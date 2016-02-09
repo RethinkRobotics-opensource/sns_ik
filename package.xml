@@ -1,23 +1,36 @@
+<?xml version="1.0"?>
 <package>
-  <description brief="IKL">
-
-     IKL
-
+  <name>sns_ikl</name>
+  <version>0.1.0</version>
+  <description>
+   Saturation in the Null Space (SNS) Inverse Kinematic Library.
+   SNS is a real-time Cartesian IK solver for uses the redundancy
+   in the supplied kinematic chain for collision avoidance,
+   joint motion optimization, or additional task objectives or
+   soft constraints.
   </description>
+
   <author>Fabrizio Flacco</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/IKL</url>
-  <depend package="std_msgs"/>
-  <depend package="roscpp"/>
+  <maintainer email="rsdk.support@rethinkrobotics.com">
+    Rethink Robotics Inc.
+  </maintainer>
+  <license>Apache 2.0</license>
+  <url type="website">http://ros.org/wiki/sns_ikl</url>
+  <url type="repository">
+    https://github.com/RethinkRobotics-opensource/sns_ikl
+  </url>
+  <url type="bugtracker">
+    https://github.com/RethinkRobotics-opensource/sns_ikl/issues
+  </url>
 
-  <depend package="common_rosdeps" />
-  <rosdep name="eigen" />
+  <buildtool_depend>catkin</buildtool_depend>
 
-    <export>
-      <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lIKL"/>
-    </export>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>cmake_modules</build_depend>
+
+  <run_depend>std_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
 
 </package>
-
-

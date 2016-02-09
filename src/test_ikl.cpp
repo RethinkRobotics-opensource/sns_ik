@@ -1,6 +1,6 @@
 /* test for the IK library*/
 
-#include <IKL/IKL.hpp>
+#include <sns_ikl/sns_ikl.hpp>
 
 #include <Eigen/Dense>
 #include <iostream>

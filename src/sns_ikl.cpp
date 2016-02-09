@@ -3,7 +3,7 @@
  * Fabrizio Flacco
  * July 2012
  */
-#include <IKL/IKL.hpp>
+#include <sns_ikl/sns_ikl.hpp>
 
 #include <iostream>
 #include <math.h>
