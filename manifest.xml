@@ -1,0 +1,23 @@
+<package>
+  <description brief="IKL">
+
+     IKL
+
+  </description>
+  <author>Fabrizio Flacco</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/IKL</url>
+  <depend package="std_msgs"/>
+  <depend package="roscpp"/>
+
+  <depend package="common_rosdeps" />
+  <rosdep name="eigen" />
+
+    <export>
+      <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lIKL"/>
+    </export>
+
+</package>
+
+
