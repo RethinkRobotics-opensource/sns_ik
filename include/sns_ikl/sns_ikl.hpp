@@ -93,9 +93,6 @@ enum inv_solvers{STD,
                  STD_MIN_ACC,
                  ACC,
                  RP_ST};
-enum inv_methods{SVD, QR}; //only SVD implemented (for now)
-enum level{VELOCITY, ACCELERATION};
-
 
 /*! \struct Task
  *  A desired robot task
@@ -123,7 +120,7 @@ typedef  vector<Task> StackOfTasks;
 
 class IKL{
 public:
- IKL(inv_solvers solver=STD, inv_methods method=SVD, level in=VELOCITY);
+ IKL(inv_solvers solver=STD);
 
  // set the method used to compute the inverse kinematic
  void setSolver(inv_solvers solver=STD);
@@ -159,12 +156,7 @@ protected:
   MatrixD invJ;
 
 private:
-  bool saturate;  	//active software saturation at joint level (is useful only with inv_resolutions=STD)
-  bool damp;		//use damped pseudoinversion, only with SVD
-  
   inv_solvers inv_solver;
-  inv_methods inv_method;
-  level input_level;
   
   // robot capabilities
   int n_dof;				//manipulator degree of freedom

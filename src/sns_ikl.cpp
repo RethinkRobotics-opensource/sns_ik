@@ -32,15 +32,10 @@ using namespace std;
 using namespace Eigen;
 using namespace IKL_;
 
-IKL::IKL(inv_solvers solver, inv_methods method, level in) {
+IKL::IKL(inv_solvers solver) {
   initializeMap();
 
   setSolver(solver);
-  inv_method = method;//not used ?
-  input_level = in; //not used ?
-
-  saturate = true; //not used ?
-  damp = false;//not used ?
 
   prev_JointVelocity = VectorD::Zero(1,1);
   J_prev = MatrixD::Zero(1,1);
@@ -50,7 +45,7 @@ IKL::IKL(inv_solvers solver, inv_methods method, level in) {
 }
 
 void IKL::setSolver(inv_solvers solver) {
-  inv_solver=solver;  MatrixD J_prev;				//used to comute dot J
+  inv_solver = solver;
 
   switch(solver){
 	  case STD:
@@ -113,7 +108,6 @@ void IKL::setSolver(inv_solvers solver) {
 
 void IKL::setSolver(const string solver) {
 	setSolver(s_mapNameIKsolver[solver]);
-
 }
 
 
@@ -131,7 +125,6 @@ void IKL::initializeMap() {
 	s_mapNameIKsolver["STD_MIN_ACC"] = STD_MIN_ACC;
 	s_mapNameIKsolver["ACC"] = ACC;
 	s_mapNameIKsolver["RP_ST"] = RP_ST;
-
 }
 
 bool IKL::pinv(MatrixD *A, MatrixD *invA, Scalar eps) {
@@ -281,7 +274,6 @@ bool IKL::pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z,Scalar la
 
 	MatrixD AZ0t = ((*A) * (*Z0)).transpose();
 	HouseholderQR<MatrixD> qr = AZ0t.householderQr();
-	MatrixD J_prev;				//used to comute dot J
 
 	int m = A->rows();
 	int p = Z0->cols();
@@ -308,7 +300,7 @@ bool IKL::pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z,Scalar la
 		*Z = (*Z0) * (((MatrixD) qr.householderQ()).rightCols(p-m));
 		return true;
 	}else{
-		MatrixD R=MatrixD::Zero(m,m);
+		MatrixD R = MatrixD::Zero(m,m);
 		//take the useful part of R
 		for ( int i = 0; i < m; i++) {
 			int j = i;
