@@ -32,247 +32,241 @@ using namespace std;
 using namespace Eigen;
 using namespace IKL_;
 
-IKL::IKL(inv_solvers solver, inv_methods method, level in){
-  cout << "INIT IKL" <<endl;
+IKL::IKL(inv_solvers solver, inv_methods method, level in) {
   initializeMap();
 
   setSolver(solver);
-  inv_method=method;//not used ?
-  input_level=in; //not used ?
+  inv_method = method;//not used ?
+  input_level = in; //not used ?
 
-  saturate=true; //not used ?
-  damp=false;//not used ?
+  saturate = true; //not used ?
+  damp = false;//not used ?
 
-  prev_JointVelocity=VectorD::Zero(1,1);
-  J_prev=MatrixD::Zero(1,1);
-  dx_prev=VectorD::Zero(1,1);
-  nullSpaceDampingFactor=0.95;
+  prev_JointVelocity = VectorD::Zero(1,1);
+  J_prev = MatrixD::Zero(1,1);
+  dx_prev = VectorD::Zero(1,1);
+  nullSpaceDampingFactor = 0.95;
 
 }
 
-void IKL::setSolver(inv_solvers solver){
+void IKL::setSolver(inv_solvers solver) {
   inv_solver=solver;  MatrixD J_prev;				//used to comute dot J
-
 
   switch(solver){
 	  case STD:
-		getJointVelocityP=&IKL::getJointVelocity_STD;
-		ROS_INFO("solver set to: STD");
-		break;
+      getJointVelocityP=&IKL::getJointVelocity_STD;
+      ROS_INFO("solver set to: STD");
+      break;
 	  case CHIAVERINI:
-		getJointVelocityP=&IKL::getJointVelocity_Chiaverini;
-		ROS_INFO("solver set to: CHIAVERINI");
-		break;
-  	  case SCALE:
+      getJointVelocityP=&IKL::getJointVelocity_Chiaverini;
+      ROS_INFO("solver set to: CHIAVERINI");
+      break;
+    case SCALE:
   		getJointVelocityP=&IKL::getJointVelocity_Scale;
-		ROS_INFO("solver set to: SCALE");
+  		ROS_INFO("solver set to: SCALE");
   		break;
-  	  case SNS:
+  	case SNS:
   		getJointVelocityP=&IKL::getJointVelocity_SNS;
-		ROS_INFO("solver set to: SNS");
+		  ROS_INFO("solver set to: SNS");
   		break;
-  	  case OSNS:
+  	case OSNS:
   		getJointVelocityP=&IKL::getJointVelocity_OSNS;
-		ROS_INFO("solver set to: OSNS");
-		break;
-  	  case OSNSsm:
+		  ROS_INFO("solver set to: OSNS");
+		  break;
+  	case OSNSsm:
   		getJointVelocityP=&IKL::getJointVelocity_OSNSsm;
-		ROS_INFO("solver set to: OSNSsm");
+		  ROS_INFO("solver set to: OSNSsm");
   		break;
-  	  case FSNS:
+  	case FSNS:
   		getJointVelocityP=&IKL::getJointVelocity_FSNS;
-		ROS_INFO("solver set to: FSNS");
+		  ROS_INFO("solver set to: FSNS");
   		break;
-  	  case FOSNS:
+  	case FOSNS:
   		getJointVelocityP=&IKL::getJointVelocity_FOSNS;
-		ROS_INFO("solver set to: FOSNS");
+		  ROS_INFO("solver set to: FOSNS");
   		break;
-  	  case QP:
+  	case QP:
   		getJointVelocityP=&IKL::getJointVelocity_QP;
-		ROS_INFO("solver set to: QP");
+		  ROS_INFO("solver set to: QP");
   		break;
-  	  case RP:
+  	case RP:
   		getJointVelocityP=&IKL::getJointVelocity_RP;
-		ROS_INFO("solver set to: RP");
+		  ROS_INFO("solver set to: RP");
   		break;
-  	  case STD_MIN_ACC:
+  	case STD_MIN_ACC:
   		getJointVelocityP=&IKL::getJointVelocity_STD_MIN_ACC;
-		ROS_INFO("solver set to: STD_MIN_ACC");
+		  ROS_INFO("solver set to: STD_MIN_ACC");
   		break;
-  	  case ACC:
+  	case ACC:
   		getJointVelocityP=&IKL::getJointVelocity_ACC;
-		ROS_INFO("solver set to: ACC");
+		  ROS_INFO("solver set to: ACC");
   		break;
-  	  case RP_ST:
+  	case RP_ST:
   		getJointVelocityP=&IKL::getJointVelocity_RP_ST;
-		ROS_INFO("solver set to: RP_ST");
+		  ROS_INFO("solver set to: RP_ST");
   		break;
-
-  	  default:
-  		  cout <<"this IK solver has not be implemented (yet)" <<endl;
-  		  break;
+  	default:
+      cout <<"this IK solver has not be implemented (yet)" <<endl;
+      break;
   }
 }
 
-void IKL::setSolver(const string solver){
+void IKL::setSolver(const string solver) {
 	setSolver(s_mapNameIKsolver[solver]);
 
 }
 
 
-void IKL::initializeMap(){
-	s_mapNameIKsolver["STD"]=STD;
-	s_mapNameIKsolver["CHIAVERINI"]=CHIAVERINI;
-	s_mapNameIKsolver["SCALE"]=SCALE;
-	s_mapNameIKsolver["SNS"]=SNS;
-	s_mapNameIKsolver["OSNS"]=OSNS;
-	s_mapNameIKsolver["FSNS"]=FSNS;
-	s_mapNameIKsolver["OSNSsm"]=OSNSsm;
-	s_mapNameIKsolver["FOSNS"]=FOSNS;
-	s_mapNameIKsolver["QP"]=QP;
-	s_mapNameIKsolver["RP"]=RP;
-	s_mapNameIKsolver["STD_MIN_ACC"]=STD_MIN_ACC;
-	s_mapNameIKsolver["ACC"]=ACC;
-	s_mapNameIKsolver["RP_ST"]=RP_ST;
+void IKL::initializeMap() {
+	s_mapNameIKsolver["STD"] = STD;
+	s_mapNameIKsolver["CHIAVERINI"] = CHIAVERINI;
+	s_mapNameIKsolver["SCALE"] = SCALE;
+	s_mapNameIKsolver["SNS"] = SNS;
+	s_mapNameIKsolver["OSNS"] = OSNS;
+	s_mapNameIKsolver["FSNS"] = FSNS;
+	s_mapNameIKsolver["OSNSsm"] = OSNSsm;
+	s_mapNameIKsolver["FOSNS"] = FOSNS;
+	s_mapNameIKsolver["QP"] = QP;
+	s_mapNameIKsolver["RP"] = RP;
+	s_mapNameIKsolver["STD_MIN_ACC"] = STD_MIN_ACC;
+	s_mapNameIKsolver["ACC"] = ACC;
+	s_mapNameIKsolver["RP_ST"] = RP_ST;
 
 }
 
-bool IKL::pinv(MatrixD *A, MatrixD *invA, Scalar eps){
+bool IKL::pinv(MatrixD *A, MatrixD *invA, Scalar eps) {
 
 	//A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-	int m=A->rows()-1;
+	int m = A->rows() - 1;
 	VectorD sigma;		//vector of singular values
 
-    svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
-    sigma=svd_A.singularValues();
-    if ( ((m>0)&& (sigma(m)> eps)) || ((m==0)&& (A->array().abs() > eps).any())   ) {
-    	for (int i=0; i<=m; i++){
-    		sigma(i)=(1.0/sigma(i));
-  	}
-    	(*invA)=svd_A.matrixU()*sigma.asDiagonal()*svd_A.matrixV().transpose();
-    	return true;
-    }else{
-    	return false;
+  svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
+  sigma=svd_A.singularValues();
+  if ( ((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any()) ) {
+    for (int i = 0; i <= m; i++) {
+      sigma(i) = 1.0 / sigma(i);
     }
+    (*invA) = svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
+    return true;
+  } else {
+    return false;
+  }
 }
 
-bool IKL::pinv_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar eps){
+bool IKL::pinv_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar eps) {
 
 	//A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-	int m=A->rows()-1;
-	VectorD sigma;		//vector of singular values
+	int m = A->rows() - 1;
+	VectorD sigma;	 //vector of singular values
 
-    svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
-    sigma=svd_A.singularValues();
-    if ( ((m>0)&& (sigma(m)> eps)) || ((m==0)&& (A->array().abs() > eps).any())   ) {
-    	for (int i=0; i<=m; i++){
-    		sigma(i)=(1.0/sigma(i));
-    	}
-    	(*invA)=svd_A.matrixU()*sigma.asDiagonal()*svd_A.matrixV().transpose();
-        (*P)=((*P)-svd_A.matrixU()*svd_A.matrixU().transpose()).eval();
-    	return true;
-    }else{
-    	return false;
+  svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
+  sigma = svd_A.singularValues();
+  if ( ((m > 0)&& (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any()) ) {
+    for (int i = 0; i <= m; i++){
+      sigma(i)= 1.0 / sigma(i);
     }
-
-}
-
-bool IKL::pinv_damped(MatrixD *A, MatrixD *invA,Scalar lambda_max, Scalar eps){
-
-	//A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-	int m=A->rows()-1;
-	VectorD sigma;		//vector of singular values
-	Scalar lambda2;
-	int r=0;
-
-    svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
-    sigma=svd_A.singularValues();
-    if ( ((m>0)&& (sigma(m)> eps)) || ((m==0)&& (A->array().abs() > eps).any())   ) {
-    	for (int i=0; i<=m; i++){
-    		sigma(i)=(1.0/sigma(i));
-    	}
-    	(*invA)=svd_A.matrixU()*sigma.asDiagonal()*svd_A.matrixV().transpose();
-    	return true;
-    }else{
-    	lambda2=(1-(sigma(m)/eps)*(sigma(m)/eps))*lambda_max*lambda_max;
-    	for (int i=0; i<=m; i++){
-    		if (sigma(i)> EPSQ) r++;
-    		sigma(i)=(sigma(i)/(sigma(i)*sigma(i)+lambda2));
-    	}
-    	//only U till the rank
-    	MatrixD subU =svd_A.matrixU().block(0,0,A->cols(),r);
-    	MatrixD subV =svd_A.matrixV().block(0,0,A->rows(),r);
-
-    	(*invA)=subU*sigma.asDiagonal()*subV.transpose();
-    	return false;
-    }
+    (*invA) = svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
+    (*P) = ((*P) - svd_A.matrixU() * svd_A.matrixU().transpose()).eval();
+    return true;
+  }else{
+    return false;
+  }
 
 }
 
-bool IKL::pinv_damped_P(MatrixD *A, MatrixD *invA, MatrixD *P,Scalar lambda_max, Scalar eps){
+bool IKL::pinv_damped(MatrixD *A, MatrixD *invA,Scalar lambda_max, Scalar eps) {
 
 	//A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-	int m=A->rows()-1;
-	int r=0; 				//rank
+	int m = A->rows() -1 ;
 	VectorD sigma;		//vector of singular values
 	Scalar lambda2;
+	int r = 0;
 
-    svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
-    sigma=svd_A.singularValues();
-    if ( ((m>0)&& (sigma(m)> eps)) || ((m==0)&& (A->array().abs() > eps).any())   ) {
-    	for (int i=0; i<=m; i++){
-    		sigma(i)=(1.0/sigma(i));
-    	}
-    	(*invA)=svd_A.matrixU()*sigma.asDiagonal()*svd_A.matrixV().transpose();
-        (*P)=((*P)-svd_A.matrixU()*svd_A.matrixU().transpose()).eval();
-    	return true;
-    }else{
-    	lambda2=(1-(sigma(m)/eps)*(sigma(m)/eps))*lambda_max*lambda_max;
-    	for (int i=0; i<=m; i++){
-    		if (sigma(i)> EPSQ) r++;
-    		sigma(i)=(sigma(i)/(sigma(i)*sigma(i)+lambda2));
-    	}
-
-    	//only U till the rank
-    	MatrixD subU =svd_A.matrixU().block(0,0,A->cols(),r);
-    	MatrixD subV =svd_A.matrixV().block(0,0,A->rows(),r);
-    	(*P)=((*P)-subU*subU.transpose()).eval();
-
-    	(*invA)=subU*sigma.asDiagonal()*subV.transpose();
-    	return false;
+  svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
+  sigma = svd_A.singularValues();
+  if ( (( m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any()) ) {
+    for (int i = 0; i <= m; i++){
+      sigma(i) = 1.0 / sigma(i);
     }
+    (*invA) = svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
+    return true;
+  }else{
+    lambda2 = (1 - (sigma(m)/eps) * (sigma(m)/eps)) * lambda_max*lambda_max;
+    for (int i = 0; i <= m; i++){
+      if (sigma(i) > EPSQ) r++;
+      sigma(i) = (sigma(i) / (sigma(i)*sigma(i)+lambda2));
+    }
+    //only U till the rank
+    MatrixD subU = svd_A.matrixU().block(0,0,A->cols(),r);
+    MatrixD subV = svd_A.matrixV().block(0,0,A->rows(),r);
+
+    (*invA) = subU * sigma.asDiagonal() * subV.transpose();
+    return false;
+  }
 
 }
 
-bool IKL::pinv_QR(MatrixD *A, MatrixD *invA, Scalar eps){
-	MatrixD At=A->transpose();
-	HouseholderQR<MatrixD> qr= At.householderQr();
-	int m=A->rows();
-	int n=A->cols();
+bool IKL::pinv_damped_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar lambda_max, Scalar eps) {
 
-	MatrixD Rt=MatrixD::Zero(m,m);
-	bool invertible;  MatrixD J_prev;				//used to comute dot J
+	//A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
+	int m = A->rows() - 1;
+	int r = 0; 				//rank
+	VectorD sigma;		//vector of singular values
+	Scalar lambda2;
 
-	MatrixD hR=(MatrixD) qr.matrixQR();
-	MatrixD Y=((MatrixD) qr.householderQ()).leftCols(m);
+  svd_A.compute(A->transpose(), ComputeThinU | ComputeThinV);
+  sigma = svd_A.singularValues();
+  if ( ((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any()) ) {
+    for (int i = 0; i <= m; i++){
+      sigma(i)= 1.0 / sigma(i);
+    }
+    (*invA) = svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
+    (*P) = ((*P) - svd_A.matrixU() * svd_A.matrixU().transpose()).eval();
+    return true;
+  }else{
+    lambda2 = (1 - (sigma(m)/eps) * (sigma(m)/eps)) * lambda_max*lambda_max;
+    for (int i = 0; i <= m; i++){
+      if (sigma(i) > EPSQ) r++;
+      sigma(i) = (sigma(i) / (sigma(i)*sigma(i)+lambda2));
+    }
+
+    //only U till the rank
+    MatrixD subU = svd_A.matrixU().block(0,0,A->cols(),r);
+    MatrixD subV = svd_A.matrixV().block(0,0,A->rows(),r);
+    (*P) = ((*P) - subU*subU.transpose()).eval();
+
+    (*invA) = subU * sigma.asDiagonal() * subV.transpose();
+    return false;
+  }
+
+}
+
+bool IKL::pinv_QR(MatrixD *A, MatrixD *invA, Scalar eps) {
+	MatrixD At = A->transpose();
+	HouseholderQR<MatrixD> qr = At.householderQr();
+	int m = A->rows();
+	int n = A->cols();
+
+	MatrixD Rt = MatrixD::Zero(m,m);
+	bool invertible;
+
+	MatrixD hR = (MatrixD) qr.matrixQR();
+	MatrixD Y = ((MatrixD) qr.householderQ()).leftCols(m);
 
 	//take the useful part of R
-	for(int i=0;i<m;i++){
-		int j=0;
-		while(j<=i){
-			Rt(i,j)=hR(j,i);
+	for (int i = 0; i < m; i++) {
+		int j = 0;
+		while ( j <= i) {
+			Rt(i,j) = hR(j,i);
 			j++;
 		}
 	}
 	FullPivLU<MatrixD> invRt(Rt);
 
-	//invRt.setThreshold(eps);
-	//invertible=invRt.isInvertible();
-	if (abs(invRt.determinant())>eps) invertible=true;
-	else invertible=false;
+	invertible = abs(invRt.determinant()) > eps;
 
-	if (invertible){
-		*invA=Y*invRt.inverse();
+	if (invertible) {
+		*invA = Y * invRt.inverse();
 		return true;
 	}else{
 		return false;
@@ -281,119 +275,105 @@ bool IKL::pinv_QR(MatrixD *A, MatrixD *invA, Scalar eps){
 }
 
 
-bool IKL::pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z,Scalar lambda_max, Scalar eps){
+bool IKL::pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z,Scalar lambda_max, Scalar eps) {
 	VectorD sigma;		//vector of singular values
 	Scalar lambda2;
 
-	MatrixD AZ0t=((*A) * (*Z0)).transpose();
-	//MatrixD iJ;
-	//pinv(A,&iJ);
-	HouseholderQR<MatrixD> qr= AZ0t.householderQr();
-	  MatrixD J_prev;				//used to comute dot J
+	MatrixD AZ0t = ((*A) * (*Z0)).transpose();
+	HouseholderQR<MatrixD> qr = AZ0t.householderQr();
+	MatrixD J_prev;				//used to comute dot J
 
-	int m=A->rows();
-	int p=Z0->cols();
+	int m = A->rows();
+	int p = Z0->cols();
 
-	MatrixD Rt=MatrixD::Zero(m,m);
+	MatrixD Rt = MatrixD::Zero(m,m);
 	bool invertible;
-	MatrixD hR=(MatrixD) qr.matrixQR();
-	MatrixD Y=((MatrixD) qr.householderQ()).leftCols(m);
+	MatrixD hR = (MatrixD) qr.matrixQR();
+	MatrixD Y = ((MatrixD) qr.householderQ()).leftCols(m);
 
 	//take the useful part of R
-	for(int i=0;i<m;i++){
-		int j=0;
-		while(j<=i){
-			Rt(i,j)=hR(j,i);
+	for (int i=0; i < m; i++) {
+		int j = 0;
+		while (j <= i) {
+			Rt(i,j) = hR(j,i);
 			j++;
 		}
 	}
 
 	FullPivLU<MatrixD> invRt(Rt);
-//	stringstream log;
-//	log<<"det(R') \n"<<invRt.determinant()<<" - "<<Rt.determinant()<<endl;
-//	ROS_INFO("%s",log.str().c_str());
+	invertible = abs(invRt.determinant()) > eps;
 
-	if (abs(invRt.determinant())>eps) invertible=true;
-	else invertible=false;
-
-	if (invertible){
-		*invA=(*Z0)*Y*invRt.inverse();
-		*Z=(*Z0)*(((MatrixD) qr.householderQ()).rightCols(p-m));
+	if (invertible) {
+		*invA = (*Z0) * Y * invRt.inverse();
+		*Z = (*Z0) * (((MatrixD) qr.householderQ()).rightCols(p-m));
 		return true;
 	}else{
 		MatrixD R=MatrixD::Zero(m,m);
-		//MatrixD hR=(MatrixD) qr.matrixQR();
-		//MatrixD Y=((MatrixD) qr.householderQ()).leftCols(m);
 		//take the useful part of R
-		for(int i=0;i<m;i++){
-			int j=i;
-			while(j<m){
-				R(i,j)=hR(i,j);
+		for ( int i = 0; i < m; i++) {
+			int j = i;
+			while (j < m) {
+				R(i,j) = hR(i,j);
 				j++;
 			}
-		}  MatrixD J_prev;				//used to comute dot J
+		}
 
 		//perform the SVD of R
-	    svd_A.compute(R, ComputeThinU | ComputeThinV);
-	    sigma=svd_A.singularValues();
-	  	lambda2=(1-(sigma(m-1)/eps)*(sigma(m-1)/eps))*lambda_max*lambda_max;
-	    for (int i=0; i<m; i++){
-	    	sigma(i)=(sigma(i)/(sigma(i)*sigma(i)+lambda2));
-	    }
-	    (*invA)=(*Z0)*Y*svd_A.matrixU()*sigma.asDiagonal()*svd_A.matrixV().transpose();
+    svd_A.compute(R, ComputeThinU | ComputeThinV);
+    sigma = svd_A.singularValues();
+    lambda2 = (1 - (sigma(m-1)/eps) * (sigma(m-1)/eps)) * lambda_max*lambda_max;
+    for (int i = 0; i < m; i++) {
+      sigma(i) = sigma(i) / (sigma(i)*sigma(i)+lambda2);
+    }
+    (*invA) = (*Z0) * Y * svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
 
-
-
-		*Z=(*Z0)*(((MatrixD) qr.householderQ()).rightCols(p-m));
+		*Z = (*Z0) * (((MatrixD) qr.householderQ()).rightCols(p-m));
 		return false;
 	}
-
 
 }
 
 
-bool IKL::pinv_forBarP(MatrixD *W,MatrixD *P, MatrixD *inv){
+bool IKL::pinv_forBarP(MatrixD *W,MatrixD *P, MatrixD *inv) {
 
 	MatrixD barW;
-	int rowsBarW=0;
+	int rowsBarW = 0;
 
 	MatrixD tmp;
 	bool invertible;
 
-
-	for (int i=0; i < W->rows(); i++){
-		if ((*W)(i,i)>0.99){ //equal to 1 (safer)
+	for (int i = 0; i < W->rows(); i++) {
+		if ((*W)(i,i) > 0.99){ //equal to 1 (safer)
 			rowsBarW++;
 			barW = (MatrixD(rowsBarW,W->cols()) << barW, W->row(i) ).finished();
 		}
 	}
 
-	tmp=barW*(*P)*barW.transpose();
+	tmp = barW * (*P) * barW.transpose();
 	FullPivLU<MatrixD> inversePbar(tmp);
-
 
 	invertible=inversePbar.isInvertible();
 
 	if (invertible){
-		(*inv)=(*P)*barW.transpose() * inversePbar.inverse() *barW;
+		(*inv) = (*P) * barW.transpose() * inversePbar.inverse() * barW;
 		return true;
 	}else {
-		(*inv)=MatrixD::Zero(W->rows(),W->rows());
+		(*inv) = MatrixD::Zero(W->rows(), W->rows());
 		return false;
 	}
 }
 
 
 
-bool IKL::isIdentity(MatrixD *A){
+bool IKL::isIdentity(MatrixD *A) {
 
-	bool isIdentity=true;
-	int n=A->rows();
-	int i=0;
-	do{
+	bool isIdentity = true;
+	int n = A->rows();
+	int i = 0;
+	do {
 		isIdentity &= ((*A)(i,i) > 0.9); // equal to 1.0 (safer)
 		i++;
-	}while(isIdentity && i<n);
+	} while (isIdentity && i < n);
 
 	return isIdentity;
 }
@@ -404,8 +384,6 @@ Scalar IKL::getJointVelocity(VectorD *jointVelocity, StackOfTasks *sot, VectorD 
   return (this->*getJointVelocityP)(jointVelocity,sot,jointConfiguration);
   
 }
-
-
 
 
 Scalar IKL::getJointVelocity_STD(VectorD *jointVelocity, StackOfTasks *sot, VectorD *jointConfiguration){
@@ -998,20 +976,15 @@ void IKL::setJointsCapabilities(VectorXd limit_low, VectorXd limit_high, VectorX
 
 	dotQmin=-maxJointVelocity.array();
 	dotQmax=maxJointVelocity.array();
-
 }
 
-void IKL::shapeJointVelocityBound(VectorD *actualJointConfiguration,double margin){
+void IKL::shapeJointVelocityBound(VectorD *actualJointConfiguration, double margin){
 
 	//it could be written using the Eigen::Array potentiality
 	double step,max,stop;
 
-	//double safeJointLimit_low,safeJointLimit_high,safemaximumVelocity,safeMaximumAcceleration;
-
-	for(int i=0; i<n_dof; i++){
-
+	for (int i=0; i<n_dof; i++) {
 		//for the minimum bound
-
 		step=(jointLimit_low(i)-(*actualJointConfiguration)(i))/loop_period;
 		max=-maxJointVelocity(i);
 		stop=- sqrt(2*maxJointAcceleration(i)*((*actualJointConfiguration)(i)-jointLimit_low(i)));
@@ -1022,25 +995,23 @@ void IKL::shapeJointVelocityBound(VectorD *actualJointConfiguration,double margi
 		max=maxJointVelocity(i);
 		stop=sqrt(2*maxJointAcceleration(i)*(jointLimit_high(i)-(*actualJointConfiguration)(i)));
 		dotQmax(i)=(step<max)?((step<stop)?step: stop):((max<stop)?max:stop); //take the minimum
-
 	}
 
 	dotQmin*=margin;
 	dotQmax*=margin;
-
 }
 
 void IKL::getTaskScalingFactor(Array<Scalar,Dynamic,1> *a, Array<Scalar,Dynamic,1> *b,MatrixD *W,Scalar *scalingFactor,int *mostCriticalJoint,Scalar maxScalingFactor){
 
 	Array<Scalar,Dynamic,1> Smin,Smax;
-	Scalar temp,smax,smin;
-	Scalar inf=INF;
+	Scalar temp, smax, smin;
+	Scalar inf = INF;
 	int col;
 
-	Smin=(dotQmin - (*b))/(*a);
-	Smax=(dotQmax - (*b))/(*a);
+	Smin = (dotQmin - (*b))/(*a);
+	Smax = (dotQmax - (*b))/(*a);
 
-	for (int i=0; i < a->rows(); i++){
+	for (int i=0; i < a->rows(); i++) {
 		//switch
 		if (Smin(i) > Smax(i)){
 			temp=Smin(i);
@@ -1051,10 +1022,8 @@ void IKL::getTaskScalingFactor(Array<Scalar,Dynamic,1> *a, Array<Scalar,Dynamic,
 		if (((*W)(i,i)<0.2)|| ((*a)(i)==0)) { // if it is not 1 (safer)
 			Smin(i)=-INF;
 			Smax(i)=INF;
-
 		}
 	}
-
 
 	smax=Smax.minCoeff(mostCriticalJoint,&col);
 	smin=Smin.maxCoeff();
@@ -1848,237 +1817,6 @@ Scalar IKL::FSNSsingle(int priority,VectorD *higherPriorityJointVelocity,MatrixD
 	(*jointVelocity)=dotQ;
 	return 1.0;
 }
-
-/*
-Scalar IKL::FSNSsingle(int priority,VectorD *higherPriorityJointVelocity,MatrixD *higherPriorityNull, MatrixD *jacobian, VectorD *task, VectorD *jointVelocity,MatrixD *nullSpaceProjector,double start_scale){
-
-	//INITIALIZATION
-//	VectorD tildeDotQ;
-//	MatrixD projectorSaturated; 			//(((I-W_k)*P_{k-1})^#
-	MatrixD JPinverse;					//(J_k P_{k-1})^#
-//	bool isW_identity;
-//	MatrixD barP=*higherPriorityNull;  // remove the pointer arguments advantage... but I need to modify it
-	Array<Scalar,Dynamic,1> a,b;					   // used to compute the task scaling factor
-	bool limit_excedeed;
-	bool singularTask=false;
-//	bool evaluated_Dq;
-//	bool reachedSingularity=false;
-	Scalar scalingFactor=1.0;
-	int mostCriticalJoint;
-	//best solution
-	Scalar best_Scale=-1.0;
-	MatrixD best_B;
-	//MatrixD best_JW;
-	VectorD best_dqw;
-	VectorXi best_sSat;
-	int best_nSat;
-
-	VectorD dotQ_1;
-	VectorD dotQ_2;
-	VectorD dotQ_base;
-	//VectorD dotQ_s;
-	MatrixD tildeP;
-
-	VectorD zv=VectorD::Zero(n_dof);
-	//int k;
-
-//temporary
-	MatrixD temp;
-	VectorD BJwX1=zv;
-	VectorD BJwX2=zv;
-	VectorD BJwX3=zv;
-	MatrixD BJw=MatrixD::Zero(n_dof,n_dof);
-	VectorD bin;
-	VectorD bmcj;
-	Scalar error;
-
-//initialization
-	nSat[priority]=0;
-	S[priority]=VectorXi::Zero(n_dof);
-
-
-
-//compute the base solution
-	temp=(*jacobian)*(*higherPriorityNull);
-	singularTask=!pinv_damped_P(&temp, &JPinverse, nullSpaceProjector);
-	tildeP=*nullSpaceProjector;
-	dotQ_1=JPinverse * (*task);
-	dotQ_2=-JPinverse * (*jacobian)*(*higherPriorityJointVelocity);
-	dotQ_base=dotQ_1 + dotQ_2;
-	//(*nullSpaceProjector)=tildeP;
-
-	dotQ=  (*higherPriorityJointVelocity) + dotQ_base;
-	a=dotQ_1.array();
-	b=dotQ.array() - a;
-	getTaskScalingFactor_fast(&a, &b,&S[priority], &scalingFactor, &mostCriticalJoint);
-
-	//double scalingI=scalingFactor;
-	if (scalingFactor >= 1.0){
-		// then is clearly the optimum since all joints velocity are computed with the pseudoinverse
-//ROS_INFO("solved I");
-		(*jointVelocity)=dotQ;
-		nSat[priority]=0;
-		dotQopt[priority]=dotQ;
-		return scalingFactor;
-	}
-
-	if (singularTask){
-		// the task is singular so return a scaled damped solution (no SNS possible)
-		//ROS_ERROR("sing");
-		if (scalingFactor >= 0.0){
-			nSat[priority]=0;
-			(*jointVelocity)= (*higherPriorityJointVelocity) +  scalingFactor*dotQ_1  + dotQ_2;
-			dotQopt[priority]=(*jointVelocity);
-		}else{
-			// the task is not executed
-			nSat[priority]=0;
-			*jointVelocity= *higherPriorityJointVelocity;
-			dotQopt[priority]=(*jointVelocity);
-			*nullSpaceProjector=*higherPriorityNull;
-		}
-		return scalingFactor;
-	}
-
-	if (scalingFactor>best_Scale){
-//		ROS_INFO("best scale I %f",scalingFactor);
-		//save best solution so far
-		best_Scale=scalingFactor;
-		best_nSat=0;
-	}
-
-//	evaluated_Dq=true;
-//_______________________________________________________END of base computation
-
-
-	//SNS
-	int count=0;
-	do{
-		count++;
-		//ROS_INFO("%d",count);
-		if (count>2*n_dof){
-#ifndef _ONLY_WARNING_ON_ERROR
-			ROS_ERROR("Infinite loop on SNS for task (%d)",priority);
-
-			exit(1);
-#else
-			ROS_WARN("Infinite loop on SNS for task (%d)",priority);
-
-			// the task is not executed
-			nSat[priority]=0;
-			*jointVelocity= *higherPriorityJointVelocity;
-			dotQopt[priority]=(*jointVelocity);
-			*nullSpaceProjector=*higherPriorityNull;
-			limit_excedeed=false;
-			//continue;
-			return -1.0;
-#endif
-		}
-		limit_excedeed=true;
-
-		//saturate the most critical joint
-
-	//	ROS_INFO("mcj %d, nSat %d, count %d, p%d",mostCriticalJoint,nSat[priority],count,priority);
-		//try without Jw
-		bin=tildeP.col(mostCriticalJoint)/tildeP(mostCriticalJoint,mostCriticalJoint);
-		//B=[(I-bin*Js)*B,bin];
-		bmcj=B.row(mostCriticalJoint);
-		for (int i=0; i<n_dof; i++){
-			for (int j=0; j<nSat[priority]; j++){
-				B(i,j)-=  bin(i)*bmcj(j); //B(mostCriticalJoint,j);
-			}
-		}
-		nSat[priority]++;
-		B.col(nSat[priority]-1)=bin;
-
-		S[priority](mostCriticalJoint)=nSat[priority];
-		sSat[priority](nSat[priority]-1)=mostCriticalJoint;
-
-		//tildeP=nullSpaceProjector + B*Jw*(I-nullSpaceProjector);
-		BJw=MatrixD::Zero(n_dof,n_dof);
-		for (int j=0; j<nSat[priority]; j++){
-			BJw.col(sSat[priority](j))=B.col(j);
-		}
-		tildeP=(*nullSpaceProjector)  + BJw*(I-(*nullSpaceProjector));
-
-		if (dotQ(mostCriticalJoint)>=0.0){
-			dqw(nSat[priority]-1)=dotQmax(mostCriticalJoint)-(*higherPriorityJointVelocity)(mostCriticalJoint);
-		}else{
-			dqw(nSat[priority]-1)=dotQmin(mostCriticalJoint)-(*higherPriorityJointVelocity)(mostCriticalJoint);
-		}
-
-		//dotQ_a=(I-B*Jw)*dotQ_base;
-		//dotQ_b=B*dqw;
-		//a=(I-B*Jw)*dotQ_1;
-		for (int i=0; i<n_dof; i++){
-			BJwX1(i)=0;
-			BJwX2(i)=0;
-			BJwX3(i)=0;
-			for (int j=0; j<nSat[priority]; j++){
-				BJwX1(i)+=B(i,j)*dotQ_base(sSat[priority](j));
-				BJwX2(i)+=B(i,j)*dotQ_1(sSat[priority](j));
-				BJwX3(i)+=B(i,j)*dqw(j);
-			}
-		}
-		dotQ=(*higherPriorityJointVelocity) + dotQ_base - BJwX1 + BJwX3;
-
-		//solution non correct --> singularity
-		error=((*jacobian)*dotQ - (*task)).norm();
-		if ((error>1e-10) || (error!=error)){
-			if (best_Scale>=0){
-				//take the best solution
-				for (int i=0; i<n_dof; i++){
-					BJwX1(i)=0;
-					BJwX2(i)=0;
-					BJwX3(i)=0;
-					for (int j=0; j<best_nSat; j++){
-						BJwX1(i)+=best_B(i,j)*dotQ_1(best_sSat(j));
-						BJwX2(i)+=best_B(i,j)*dotQ_2(best_sSat(j));
-						BJwX3(i)+=best_B(i,j)*best_dqw(j);
-					}
-				}
-				*jointVelocity=(*higherPriorityJointVelocity) + best_Scale*(dotQ_1 - BJwX1) + (dotQ_2 - BJwX2) + BJwX3;
-				dotQopt[priority]=(*jointVelocity);
-				//nSat[priority]=best_nSat;
-				return best_Scale;
-			}else{
-				//no solution
-				//nSat[priority]=0;
-				*jointVelocity= *higherPriorityJointVelocity;
-				dotQopt[priority]=(*jointVelocity);
-				*nullSpaceProjector=*higherPriorityNull;
-				limit_excedeed=false;
-				//continue;
-				return -1.0;
-			}
-		}
-
-		a=(dotQ_1-BJwX2).array();
-		b=dotQ.array() - a;
-		getTaskScalingFactor_fast(&a, &b,&S[priority], &scalingFactor, &mostCriticalJoint);
-		if (scalingFactor >= 1.0){
-			// task accomplished
-			*jointVelocity= dotQ;
-			dotQopt[priority]=(*jointVelocity);
-			return scalingFactor;
-		}else {
-			if ((scalingFactor>best_Scale)){
-				//save best solution so far
-				best_Scale=scalingFactor;
-				best_B=B;
-				//best_JW=Jw[priority];
-				best_dqw=dqw;
-				best_nSat=nSat[priority];
-				best_sSat=sSat[priority];
-			}
-		}
-
-
-	}while(limit_excedeed); //actually in this implementation if we use while(1) it would be the same
-
-	(*jointVelocity)=dotQ;
-	return 1.0;
-}
-*/
 
 //#define LOG_ACTIVE
 
