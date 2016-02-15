@@ -1,12 +1,12 @@
 /* test for the IK library*/
 
-#include <sns_ikl/sns_ikl.hpp>
+#include <sns_ik/sns_ik.hpp>
 
 #include <Eigen/Dense>
 #include <iostream>
 
 using namespace Eigen;
-using namespace sns_ikl;
+using namespace sns_ik;
 
 int main(int argc, char** argv) {
   

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(sns_ikl)
+project(sns_ik_lib)
 
 # Verify c++11 / c++0x is valid for this compiler
 include(CheckCXXCompilerFlag)
@@ -26,17 +26,17 @@ catkin_package(
   INCLUDE_DIRS include
   DEPENDS Eigen
   CATKIN_DEPENDS roscpp std_msgs
-  LIBRARIES ${PROJECT_NAME}
+  LIBRARIES sns_ik
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-add_library(${PROJECT_NAME} src/sns_ikl.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
-install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+add_library(sns_ik src/sns_ik.cpp)
+target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
+install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 
-add_executable(test_ikl src/test_ikl.cpp)
-target_link_libraries(test_ikl ${PROJECT_NAME} ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
-install(TARGETS test_ikl DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_executable(test_sns_ik src/test_sns_ik.cpp)
+target_link_libraries(test_sns_ik sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
+install(TARGETS test_sns_ik DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

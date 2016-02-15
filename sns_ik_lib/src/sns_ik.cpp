@@ -17,7 +17,7 @@
  *    limitations under the License.
  */
 
-#include <sns_ikl/sns_ikl.hpp>
+#include <sns_ik/sns_ik.hpp>
 
 #include <iostream>
 #include <math.h>
@@ -29,7 +29,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace sns_ikl;
+using namespace sns_ik;
 
 IKL::IKL(inv_solvers solver) {
   initializeMap();
