@@ -29,7 +29,7 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace IKL_;
+using namespace sns_ikl;
 
 IKL::IKL(inv_solvers solver) {
   initializeMap();

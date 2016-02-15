@@ -6,7 +6,7 @@
 #include <iostream>
 
 using namespace Eigen;
-using namespace IKL_;
+using namespace sns_ikl;
 
 int main(int argc, char** argv) {
   
