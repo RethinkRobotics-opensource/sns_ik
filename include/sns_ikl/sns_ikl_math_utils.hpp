@@ -71,19 +71,21 @@ namespace sns_ikl {
 #define SHAPE_MARGIN 0.98
 
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
-bool pinv(MatrixD *A, MatrixD *invA, Scalar eps = EPS);
+bool pinv(const MatrixD &A, MatrixD *invA, Scalar eps = EPS);
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
 // return also the null space projector P=(P-pinv(A)A)
-bool pinv_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar eps = EPS);
+bool pinv_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar eps = EPS);
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
-bool pinv_damped(MatrixD *A, MatrixD *invA, Scalar lambda_max = LAMBDA_MAX, Scalar eps = EPS);
-bool pinv_damped_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar lambda_max = LAMBDA_MAX, Scalar eps = EPS);
-bool pinv_forBarP(MatrixD *W, MatrixD *P, MatrixD *inv);
-bool pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z, Scalar lambda_max = LAMBDA_MAX,
-    Scalar eps = EPS);
-bool pinv_QR(MatrixD *A, MatrixD *invA, Scalar eps = EPS);
+bool pinv_damped(const MatrixD &A, MatrixD *invA, Scalar lambda_max = LAMBDA_MAX,
+                 Scalar eps = EPS);
+bool pinv_damped_P(const MatrixD &A, MatrixD *invA, MatrixD *P,
+                   Scalar lambda_max = LAMBDA_MAX, Scalar eps = EPS);
+bool pinv_forBarP(const MatrixD &W, const MatrixD &P, MatrixD *inv);
+bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z,
+               Scalar lambda_max = LAMBDA_MAX, Scalar eps = EPS);
+bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps = EPS);
 
-bool isIdentity(MatrixD *A);
+bool isIdentity(const MatrixD &A);
 
 }  // namespace sns_ikl
 

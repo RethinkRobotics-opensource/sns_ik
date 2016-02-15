@@ -25,15 +25,15 @@
 using namespace Eigen;
 using namespace sns_ikl;
 
-bool pinv(MatrixD *A, MatrixD *invA, Scalar eps) {
+bool pinv(const MatrixD &A, MatrixD *invA, Scalar eps) {
 
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-  int m = A->rows() - 1;
+  int m = A.rows() - 1;
   VectorD sigma;  //vector of singular values
 
-  JacobiSVD<MatrixD> svd_A(A->transpose(), ComputeThinU | ComputeThinV);
+  JacobiSVD<MatrixD> svd_A(A.transpose(), ComputeThinU | ComputeThinV);
   sigma = svd_A.singularValues();
-  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any())) {
+  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A.array().abs() > eps).any())) {
     for (int i = 0; i <= m; i++) {
       sigma(i) = 1.0 / sigma(i);
     }
@@ -44,15 +44,15 @@ bool pinv(MatrixD *A, MatrixD *invA, Scalar eps) {
   }
 }
 
-bool pinv_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar eps) {
+bool pinv_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar eps) {
 
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-  int m = A->rows() - 1;
+  int m = A.rows() - 1;
   VectorD sigma;  //vector of singular values
 
-  JacobiSVD<MatrixD> svd_A(A->transpose(), ComputeThinU | ComputeThinV);
+  JacobiSVD<MatrixD> svd_A(A.transpose(), ComputeThinU | ComputeThinV);
   sigma = svd_A.singularValues();
-  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any())) {
+  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A.array().abs() > eps).any())) {
     for (int i = 0; i <= m; i++) {
       sigma(i) = 1.0 / sigma(i);
     }
@@ -65,17 +65,17 @@ bool pinv_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar eps) {
 
 }
 
-bool pinv_damped(MatrixD *A, MatrixD *invA, Scalar lambda_max, Scalar eps) {
+bool pinv_damped(const MatrixD &A, MatrixD *invA, Scalar lambda_max, Scalar eps) {
 
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-  int m = A->rows() - 1;
+  int m = A.rows() - 1;
   VectorD sigma;  //vector of singular values
   Scalar lambda2;
   int r = 0;
 
-  JacobiSVD<MatrixD> svd_A(A->transpose(), ComputeThinU | ComputeThinV);
+  JacobiSVD<MatrixD> svd_A(A.transpose(), ComputeThinU | ComputeThinV);
   sigma = svd_A.singularValues();
-  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any())) {
+  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A.array().abs() > eps).any())) {
     for (int i = 0; i <= m; i++) {
       sigma(i) = 1.0 / sigma(i);
     }
@@ -89,8 +89,8 @@ bool pinv_damped(MatrixD *A, MatrixD *invA, Scalar lambda_max, Scalar eps) {
       sigma(i) = (sigma(i) / (sigma(i) * sigma(i) + lambda2));
     }
     //only U till the rank
-    MatrixD subU = svd_A.matrixU().block(0, 0, A->cols(), r);
-    MatrixD subV = svd_A.matrixV().block(0, 0, A->rows(), r);
+    MatrixD subU = svd_A.matrixU().block(0, 0, A.cols(), r);
+    MatrixD subV = svd_A.matrixV().block(0, 0, A.rows(), r);
 
     (*invA) = subU * sigma.asDiagonal() * subV.transpose();
     return false;
@@ -98,17 +98,17 @@ bool pinv_damped(MatrixD *A, MatrixD *invA, Scalar lambda_max, Scalar eps) {
 
 }
 
-bool pinv_damped_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar lambda_max, Scalar eps) {
+bool pinv_damped_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar lambda_max, Scalar eps) {
 
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-  int m = A->rows() - 1;
+  int m = A.rows() - 1;
   int r = 0;  //rank
   VectorD sigma;  //vector of singular values
   Scalar lambda2;
 
-  JacobiSVD<MatrixD> svd_A(A->transpose(), ComputeThinU | ComputeThinV);
+  JacobiSVD<MatrixD> svd_A(A.transpose(), ComputeThinU | ComputeThinV);
   sigma = svd_A.singularValues();
-  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A->array().abs() > eps).any())) {
+  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A.array().abs() > eps).any())) {
     for (int i = 0; i <= m; i++) {
       sigma(i) = 1.0 / sigma(i);
     }
@@ -124,8 +124,8 @@ bool pinv_damped_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar lambda_max, Sca
     }
 
     //only U till the rank
-    MatrixD subU = svd_A.matrixU().block(0, 0, A->cols(), r);
-    MatrixD subV = svd_A.matrixV().block(0, 0, A->rows(), r);
+    MatrixD subU = svd_A.matrixU().block(0, 0, A.cols(), r);
+    MatrixD subV = svd_A.matrixV().block(0, 0, A.rows(), r);
     (*P) = ((*P) - subU * subU.transpose()).eval();
 
     (*invA) = subU * sigma.asDiagonal() * subV.transpose();
@@ -134,11 +134,11 @@ bool pinv_damped_P(MatrixD *A, MatrixD *invA, MatrixD *P, Scalar lambda_max, Sca
 
 }
 
-bool pinv_QR(MatrixD *A, MatrixD *invA, Scalar eps) {
-  MatrixD At = A->transpose();
+bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps) {
+  MatrixD At = A.transpose();
   HouseholderQR < MatrixD > qr = At.householderQr();
-  int m = A->rows();
-  int n = A->cols();
+  int m = A.rows();
+  int n = A.cols();
 
   MatrixD Rt = MatrixD::Zero(m, m);
   bool invertible;
@@ -167,15 +167,15 @@ bool pinv_QR(MatrixD *A, MatrixD *invA, Scalar eps) {
 
 }
 
-bool pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z, Scalar lambda_max, Scalar eps) {
+bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z, Scalar lambda_max, Scalar eps) {
   VectorD sigma;  //vector of singular values
   Scalar lambda2;
 
-  MatrixD AZ0t = ((*A) * (*Z0)).transpose();
+  MatrixD AZ0t = (A * Z0).transpose();
   HouseholderQR < MatrixD > qr = AZ0t.householderQr();
 
-  int m = A->rows();
-  int p = Z0->cols();
+  int m = A.rows();
+  int p = Z0.cols();
 
   MatrixD Rt = MatrixD::Zero(m, m);
   bool invertible;
@@ -195,8 +195,8 @@ bool pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z, Scalar lambda
   invertible = abs(invRt.determinant()) > eps;
 
   if (invertible) {
-    *invA = (*Z0) * Y * invRt.inverse();
-    *Z = (*Z0) * (((MatrixD) qr.householderQ()).rightCols(p - m));
+    *invA = Z0 * Y * invRt.inverse();
+    *Z = Z0 * (((MatrixD) qr.householderQ()).rightCols(p - m));
     return true;
   } else {
     MatrixD R = MatrixD::Zero(m, m);
@@ -216,15 +216,15 @@ bool pinv_QR_Z(MatrixD *A, MatrixD *Z0, MatrixD *invA, MatrixD *Z, Scalar lambda
     for (int i = 0; i < m; i++) {
       sigma(i) = sigma(i) / (sigma(i) * sigma(i) + lambda2);
     }
-    (*invA) = (*Z0) * Y * svd_R.matrixU() * sigma.asDiagonal() * svd_R.matrixV().transpose();
+    (*invA) = Z0 * Y * svd_R.matrixU() * sigma.asDiagonal() * svd_R.matrixV().transpose();
 
-    *Z = (*Z0) * (((MatrixD) qr.householderQ()).rightCols(p - m));
+    *Z = Z0 * (((MatrixD) qr.householderQ()).rightCols(p - m));
     return false;
   }
 
 }
 
-bool pinv_forBarP(MatrixD *W, MatrixD *P, MatrixD *inv) {
+bool pinv_forBarP(const MatrixD &W, const MatrixD &P, MatrixD *inv) {
 
   MatrixD barW;
   int rowsBarW = 0;
@@ -232,34 +232,34 @@ bool pinv_forBarP(MatrixD *W, MatrixD *P, MatrixD *inv) {
   MatrixD tmp;
   bool invertible;
 
-  for (int i = 0; i < W->rows(); i++) {
-    if ((*W)(i, i) > 0.99) {  //equal to 1 (safer)
+  for (int i = 0; i < W.rows(); i++) {
+    if (W(i, i) > 0.99) {  //equal to 1 (safer)
       rowsBarW++;
-      barW = (MatrixD(rowsBarW, W->cols()) << barW, W->row(i)).finished();
+      barW = (MatrixD(rowsBarW, W.cols()) << barW, W.row(i)).finished();
     }
   }
 
-  tmp = barW * (*P) * barW.transpose();
+  tmp = barW * P * barW.transpose();
   FullPivLU < MatrixD > inversePbar(tmp);
 
   invertible = inversePbar.isInvertible();
 
   if (invertible) {
-    (*inv) = (*P) * barW.transpose() * inversePbar.inverse() * barW;
+    (*inv) = P * barW.transpose() * inversePbar.inverse() * barW;
     return true;
   } else {
-    (*inv) = MatrixD::Zero(W->rows(), W->rows());
+    (*inv) = MatrixD::Zero(W.rows(), W.rows());
     return false;
   }
 }
 
-bool isIdentity(MatrixD *A) {
+bool isIdentity(const MatrixD &A) {
 
   bool isIdentity = true;
-  int n = A->rows();
+  int n = A.rows();
   int i = 0;
   do {
-    isIdentity &= ((*A)(i, i) > 0.9);  // equal to 1.0 (safer)
+    isIdentity &= (A(i, i) > 0.99);  // equal to 1.0 (safer)
     i++;
   } while (isIdentity && i < n);
 
