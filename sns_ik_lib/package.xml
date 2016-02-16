@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>sns_ikl</name>
+  <name>sns_ik_lib</name>
   <version>0.1.0</version>
   <description>
    Saturation in the Null Space (SNS) Inverse Kinematic Library.
@@ -11,6 +11,8 @@
   </description>
 
   <author>Fabrizio Flacco</author>
+  <author>Ian McMahon</author>
+  <author>Forrest Rogers-Marcovitz</author>
   <maintainer email="rsdk.support@rethinkrobotics.com">
     Rethink Robotics Inc.
   </maintainer>
