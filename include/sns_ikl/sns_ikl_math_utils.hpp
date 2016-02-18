@@ -20,8 +20,8 @@
  *    limitations under the License.
  */
 
-#ifndef SNS_IKL_MATH_UTILS_
-#define SNS_IKL_MATH_UTILS_
+#ifndef SNS_IKL_MATH_UTILS
+#define SNS_IKL_MATH_UTILS
 
 #include <Eigen/Dense>
 
@@ -68,7 +68,6 @@ namespace sns_ikl {
 #endif
 
 #define INF 1e20;  // Should this be the std INF?
-#define SHAPE_MARGIN 0.98
 
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
 bool pinv(const MatrixD &A, MatrixD *invA, Scalar eps = EPS);

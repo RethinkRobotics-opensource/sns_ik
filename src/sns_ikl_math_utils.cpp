@@ -25,6 +25,8 @@
 using namespace Eigen;
 using namespace sns_ikl;
 
+namespace sns_ikl {
+
 bool pinv(const MatrixD &A, MatrixD *invA, Scalar eps) {
 
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
@@ -265,3 +267,5 @@ bool isIdentity(const MatrixD &A) {
 
   return isIdentity;
 }
+
+} // namespace sns_ikl
