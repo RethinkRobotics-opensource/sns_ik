@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package>
+  <name>sns_ik</name>
+  <version>0.1.0</version>
+  <description>
+   Metapackage for the Saturation in the Null Space (SNS)
+   Inverse Kinematic Library.
+  </description>
+
+  <author>Fabrizio Flacco</author>
+  <author>Ian McMahon</author>
+  <author>Forrest Rogers-Marcovitz</author>
+  <maintainer email="rsdk.support@rethinkrobotics.com">
+    Rethink Robotics Inc.
+  </maintainer>
+  <license>Apache 2.0</license>
+  <url type="website">http://ros.org/wiki/sns_ikl</url>
+  <url type="repository">
+    https://github.com/RethinkRobotics-opensource/sns_ikl
+  </url>
+  <url type="bugtracker">
+    https://github.com/RethinkRobotics-opensource/sns_ikl/issues
+  </url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>sns_ik_lib</run_depend>
+  <run_depend>sns_ik_examples</run_depend>
+  <run_depend>sns_ik_kinematics_plugin</run_depend>
+
+</package>

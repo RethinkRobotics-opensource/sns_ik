@@ -1,4 +1,4 @@
-/*! \file sns_ikl_math_utils.hpp
+/*! \file sns_ik_math_utils.hpp
  * \brief Math utilities for the SNS IK solvers
  * \author Fabrizio Flacco
  * \author Forrest Rogers-Marcovitz
@@ -20,12 +20,12 @@
  *    limitations under the License.
  */
 
-#include <sns_ikl/sns_ikl_math_utils.hpp>
+#include <sns_ik/sns_ik_math_utils.hpp>
 
 using namespace Eigen;
-using namespace sns_ikl;
+using namespace sns_ik;
 
-namespace sns_ikl {
+namespace sns_ik {
 
 bool pinv(const MatrixD &A, MatrixD *invA, Scalar eps) {
 

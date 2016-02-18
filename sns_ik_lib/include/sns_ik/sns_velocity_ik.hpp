@@ -25,11 +25,11 @@
 
 #include <Eigen/Dense>
 
-#include "sns_ikl/sns_ikl_math_utils.hpp"
+#include "sns_ik/sns_ik_math_utils.hpp"
 
 using namespace Eigen;
 
-namespace sns_ikl {
+namespace sns_ik {
 
 /*! \struct Task
  *  A desired robot task

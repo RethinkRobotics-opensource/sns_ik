@@ -20,17 +20,17 @@
  *    limitations under the License.
  */
 
-#include <sns_ikl/sns_velocity_ik.hpp>
+#include <sns_ik/sns_velocity_ik.hpp>
 
 using namespace Eigen;
-using namespace sns_ikl;
+using namespace sns_ik;
 
 SNSVelocityIK::SNSVelocityIK() {
   // TODO: inital variable values
 }
 
 void SNSVelocityIK::setJointsCapabilities(VectorD limit_low, VectorD limit_high,
-                                       VectorD maxVelocity, VectorD maxAcceleration)
+                                          VectorD maxVelocity, VectorD maxAcceleration)
 {
   jointLimit_low = limit_low;
   jointLimit_high = limit_high;

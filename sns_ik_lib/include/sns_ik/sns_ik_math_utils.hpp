@@ -27,7 +27,7 @@
 
 using namespace Eigen;
 
-namespace sns_ikl {
+namespace sns_ik {
 
 #define _USE_DOUBLE_  
 /*! \def _USE_DOUBLE_  

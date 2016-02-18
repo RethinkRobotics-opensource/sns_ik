@@ -1,13 +1,13 @@
 /* test for the IK library*/
 
-#include <sns_ikl/sns_ikl_math_utils.hpp>
-#include <sns_ikl/sns_velocity_ik.hpp>
+#include <sns_ik/sns_ik_math_utils.hpp>
+#include <sns_ik/sns_velocity_ik.hpp>
 
 #include <Eigen/Dense>
 #include <iostream>
 
 using namespace Eigen;
-using namespace sns_ikl;
+using namespace sns_ik;
 
 int main(int argc, char** argv) {
   SNSVelocityIK ikVelSolver;
@@ -21,8 +21,11 @@ int main(int argc, char** argv) {
 
   sot.push_back(task);
 
-  VectorD joints = VectorD::Random(7);
+  VectorD l = VectorD::Ones(7);
+  ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
+  ikVelSolver.setNumberOfTasks(1,7);
 
+  VectorD joints = VectorD::Random(7);
   ikVelSolver.getJointVelocity(&jointVelocity, sot, joints);
 
   std::cout << "result :"<< jointVelocity.transpose() << std::endl;

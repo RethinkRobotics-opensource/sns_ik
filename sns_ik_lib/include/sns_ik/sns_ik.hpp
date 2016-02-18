@@ -1,4 +1,4 @@
-/*! \file sns_ikl.hpp
+/*! \file sns_ik.hpp
  * \brief The SNS Inverse Kinematic Library (\b IKL)
  * \author Fabrizio Flacco
  */
@@ -17,8 +17,8 @@
  *    limitations under the License.
  */
 
-#ifndef SNS_IKL
-#define SNS_IKL
+#ifndef SNS_IK
+#define SNS_IK
 
 #include <Eigen/Dense>
 #include <vector>
@@ -29,7 +29,7 @@
 using namespace std;
 using namespace Eigen;
 
-namespace sns_ikl {
+namespace sns_ik {
 
 #define _USE_DOUBLE_  
 /*! \def _USE_DOUBLE_  

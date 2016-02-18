@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <name>sns_ik_kinematics_plugin</name>
+  <version>0.1.0</version>
+  <description>
+   SNS IK Kinematics Plugin for use with the MoveIT! framework.
+  </description>
+
+  <author>Fabrizio Flacco</author>
+  <author>Ian McMahon</author>
+  <author>Forrest Rogers-Marcovitz</author>
+  <maintainer email="rsdk.support@rethinkrobotics.com">
+    Rethink Robotics Inc.
+  </maintainer>
+  <license>Apache 2.0</license>
+  <url type="website">http://ros.org/wiki/sns_ikl</url>
+  <url type="repository">
+    https://github.com/RethinkRobotics-opensource/sns_ikl
+  </url>
+  <url type="bugtracker">
+    https://github.com/RethinkRobotics-opensource/sns_ikl/issues
+  </url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>sns_ik_lib</build_depend>
+  <run_depend>sns_ik_lib</run_depend>
+
+</package>
