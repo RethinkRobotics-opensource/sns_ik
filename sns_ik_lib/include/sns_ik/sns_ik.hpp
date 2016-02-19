@@ -147,6 +147,7 @@ class IKL {
     Scalar getJointVelocity_STD_MIN_ACC(VectorD *jointVelocity, StackOfTasks *sot, VectorD *jointConfiguration = NULL);
     Scalar getJointVelocity_ACC(VectorD *jointVelocity, StackOfTasks *sot, VectorD *jointConfiguration = NULL);
 
+    // Used in getJointVelocity_RP_ST
     double activation(double position, double velocity, double min, double max, double bufferPos, double bufferVel);
 
     MatrixD invJ;

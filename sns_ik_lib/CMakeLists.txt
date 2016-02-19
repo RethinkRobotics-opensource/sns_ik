@@ -32,6 +32,6 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-add_library(sns_ik src/sns_ik.cpp)
+add_library(sns_ik src/sns_ik_math_utils.cpp src/sns_velocity_ik.cpp)
 target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
