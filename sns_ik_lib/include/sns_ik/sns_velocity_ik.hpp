@@ -64,15 +64,15 @@ typedef std::vector<Task> StackOfTasks;
 
 class SNSVelocityIK {
   public:
-    SNSVelocityIK();
+    SNSVelocityIK(int dof, Scalar loop_period);
     
-    void setJointsCapabilities(VectorD limit_low, VectorD limit_high,
+    bool setJointsCapabilities(VectorD limit_low, VectorD limit_high,
                                VectorD maxVelocity, VectorD maxAcceleration);
     void setNumberOfTasks(int ntasks, int dof = -1);
     void setNumberOfDOF(int dof);
 
     // The control loop period in seconds
-    void setloopPeriod(double period) { loop_period = period; }
+    void setLoopPeriod(double period) { loop_period = period; }
     
     // Standard straight inverse jacobian
     Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,

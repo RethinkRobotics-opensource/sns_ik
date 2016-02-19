@@ -25,13 +25,19 @@
 using namespace Eigen;
 using namespace sns_ik;
 
-SNSVelocityIK::SNSVelocityIK() {
-  // TODO: inital variable values
+SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) {
+  setNumberOfDOF(dof);
+  setLoopPeriod(loop_period);
 }
 
-void SNSVelocityIK::setJointsCapabilities(VectorD limit_low, VectorD limit_high,
+bool SNSVelocityIK::setJointsCapabilities(VectorD limit_low, VectorD limit_high,
                                           VectorD maxVelocity, VectorD maxAcceleration)
 {
+  if (limit_low.rows() != n_dof || limit_high.rows() != n_dof
+      || maxVelocity.rows() != n_dof || maxAcceleration.rows() != n_dof) {
+    return false;
+  }
+
   jointLimit_low = limit_low;
   jointLimit_high = limit_high;
   maxJointVelocity = maxVelocity;
@@ -39,30 +45,33 @@ void SNSVelocityIK::setJointsCapabilities(VectorD limit_low, VectorD limit_high,
 
   dotQmin = -maxJointVelocity.array();
   dotQmax = maxJointVelocity.array();
+
+  return true;
 }
 
 void SNSVelocityIK::setNumberOfDOF(int dof)
 {
-  n_dof = dof;
-  I = MatrixD::Identity(n_dof, n_dof);
-  dotQ = VectorD::Zero(n_dof);
+  if (dof > 0 && dof != n_dof) {
+    n_dof = dof;
+    I = MatrixD::Identity(n_dof, n_dof);
+    dotQ = VectorD::Zero(n_dof);
+  }
 }
 
 void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
 {
-  n_tasks = ntasks;
-  if (dof != -1) {
-    n_dof = dof;
-    I = MatrixD::Identity(n_dof, n_dof);
-  }
+  setNumberOfDOF(dof);
 
-  Scalar scale = 1.0;
-  VectorD dq = VectorD::Zero(n_dof);
+  if (n_tasks != ntasks) {
+    n_tasks = ntasks;
+    Scalar scale = 1.0;
+    VectorD dq = VectorD::Zero(n_dof);
 
-  for (int i = 0; i < n_tasks; i++) {
-    W.push_back(I);
-    scaleFactors.push_back(scale);
-    dotQopt.push_back(dq);
+    for (int i = 0; i < n_tasks; i++) {
+      W.push_back(I);
+      scaleFactors.push_back(scale);
+      dotQopt.push_back(dq);
+    }
   }
 
   /*
@@ -87,7 +96,7 @@ void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
 }
 
 Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
-                                    const StackOfTasks &sot)
+                                           const StackOfTasks &sot)
 {
   int n_task = sot.size();
   int robotDOF = sot[0].jacobian.cols();
@@ -114,19 +123,21 @@ Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
 Scalar SNSVelocityIK::getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                                        const VectorD &jointConfiguration)
 {
-  int n_task = sot.size();
-  int robotDOF = sot[0].jacobian.cols();
+  // This will only reset member variables if different from previous values
+  setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
+
+  // TODO: check that setJointsCapabilities has been already called
 
   //P_0=I
   //dq_0=0
-  MatrixD P = MatrixD::Identity(robotDOF, robotDOF);
-  *jointVelocity = VectorD::Zero(robotDOF, 1);
+  MatrixD P = MatrixD::Identity(n_dof, n_dof);
+  *jointVelocity = VectorD::Zero(n_dof, 1);
   VectorD higherPriorityJointVelocity;
   MatrixD higherPriorityNull;
 
   shapeJointVelocityBound(jointConfiguration);
 
-  for (int i_task = 0; i_task < n_task; i_task++) {  //consider all tasks
+  for (int i_task = 0; i_task < n_tasks; i_task++) {  //consider all tasks
     higherPriorityJointVelocity = *jointVelocity;
     higherPriorityNull = P;
     scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,

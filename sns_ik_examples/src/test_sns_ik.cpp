@@ -10,7 +10,7 @@ using namespace Eigen;
 using namespace sns_ik;
 
 int main(int argc, char** argv) {
-  SNSVelocityIK ikVelSolver;
+  SNSVelocityIK ikVelSolver(7, 0.01);
   StackOfTasks sot;
   Task task;
 
@@ -23,7 +23,6 @@ int main(int argc, char** argv) {
 
   VectorD l = VectorD::Ones(7);
   ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
-  ikVelSolver.setNumberOfTasks(1,7);
 
   VectorD joints = VectorD::Random(7);
   ikVelSolver.getJointVelocity(&jointVelocity, sot, joints);
