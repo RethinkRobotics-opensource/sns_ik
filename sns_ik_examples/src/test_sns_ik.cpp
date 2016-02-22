@@ -2,9 +2,11 @@
 
 #include <sns_ik/sns_ik_math_utils.hpp>
 #include <sns_ik/sns_velocity_ik.hpp>
+#include <sns_ik/sns_position_ik.hpp>
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <kdl/chain.hpp>
 
 using namespace Eigen;
 using namespace sns_ik;
@@ -27,5 +29,21 @@ int main(int argc, char** argv) {
   VectorD joints = VectorD::Random(7);
   ikVelSolver.getJointVelocity(&jointVelocity, sot, joints);
 
-  std::cout << "result :"<< jointVelocity.transpose() << std::endl;
+  std::cout << "Velocity IK result: "<< jointVelocity.transpose() << std::endl;
+
+  KDL::Chain chain;
+  KDL::JntArray jointSeed(7);
+  for (int ii = 0; ii < 7; ++ii) {
+    chain.addSegment(KDL::Segment());
+    jointSeed(ii) = joints(ii);
+  }
+
+  SNSPositionIK positionIK(chain, ikVelSolver);
+
+  KDL::Frame goal;  // TODO: randomize
+  KDL::JntArray goalJoints;
+  KDL::Twist tolerances;  // not currently used
+  positionIK.CartToJnt(jointSeed, goal, &goalJoints, tolerances);
+
+  //std::count << "Positin IK result: " << goalJoints.transpose() << std::endl;
 }
