@@ -13,25 +13,27 @@ else()
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++0X or C++11 support. Please choose different C++ compiler.")
 endif()
 
+find_package(orocos_kdl REQUIRED)
 find_package(catkin REQUIRED
   COMPONENTS
   roscpp
   std_msgs
   cmake_modules
+  orocos_kdl
 )
-
 find_package(Eigen REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-  DEPENDS Eigen
+  DEPENDS Eigen orocos_kdl
   CATKIN_DEPENDS roscpp std_msgs
   LIBRARIES sns_ik
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
+link_directories(${orocos_kdl_LIBRARY_DIRS})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-add_library(sns_ik src/sns_ik_math_utils.cpp src/sns_velocity_ik.cpp)
-target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
+add_library(sns_ik src/sns_ik_math_utils.cpp src/sns_velocity_ik.cpp src/sns_position_ik.cpp)
+target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES} ${orocos_kdl_LIBRARIES})
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
