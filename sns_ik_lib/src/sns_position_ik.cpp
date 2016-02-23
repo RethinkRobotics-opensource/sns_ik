@@ -111,6 +111,10 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     q_i.data += dt * qDot;
   }
 
-  *return_joints = q_i;
-  return 1;  // TODO: return success/fail code
+  if (solutionFound) {
+      *return_joints = q_i;
+      return 1;  // TODO: return success/fail code
+    } else {
+      return -1;
+    }
 }

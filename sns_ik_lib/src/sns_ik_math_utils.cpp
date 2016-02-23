@@ -140,7 +140,7 @@ bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps) {
   MatrixD At = A.transpose();
   HouseholderQR < MatrixD > qr = At.householderQr();
   int m = A.rows();
-  int n = A.cols();
+  //int n = A.cols();
 
   MatrixD Rt = MatrixD::Zero(m, m);
   bool invertible;
