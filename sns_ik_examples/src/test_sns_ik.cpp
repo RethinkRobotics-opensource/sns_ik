@@ -17,9 +17,12 @@ int main(int argc, char** argv) {
   Task task;
 
   VectorD jointVelocity;
-  
+
   task.jacobian = MatrixD::Random(3,7);
   task.desired =  MatrixD::Random(3,1);
+
+  std::cout << "desired: " << task.desired.transpose() << std::endl;
+  std::cout << "jacobian: " << task.jacobian << std::endl;
 
   sot.push_back(task);
 
