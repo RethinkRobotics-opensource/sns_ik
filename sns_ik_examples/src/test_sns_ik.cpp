@@ -12,27 +12,34 @@ using namespace Eigen;
 using namespace sns_ik;
 
 int main(int argc, char** argv) {
-  SNSVelocityIK ikVelSolver(7, 0.01);
   StackOfTasks sot;
   Task task;
-
   VectorD jointVelocity;
 
   task.jacobian = MatrixD::Random(3,7);
   task.desired =  MatrixD::Random(3,1);
+  sot.push_back(task);
+  VectorD joints = VectorD::Random(7);
 
   std::cout << "desired: " << task.desired.transpose() << std::endl;
-  std::cout << "jacobian: " << task.jacobian << std::endl;
-
-  sot.push_back(task);
+  std::cout << "jacobian: " << std::endl << task.jacobian << std::endl;
+  std::cout << "joints: " << joints.transpose() << std::endl;
 
   VectorD l = VectorD::Ones(7);
-  ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
 
-  VectorD joints = VectorD::Random(7);
+  SNSVelocityIK ikVelSolver(7, 0.01);
+  ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
   ikVelSolver.getJointVelocity(&jointVelocity, sot, joints);
 
-  std::cout << "Velocity IK result: "<< jointVelocity.transpose() << std::endl;
+  std::cout << "SNS Velocity IK result: " << std::endl
+            << jointVelocity.transpose() << std::endl;
+
+  SNSVelocityIK ikVelSolver_osns(7, 0.01);
+  ikVelSolver_osns.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
+  ikVelSolver_osns.getJointVelocity(&jointVelocity, sot, joints);
+
+  std::cout << "Optimal SNS Velocity IK result: " << std::endl
+      << jointVelocity.transpose() << std::endl;
 
   KDL::Chain chain;
   KDL::JntArray jointSeed(7);
@@ -48,5 +55,6 @@ int main(int argc, char** argv) {
   KDL::Twist tolerances;  // not currently used
   positionIK.CartToJnt(jointSeed, goal, &goalJoints, tolerances);
 
-  //std::count << "Positin IK result: " << goalJoints.transpose() << std::endl;
+  std::cout << "Position IK result: " << std::endl
+             << goalJoints.data.transpose() << std::endl;
 }
