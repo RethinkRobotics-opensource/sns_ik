@@ -32,13 +32,13 @@ using namespace Eigen;
 
 namespace sns_ik {
 
-class OSNSVelocityIK : SNSVelocityIK {
+class OSNSVelocityIK : public SNSVelocityIK {
   public:
     OSNSVelocityIK(int dof, Scalar loop_period);
     
     // Optimal SNS Velocity IK
-    //Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
-    //                        const VectorD &jointConfiguration);
+    Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+                            const VectorD &jointConfiguration);
     
   protected:
     // Perform the SNS for a single task

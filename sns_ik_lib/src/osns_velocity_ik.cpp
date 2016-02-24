@@ -22,8 +22,6 @@
 
 #include <sns_ik/osns_velocity_ik.hpp>
 
-#include <iostream>
-
 using namespace Eigen;
 using namespace sns_ik;
 
@@ -32,18 +30,37 @@ OSNSVelocityIK::OSNSVelocityIK(int dof, Scalar loop_period) :
 {
 }
 
-/*
+
 Scalar OSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     const StackOfTasks &sot,
     const VectorD &jointConfiguration)
 {
-  // This is should call the local version of SNSsingle and return a different scale factor
-  SNSVelocityIK::getJointVelocity(jointVelocity, StackOfTasks, jointConfiguration);
+  // This will only reset member variables if different from previous values
+  setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
+
+  // TODO: check that setJointsCapabilities has been already called
+
+  //P_0=I
+  //dq_0=0
+  MatrixD P = MatrixD::Identity(n_dof, n_dof);
+  *jointVelocity = VectorD::Zero(n_dof, 1);
+  VectorD higherPriorityJointVelocity;
+  MatrixD higherPriorityNull;
+
+  shapeJointVelocityBound(jointConfiguration);
+
+  for (int i_task = 0; i_task < n_tasks; i_task++) {  //consider all tasks
+    higherPriorityJointVelocity = *jointVelocity;
+    higherPriorityNull = P;
+    scaleFactors[i_task] = OSNSVelocityIK::SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
+        sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
+  }
   
   // TODO: verify what is being set here
-  return 1.0 * nSat[0] + nSat[1] + nSat[2] + nSat[3] + nSat[4];
+  //return 1.0 * nSat[0] + nSat[1] + nSat[2] + nSat[3] + nSat[4];
+  return 1.0;
 }
-*/
+
 
 Scalar OSNSVelocityIK::SNSsingle(int priority,
                                 const VectorD &higherPriorityJointVelocity,
@@ -53,7 +70,6 @@ Scalar OSNSVelocityIK::SNSsingle(int priority,
                                 VectorD *jointVelocity,
                                 MatrixD *nullSpaceProjector)
 {
-  std::cout << "Optimal SNS single!" << std::endl;
   //INITIALIZATION
   //VectorD tildeDotQ;
   MatrixD projectorSaturated;  //(((I-W_k)*P_{k-1})^#
