@@ -52,7 +52,7 @@ Scalar OSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
   for (int i_task = 0; i_task < n_tasks; i_task++) {  //consider all tasks
     higherPriorityJointVelocity = *jointVelocity;
     higherPriorityNull = P;
-    scaleFactors[i_task] = OSNSVelocityIK::SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
+    scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
         sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
   }
   
