@@ -41,9 +41,12 @@ class SNSPositionIK {
                   KDL::JntArray* return_joints,
                   const KDL::Twist& tolerances);
 
-    KDL::Chain* getChain() { return &m_chain; }
+    // TODO: looks like this would require the KDL solvers to be wrapped in smart pointers
+    //void setChain(const KDL::Chain chain);
+    KDL::Chain getChain() { return m_chain; }
 
-    SNSVelocityIK* getVelocityIK() { return &m_ikVelSolver; }
+    // TODO: figure out the best way of providing a reference to the velocity IK solver
+    //SNSVelocityIK* getVelocityIK() { return &m_ikVelSolver; }
 
   private:
     KDL::Chain m_chain;

@@ -35,6 +35,15 @@ SNSPositionIK::~SNSPositionIK()
 {
 }
 
+/*
+void SNSPositionIK::setChain(const KDL::Chain chain)
+{
+  m_chain = chain;
+  m_positionFK = KDL::ChainFkSolverPos_recursive(chain);
+  m_jacobianSolver = KDL::ChainJntToJacSolver(chain);
+}
+*/
+
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& desired_end_effector_pose,
                              KDL::JntArray* return_joints,
@@ -46,7 +55,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   double angularTolerance = 1e-6;
   double linearMaxStepSize = 0.05;
   double angularMaxStepSize = 0.025;
-  int maxInterations = 100;
+  int maxInterations = 200;
   double dt = 0.2;
 
   bool solutionFound = false;
@@ -60,11 +69,13 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     if (m_positionFK.JntToCart(q_i, pose_i) < 0)
     {
       // ERROR
+      std::cout << "JntToCart failed" << std::endl;
       return -1;
     }
 
-    // TODO: need to check math here
+    // Calculate the offset transform
     pose_delta = pose_i.Inverse() * desired_end_effector_pose;
+
     Eigen::Vector3d trans(pose_delta.p.data);
     double L = trans.norm();
     KDL::Vector rotAxis;
@@ -75,6 +86,8 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       rotSign = -1;
       theta = -theta;
     }
+
+    //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
     if (L <= linearTolerance && theta <= angularTolerance) {
       solutionFound = true;
@@ -94,19 +107,23 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     // Calculate the desired Cartesian twist
     sot[0].desired.head<3>() = (1.0/dt) * trans;
-    sot[0].desired.head<3>() = rotSign * theta/dt * rotAxisVec;
+    sot[0].desired.tail<3>() = rotSign * theta/dt * rotAxisVec;
 
     KDL::Jacobian jacobian;
-    m_jacobianSolver.JntToJac(q_i, jacobian);
+    jacobian.resize(q_i.rows());
+    if (m_jacobianSolver.JntToJac(q_i, jacobian) < 0)
+    {
+      // ERROR
+      std::cout << "JntToJac failed" << std::endl;
+      return -1;
+    }
     sot[0].jacobian = jacobian.data;
 
-    std::cout << "desired: " << sot[0].desired.transpose() << std::endl;
-    std::cout << "jacobian: " << std::endl << sot[0].jacobian << std::endl;
     VectorD q_ii(q_i.data);
-    std::cout << "q_ii: " << q_ii.transpose() << std::endl;
+    //std::cout << "q_ii: " << q_ii.transpose() << std::endl;
 
     VectorD qDot(n_dof);
-    //m_ikVelSolver.getJointVelocity(&qDot, sot, q_ii);
+    m_ikVelSolver.getJointVelocity(&qDot, sot, q_ii);
 
     q_i.data += dt * qDot;
   }

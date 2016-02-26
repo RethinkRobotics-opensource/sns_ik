@@ -11,6 +11,7 @@
 #include <kdl/chain.hpp>
 
 using namespace Eigen;
+using namespace KDL;
 using namespace sns_ik;
 
 // run command:
@@ -19,6 +20,7 @@ using namespace sns_ik;
 int main(int argc, char** argv) {
   StackOfTasks sot;
   Task task;
+
   VectorD jointVelocity;
 
   task.jacobian = MatrixD::Random(3,7);
@@ -29,6 +31,7 @@ int main(int argc, char** argv) {
   std::cout << "desired: " << task.desired.transpose() << std::endl;
   std::cout << "jacobian: " << std::endl << task.jacobian << std::endl;
   std::cout << "joints: " << joints.transpose() << std::endl;
+  std::cout << "-----------------------------" << std::endl;
 
   VectorD l = VectorD::Ones(7);
 
@@ -56,20 +59,31 @@ int main(int argc, char** argv) {
       << jointVelocity.transpose() << std::endl;
   std::cout << "-----------------------------" << std::endl;
 
+  //Definition of a kinematic chain & add segments to the chain
   KDL::Chain chain;
-  KDL::JntArray jointSeed(7);
+  chain.addSegment(Segment(Joint(Joint::RotZ),Frame(Vector(0.0,0.0,1.020))));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.480))));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.645))));
+  chain.addSegment(Segment(Joint(Joint::RotZ)));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.120))));
+  chain.addSegment(Segment(Joint(Joint::RotZ)));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.10))));
+
+  KDL::JntArray q_goal(7), q_tSeed(7);
   for (int ii = 0; ii < 7; ++ii) {
-    chain.addSegment(KDL::Segment());
-    jointSeed(ii) = joints(ii);
+    q_goal(ii) = joints(ii);
   }
+
+  KDL::Frame goal;
+  KDL::ChainFkSolverPos_recursive positionFK(chain);
+  positionFK.JntToCart(q_goal, goal);
 
   SNSPositionIK positionIK(chain, ikVelSolver);
 
-  KDL::Frame goal;  // TODO: randomize
   KDL::JntArray goalJoints;
   KDL::Twist tolerances;  // not currently used
-  positionIK.CartToJnt(jointSeed, goal, &goalJoints, tolerances);
+  int result = positionIK.CartToJnt(q_tSeed, goal, &goalJoints, tolerances);
 
-  std::cout << "Position IK result: " << std::endl
-             << goalJoints.data.transpose() << std::endl;
+  std::cout << "Position IK result: " << result << std::endl
+            << goalJoints.data.transpose() << std::endl;
 }
