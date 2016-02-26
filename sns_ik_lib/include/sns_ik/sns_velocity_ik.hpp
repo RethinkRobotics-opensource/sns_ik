@@ -20,8 +20,8 @@
  *    limitations under the License.
  */
 
-#ifndef SNS_IKL_VELOCITY_IK
-#define SNS_IKL_VELOCITY_IK
+#ifndef SNS_IK_VELOCITY_IK
+#define SNS_IK_VELOCITY_IK
 
 #include <Eigen/Dense>
 
@@ -39,15 +39,7 @@ namespace sns_ik {
 
 struct Task {
     MatrixD jacobian;  //!< the task Jacobian
-    MatrixD jacobian_derivate;  //!< time derivartive of the Jacobian, needed only at acceleration control level
-    VectorD desired;  //!< desired velocity/acceleration
-    Scalar h;
-    VectorD q0;
-    Scalar h0;
-    Scalar min;  //!< min for the constraints
-    Scalar max;  //!< max for the constraints
-    Scalar value;  //!< value for the constraints
-    int is_constraints;
+    VectorD desired;   //!< desired velocity in task space
 };
 
 /*! \typedef StackOfTasks

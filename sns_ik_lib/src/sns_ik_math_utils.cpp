@@ -105,11 +105,11 @@ bool pinv_damped_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar lambda_ma
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
   int m = A.rows() - 1;
   int r = 0;  //rank
-  VectorD sigma;  //vector of singular values
   Scalar lambda2;
 
   JacobiSVD<MatrixD> svd_A(A.transpose(), ComputeThinU | ComputeThinV);
-  sigma = svd_A.singularValues();
+  VectorD sigma = svd_A.singularValues();
+
   if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A.array().abs() > eps).any())) {
     for (int i = 0; i <= m; i++) {
       sigma(i) = 1.0 / sigma(i);
@@ -119,10 +119,11 @@ bool pinv_damped_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar lambda_ma
     return true;
   } else {
     lambda2 = (1 - (sigma(m) / eps) * (sigma(m) / eps)) * lambda_max * lambda_max;
+    VectorD subSigma = VectorD::Ones(m + 1);
     for (int i = 0; i <= m; i++) {
-      if (sigma(i) > EPSQ)
-        r++;
-      sigma(i) = (sigma(i) / (sigma(i) * sigma(i) + lambda2));
+      if (sigma(i) > EPSQ) {
+        subSigma(r++) = (sigma(i) / (sigma(i) * sigma(i) + lambda2));
+      }
     }
 
     //only U till the rank
@@ -130,7 +131,7 @@ bool pinv_damped_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar lambda_ma
     MatrixD subV = svd_A.matrixV().block(0, 0, A.rows(), r);
     (*P) = ((*P) - subU * subU.transpose()).eval();
 
-    (*invA) = subU * sigma.asDiagonal() * subV.transpose();
+    (*invA) = subU * subSigma.head(r).asDiagonal() * subV.transpose();
     return false;
   }
 
@@ -140,7 +141,7 @@ bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps) {
   MatrixD At = A.transpose();
   HouseholderQR < MatrixD > qr = At.householderQr();
   int m = A.rows();
-  int n = A.cols();
+  //int n = A.cols();
 
   MatrixD Rt = MatrixD::Zero(m, m);
   bool invertible;

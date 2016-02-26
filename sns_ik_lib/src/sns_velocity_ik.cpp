@@ -22,10 +22,15 @@
 
 #include <sns_ik/sns_velocity_ik.hpp>
 
+#include <iostream>
+
 using namespace Eigen;
 using namespace sns_ik;
 
-SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) {
+SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) :
+  n_dof(0),
+  n_tasks(0)
+{
   setNumberOfDOF(dof);
   setLoopPeriod(loop_period);
 }
@@ -66,6 +71,10 @@ void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
     n_tasks = ntasks;
     Scalar scale = 1.0;
     VectorD dq = VectorD::Zero(n_dof);
+
+    W.clear();
+    scaleFactors.clear();
+    dotQopt.clear();
 
     for (int i = 0; i < n_tasks; i++) {
       W.push_back(I);
@@ -252,6 +261,7 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
 
     a = (JPinverse * task).array();
     b = dotQ.array() - a;
+
     getTaskScalingFactor(a, b, W[priority], &scalingFactor, &mostCriticalJoint);
 
     if (scalingFactor >= 1.0) {
