@@ -9,44 +9,62 @@
 #include <kdl/chain.hpp>
 
 using namespace Eigen;
+using namespace KDL;
 using namespace sns_ik;
 
+// run command:
+// rosrun sns_ik_examples test_sns_ik
+
 int main(int argc, char** argv) {
-  SNSVelocityIK ikVelSolver(7, 0.01);
   StackOfTasks sot;
   Task task;
-
   VectorD jointVelocity;
 
   task.jacobian = MatrixD::Random(3,7);
   task.desired =  MatrixD::Random(3,1);
+  sot.push_back(task);
+  VectorD joints = VectorD::Random(7);
 
   std::cout << "desired: " << task.desired.transpose() << std::endl;
-  std::cout << "jacobian: " << task.jacobian << std::endl;
-
-  sot.push_back(task);
+  std::cout << "jacobian: " << std::endl << task.jacobian << std::endl;
+  std::cout << "joints: " << joints.transpose() << std::endl;
+  std::cout << "-----------------------------" << std::endl;
 
   VectorD l = VectorD::Ones(7);
-  ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
 
-  VectorD joints = VectorD::Random(7);
+  SNSVelocityIK ikVelSolver(7, 0.01);
+  ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
   ikVelSolver.getJointVelocity(&jointVelocity, sot, joints);
 
-  std::cout << "Velocity IK result: "<< jointVelocity.transpose() << std::endl;
+  std::cout << "SNS Velocity IK result: " << std::endl
+            << jointVelocity.transpose() << std::endl;
+  std::cout << "-----------------------------" << std::endl;
 
+  //Definition of a kinematic chain & add segments to the chain
   KDL::Chain chain;
-  KDL::JntArray jointSeed(7);
+  chain.addSegment(Segment(Joint(Joint::RotZ),Frame(Vector(0.0,0.0,1.020))));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.480))));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.645))));
+  chain.addSegment(Segment(Joint(Joint::RotZ)));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.120))));
+  chain.addSegment(Segment(Joint(Joint::RotZ)));
+  chain.addSegment(Segment(Joint(Joint::RotX),Frame(Vector(0.0,0.0,0.10))));
+
+  KDL::JntArray q_goal(7), q_tSeed(7);
   for (int ii = 0; ii < 7; ++ii) {
-    chain.addSegment(KDL::Segment());
-    jointSeed(ii) = joints(ii);
+    q_goal(ii) = joints(ii);
   }
+
+  KDL::Frame goal;
+  KDL::ChainFkSolverPos_recursive positionFK(chain);
+  positionFK.JntToCart(q_goal, goal);
 
   SNSPositionIK positionIK(chain, ikVelSolver);
 
-  KDL::Frame goal;  // TODO: randomize
   KDL::JntArray goalJoints;
   KDL::Twist tolerances;  // not currently used
-  positionIK.CartToJnt(jointSeed, goal, &goalJoints, tolerances);
+  int result = positionIK.CartToJnt(q_tSeed, goal, &goalJoints, tolerances);
 
-  //std::count << "Positin IK result: " << goalJoints.transpose() << std::endl;
+  std::cout << "Position IK result: " << result << std::endl
+            << goalJoints.data.transpose() << std::endl;
 }
