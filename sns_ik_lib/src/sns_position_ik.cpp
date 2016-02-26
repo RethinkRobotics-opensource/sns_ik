@@ -35,6 +35,15 @@ SNSPositionIK::~SNSPositionIK()
 {
 }
 
+/*
+void SNSPositionIK::setChain(const KDL::Chain chain)
+{
+  m_chain = chain;
+  m_positionFK = KDL::ChainFkSolverPos_recursive(chain);
+  m_jacobianSolver = KDL::ChainJntToJacSolver(chain);
+}
+*/
+
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& desired_end_effector_pose,
                              KDL::JntArray* return_joints,
