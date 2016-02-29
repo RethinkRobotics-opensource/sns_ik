@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
       << jointVelocity.transpose() << std::endl;
   std::cout << "-----------------------------" << std::endl;
 
-  OSNSsmVelocityIK ikVelSolver_osns_sm(7, 0.01);
+  OSNS_sm_VelocityIK ikVelSolver_osns_sm(7, 0.01);
   ikVelSolver_osns_sm.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
   ikVelSolver_osns_sm.getJointVelocity(&jointVelocity, sot, joints);
 

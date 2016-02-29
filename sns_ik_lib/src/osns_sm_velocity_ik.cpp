@@ -25,14 +25,14 @@
 using namespace Eigen;
 using namespace sns_ik;
 
-OSNSsmVelocityIK::OSNSsmVelocityIK(int dof, Scalar loop_period) :
+OSNS_sm_VelocityIK::OSNS_sm_VelocityIK(int dof, Scalar loop_period) :
   OSNSVelocityIK(dof, loop_period),
   m_scaleMargin(0.9)
 {
 }
 
 
-Scalar OSNSsmVelocityIK::getJointVelocity(VectorD *jointVelocity,
+Scalar OSNS_sm_VelocityIK::getJointVelocity(VectorD *jointVelocity,
     const StackOfTasks &sot,
     const VectorD &jointConfiguration)
 {
