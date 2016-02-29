@@ -72,15 +72,10 @@ void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
     Scalar scale = 1.0;
     VectorD dq = VectorD::Zero(n_dof);
 
-    W.clear();
-    scaleFactors.clear();
-    dotQopt.clear();
-
-    for (int i = 0; i < n_tasks; i++) {
-      W.push_back(I);
-      scaleFactors.push_back(scale);
-      dotQopt.push_back(dq);
-    }
+    W.resize(n_tasks, I);
+    scaleFactors.resize(n_tasks, scale);
+    dotQopt.resize(n_tasks, dq);
+    nSat.resize(n_tasks, 0);
   }
 
   /*

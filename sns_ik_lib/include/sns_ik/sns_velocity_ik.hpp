@@ -66,7 +66,7 @@ class SNSVelocityIK {
     // The control loop period in seconds
     void setLoopPeriod(double period) { loop_period = period; }
     
-    // Standard straight inverse jacobian
+    // SNS Velocity IK
     Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                             const VectorD &jointConfiguration);
 
@@ -81,7 +81,7 @@ class SNSVelocityIK {
     std::vector<Scalar> getTasksScaleFactor()
         { return scaleFactors; }
 
-  private:
+  protected:
 
     // Shape the joint velocity bound dotQmin and dotQmax
     void shapeJointVelocityBound(const VectorD &actualJointConfiguration, double margin = SHAPE_MARGIN);
@@ -114,6 +114,8 @@ class SNSVelocityIK {
     std::vector<VectorD> dotQopt;  // next solution (bar{\dotqv} in the paper)
     MatrixD I;  // identity matrix
     std::vector<Scalar> scaleFactors;
+
+    std::vector<int> nSat;  //number of saturated joint
 };
 
 }  // namespace sns_ikl

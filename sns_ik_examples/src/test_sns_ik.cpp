@@ -2,6 +2,8 @@
 
 #include <sns_ik/sns_ik_math_utils.hpp>
 #include <sns_ik/sns_velocity_ik.hpp>
+#include <sns_ik/osns_velocity_ik.hpp>
+#include <sns_ik/osns_sm_velocity_ik.hpp>
 #include <sns_ik/sns_position_ik.hpp>
 
 #include <Eigen/Dense>
@@ -18,6 +20,7 @@ using namespace sns_ik;
 int main(int argc, char** argv) {
   StackOfTasks sot;
   Task task;
+
   VectorD jointVelocity;
 
   task.jacobian = MatrixD::Random(3,7);
@@ -38,6 +41,22 @@ int main(int argc, char** argv) {
 
   std::cout << "SNS Velocity IK result: " << std::endl
             << jointVelocity.transpose() << std::endl;
+  std::cout << "-----------------------------" << std::endl;
+
+  OSNSVelocityIK ikVelSolver_osns(7, 0.01);
+  ikVelSolver_osns.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
+  ikVelSolver_osns.getJointVelocity(&jointVelocity, sot, joints);
+
+  std::cout << "Optimal SNS Velocity IK result: " << std::endl
+      << jointVelocity.transpose() << std::endl;
+  std::cout << "-----------------------------" << std::endl;
+
+  OSNS_sm_VelocityIK ikVelSolver_osns_sm(7, 0.01);
+  ikVelSolver_osns_sm.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
+  ikVelSolver_osns_sm.getJointVelocity(&jointVelocity, sot, joints);
+
+  std::cout << "Optimal SNS w/ sm Velocity IK result: " << std::endl
+      << jointVelocity.transpose() << std::endl;
   std::cout << "-----------------------------" << std::endl;
 
   //Definition of a kinematic chain & add segments to the chain
