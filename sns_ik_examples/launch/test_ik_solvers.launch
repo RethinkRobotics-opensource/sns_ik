@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="num_samples" default="100" />
+  <arg name="chain_start" default="base" />
+  <arg name="chain_end" default="right_hand" />
+  <arg name="timeout" default="0.005" />
+  <arg name="urdf_param" default="/robot_description" />
+  <arg name="load_robot_description" default="true"/>
+  <param if="$(arg load_robot_description)" name="$(arg urdf_param)"
+    command="cat $(find baxter_description)/urdf/baxter.urdf"/>
+  <rosparam command="load" ns="$(arg urdf_param)_planning"
+    file="$(find sns_ik_examples)/config/example_baxter_joint_limits.yaml" />
+
+  <node name="sns_ik_tests" pkg="sns_ik_examples" type="all_ik_tests" output="screen">
+    <param name="num_samples" value="$(arg num_samples)"/>
+    <param name="chain_start" value="$(arg chain_start)"/>
+    <param name="chain_end" value="$(arg chain_end)"/>
+    <param name="timeout" value="$(arg timeout)"/>
+    <param name="urdf_param" value="$(arg urdf_param)"/>
+  </node>
+
+
+</launch>

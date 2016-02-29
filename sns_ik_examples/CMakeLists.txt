@@ -18,6 +18,7 @@ find_package(catkin REQUIRED
   roscpp
   cmake_modules
   sns_ik_lib
+  trac_ik_lib
 )
 
 find_package(Eigen REQUIRED)
@@ -32,3 +33,7 @@ include_directories(
 add_executable(test_sns_ik src/test_sns_ik.cpp)
 target_link_libraries(test_sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES})
 install(TARGETS test_sns_ik DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+add_executable(all_ik_tests src/ik_tests.cpp)
+target_link_libraries(all_ik_tests ${catkin_LIBRARIES})
+install(TARGETS all_ik_tests DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

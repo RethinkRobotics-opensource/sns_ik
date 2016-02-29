@@ -25,6 +25,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>sns_ik_lib</build_depend>
+  <build_depend>trac_ik_lib</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>eigen</build_depend>
   <build_depend>cmake_modules</build_depend>

@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <memory>
 #include <kdl/chain.hpp>
 
 using namespace Eigen;
@@ -35,9 +36,9 @@ int main(int argc, char** argv) {
 
   VectorD l = VectorD::Ones(7);
 
-  SNSVelocityIK ikVelSolver(7, 0.01);
-  ikVelSolver.setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
-  ikVelSolver.getJointVelocity(&jointVelocity, sot, joints);
+  std::shared_ptr<SNSVelocityIK> ikVelSolver(new SNSVelocityIK(7, 0.01));
+  ikVelSolver->setJointsCapabilities(-3.0*l, 3.0*l, l, 0.5*l);
+  ikVelSolver->getJointVelocity(&jointVelocity, sot, joints);
 
   std::cout << "SNS Velocity IK result: " << std::endl
             << jointVelocity.transpose() << std::endl;

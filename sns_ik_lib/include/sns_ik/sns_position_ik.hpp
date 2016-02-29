@@ -20,6 +20,7 @@
 #ifndef SNS_IK_POSITION_IK
 #define SNS_IK_POSITION_IK
 
+#include <memory>
 #include <Eigen/Dense>
 #include <kdl/chain.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
@@ -32,8 +33,7 @@ namespace sns_ik {
 
 class SNSPositionIK {
   public:
-    SNSPositionIK(KDL::Chain chain, SNSVelocityIK velocity_ik);
-
+    SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik);
     ~SNSPositionIK();
 
     int CartToJnt(const KDL::JntArray& joint_seed,
@@ -47,10 +47,11 @@ class SNSPositionIK {
 
     // TODO: figure out the best way of providing a reference to the velocity IK solver
     //SNSVelocityIK* getVelocityIK() { return &m_ikVelSolver; }
+    std::shared_ptr<SNSVelocityIK> getVelocityIK() { return m_ikVelSolver; }
 
   private:
     KDL::Chain m_chain;
-    SNSVelocityIK m_ikVelSolver;
+    std::shared_ptr<SNSVelocityIK> m_ikVelSolver;
     KDL::ChainFkSolverPos_recursive m_positionFK;
     KDL::ChainJntToJacSolver m_jacobianSolver;
 };
