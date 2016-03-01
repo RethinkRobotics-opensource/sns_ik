@@ -37,7 +37,7 @@ class SNSPositionIK {
     ~SNSPositionIK();
 
     int CartToJnt(const KDL::JntArray& joint_seed,
-                  const KDL::Frame& desired_end_effector_pose,
+                  const KDL::Frame& goal_pose,
                   KDL::JntArray* return_joints,
                   const KDL::Twist& tolerances);
 
