@@ -84,6 +84,11 @@ int main(int argc, char** argv) {
   KDL::Twist tolerances;  // not currently used
   int result = positionIK.CartToJnt(q_tSeed, goal, &goalJoints, tolerances);
 
+  // DEBUG
+  //goal.p.data[0] += 0.01;
+  //goal.M = KDL::Rotation::RotX(0.1) * goal.M;
+  //int result = positionIK.CartToJnt(q_goal, goal, &goalJoints, tolerances);
+
   std::cout << "Position IK result: " << result << std::endl
             << goalJoints.data.transpose() << std::endl;
 }

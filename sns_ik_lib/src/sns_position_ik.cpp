@@ -45,7 +45,7 @@ void SNSPositionIK::setChain(const KDL::Chain chain)
 */
 
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
-                             const KDL::Frame& desired_end_effector_pose,
+                             const KDL::Frame& goal_pose,
                              KDL::JntArray* return_joints,
                              const KDL::Twist& tolerances)
 {
@@ -54,13 +54,13 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   double linearTolerance = 1e-6;
   double angularTolerance = 1e-6;
   double linearMaxStepSize = 0.05;
-  double angularMaxStepSize = 0.025;
-  int maxInterations = 200;
+  double angularMaxStepSize = 0.05;
+  int maxInterations = 150;
   double dt = 0.2;
 
   bool solutionFound = false;
   KDL::JntArray q_i = joint_seed;
-  KDL::Frame pose_i, pose_delta;
+  KDL::Frame pose_i;
   int n_dof = joint_seed.rows();
   StackOfTasks sot(1);
   sot[0].desired = VectorD::Zero(6);
@@ -74,18 +74,12 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
 
     // Calculate the offset transform
-    pose_delta = pose_i.Inverse() * desired_end_effector_pose;
-
-    Eigen::Vector3d trans(pose_delta.p.data);
+    Eigen::Vector3d trans((goal_pose.p - pose_i.p).data);
     double L = trans.norm();
     KDL::Vector rotAxis;
-    double theta = pose_delta.M.GetRotAngle(rotAxis);
+    KDL::Rotation rot = goal_pose.M * pose_i.M.Inverse();
+    double theta = rot.GetRotAngle(rotAxis);  // returns [0 ... pi]
     Eigen::Vector3d rotAxisVec(rotAxis.data);
-    double rotSign = 1;
-    if (theta < 0.0) {
-      rotSign = -1;
-      theta = -theta;
-    }
 
     //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
@@ -97,17 +91,14 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     if (L > linearMaxStepSize) {
       trans = linearMaxStepSize / L * trans;
     }
-    if (theta > M_PI) {
-      theta = 2 * M_PI - theta;
-      rotSign = -rotSign;
-    }
+
     if (theta > angularMaxStepSize) {
       theta = angularMaxStepSize;
     }
 
     // Calculate the desired Cartesian twist
     sot[0].desired.head<3>() = (1.0/dt) * trans;
-    sot[0].desired.tail<3>() = rotSign * theta/dt * rotAxisVec;
+    sot[0].desired.tail<3>() = theta/dt * rotAxisVec;
 
     KDL::Jacobian jacobian;
     jacobian.resize(q_i.rows());
@@ -120,7 +111,6 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     sot[0].jacobian = jacobian.data;
 
     VectorD q_ii(q_i.data);
-    //std::cout << "q_ii: " << q_ii.transpose() << std::endl;
 
     VectorD qDot(n_dof);
     m_ikVelSolver.getJointVelocity(&qDot, sot, q_ii);
