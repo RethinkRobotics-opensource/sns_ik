@@ -21,9 +21,9 @@
 
 #include <iostream>
 
-using namespace sns_ik;
+namespace sns_ik{
 
-SNSPositionIK::SNSPositionIK(KDL::Chain chain, SNSVelocityIK velocity_ik) :
+SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik) :
     m_chain(chain),
     m_ikVelSolver(velocity_ik),
     m_positionFK(chain),
@@ -51,11 +51,11 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 {
   // TODO: config params
   // TODO: use tolerance twist
-  double linearTolerance = 1e-6;
-  double angularTolerance = 1e-6;
+  double linearTolerance = 1e-5;
+  double angularTolerance = 1e-5;
   double linearMaxStepSize = 0.05;
   double angularMaxStepSize = 0.05;
-  int maxInterations = 150;
+  int maxInterations = 200;
   double dt = 0.2;
 
   bool solutionFound = false;
@@ -113,7 +113,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     VectorD q_ii(q_i.data);
 
     VectorD qDot(n_dof);
-    m_ikVelSolver.getJointVelocity(&qDot, sot, q_ii);
+    m_ikVelSolver->getJointVelocity(&qDot, sot, q_ii);
 
     q_i.data += dt * qDot;
   }
@@ -124,4 +124,5 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     } else {
       return -1;
     }
+  }
 }
