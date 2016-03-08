@@ -22,6 +22,7 @@
 
 #include <sns_ik/sns_velocity_ik.hpp>
 
+#include <ros/ros.h>
 #include <iostream>
 
 using namespace Eigen;
@@ -231,8 +232,8 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
 
       exit(1);
 #else
-      //ROS_WARN("Infinite loop on SNS for task (%d)", priority);
-      //ROS_INFO("p:%d  scale:%f  mc:%d  sing:%d", priority, scalingFactor, mostCriticalJoint, (int)reachedSingularity);
+      ROS_WARN("Infinite loop on SNS for task (%d)", priority);
+      ROS_INFO("p:%d  scale:%f  mc:%d  sing:%d", priority, scalingFactor, mostCriticalJoint, (int)reachedSingularity);
       // the task is not executed
       *jointVelocity = higherPriorityJointVelocity;
       *nullSpaceProjector = higherPriorityNull;
@@ -265,12 +266,12 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
       limit_excedeed = true;
       if (singularTask) {
         // the task is singular so return a scaled damped solution (no SNS possible)
-        //ROS_WARN("task %d is singular, scaling factor: %f",priority,scalingFactor);
+        ROS_WARN("task %d is singular, scaling factor: %f",priority,scalingFactor);
         if (scalingFactor >= 0.0) {
           (*jointVelocity) = tildeDotQ + JPinverse * (scalingFactor * task - jacobian * tildeDotQ);
         } else {
           // the task is not executed
-          //ROS_INFO("task not executed: J sing");
+          ROS_INFO("task not executed: J sing");
           //W[priority]=I;
           //dotQn=VectorD::Zero(n_dof);
           *jointVelocity = higherPriorityJointVelocity;
@@ -313,14 +314,14 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
 
       if (reachedSingularity) {
         if (bestScale >= 0.0) {
-          //ROS_INFO("best solution %f",bestScale);
+          ROS_INFO("best solution %f",bestScale);
           dotQn = bestDotQn;
           dotQ = bestTildeDotQ + bestInvJP * (bestScale * task - jacobian * bestTildeDotQ);
           //use the best solution found... no further saturation possible
           (*jointVelocity) = dotQ;
         } else {
           // the task is not executed
-          //ROS_WARN("task not executed: reached sing");
+          ROS_WARN("task not executed: reached sing");
           *jointVelocity = higherPriorityJointVelocity;
           *nullSpaceProjector = higherPriorityNull;
         }
