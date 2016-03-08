@@ -55,7 +55,7 @@ namespace sns_ik {
    *  (\em double if \b _USE_DOUBLE_ is defined)
    */
   typedef double Scalar;
-  #define EPS 0.15
+  #define EPS 0.001 //0.15  TODO This seems too large
   #define LAMBDA_MAX 0.3
   #define EPSQ 1e-10
 #else

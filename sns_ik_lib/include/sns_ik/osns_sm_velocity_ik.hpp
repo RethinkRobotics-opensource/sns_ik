@@ -35,9 +35,10 @@ namespace sns_ik {
 class OSNS_sm_VelocityIK : public OSNSVelocityIK {
   public:
     OSNS_sm_VelocityIK(int dof, Scalar loop_period);
+    virtual ~OSNS_sm_VelocityIK() {};
     
     // Optimal SNS Velocity IK
-    Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                             const VectorD &jointConfiguration);
 
     void setScaleMargin(double scale)
