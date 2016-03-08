@@ -57,6 +57,7 @@ typedef std::vector<Task> StackOfTasks;
 class SNSVelocityIK {
   public:
     SNSVelocityIK(int dof, Scalar loop_period);
+    virtual ~SNSVelocityIK() {};
     
     bool setJointsCapabilities(VectorD limit_low, VectorD limit_high,
                                VectorD maxVelocity, VectorD maxAcceleration);
@@ -67,7 +68,7 @@ class SNSVelocityIK {
     void setLoopPeriod(double period) { loop_period = period; }
     
     // SNS Velocity IK
-    Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                             const VectorD &jointConfiguration);
 
     // Standard straight inverse jacobian
@@ -81,13 +82,16 @@ class SNSVelocityIK {
     std::vector<Scalar> getTasksScaleFactor()
         { return scaleFactors; }
 
+    VectorD getJointLimitLow() { return jointLimit_low; }
+    VectorD getJointLimitHigh() { return jointLimit_high; }
+
   protected:
 
     // Shape the joint velocity bound dotQmin and dotQmax
     void shapeJointVelocityBound(const VectorD &actualJointConfiguration, double margin = SHAPE_MARGIN);
 
     // Perform the SNS for a single task
-    Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
+    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
                      const MatrixD &higherPriorityNull, const MatrixD &jacobian,
                      const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
 

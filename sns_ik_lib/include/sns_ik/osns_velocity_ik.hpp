@@ -35,14 +35,15 @@ namespace sns_ik {
 class OSNSVelocityIK : public SNSVelocityIK {
   public:
     OSNSVelocityIK(int dof, Scalar loop_period);
+    virtual ~OSNSVelocityIK() {};
     
     // Optimal SNS Velocity IK
-    Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                             const VectorD &jointConfiguration);
     
   protected:
     // Perform the SNS for a single task
-    Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
+    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
                      const MatrixD &higherPriorityNull, const MatrixD &jacobian,
                      const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
     
