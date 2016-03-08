@@ -23,6 +23,8 @@
 #include <kdl/frames.hpp>
 #include <kdl/jntarray.hpp>
 #include <sns_ik/sns_velocity_ik.hpp>
+#include <sns_ik/osns_velocity_ik.hpp>
+#include <sns_ik/osns_sm_velocity_ik.hpp>
 #include <sns_ik/sns_position_ik.hpp>
 
 namespace sns_ik {

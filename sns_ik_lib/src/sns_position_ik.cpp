@@ -58,6 +58,9 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   int maxInterations = 200;
   double dt = 0.2;
 
+  VectorD jl_low = m_ikVelSolver->getJointLimitLow();
+  VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
+
   bool solutionFound = false;
   KDL::JntArray q_i = joint_seed;
   KDL::Frame pose_i;
@@ -110,12 +113,23 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
     sot[0].jacobian = jacobian.data;
 
-    VectorD q_ii(q_i.data);
-
     VectorD qDot(n_dof);
-    m_ikVelSolver->getJointVelocity(&qDot, sot, q_ii);
+    m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     q_i.data += dt * qDot;
+
+    for (int j = 0; j < jl_low.rows(); ++j) {
+      q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
+    }
+
+    //std::cout << "    q: " << q_i.data.transpose() << std::endl;
+    //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
+    //std::cout << "    qDot: " << qDot.transpose() << std::endl;
+
+    if (qDot.norm() < 1e-7) {  // TODO: config param
+      std::cout << "ERROR: Solution stuck" << std::endl;
+      return -2;
+    }
   }
 
   if (solutionFound) {
