@@ -160,7 +160,9 @@ namespace sns_ik {
     }
     ROS_ASSERT_MSG(m_types.size()==(unsigned int)m_lower_bounds.data.size(), \
                    "SNS_IK: Could not determine joint limits for all non-continuous joints");
-    m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new OSNS_sm_VelocityIK(m_chain.getNrOfJoints(), 0.01)); //TODO make loop rate configurable
+
+    m_jacobianSolver = std::shared_ptr<KDL::ChainJntToJacSolver>(new KDL::ChainJntToJacSolver(m_chain));
+    m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), 0.01)); //TODO make loop rate configurable
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver));
@@ -176,6 +178,30 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::
   return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, tolerances);
 }
 
+int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::JntArray& qdot_out) {
+
+  if (!m_initialized) {
+    ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
+    return -1;
+  }
+  KDL::Jacobian jacobian;
+  jacobian.resize(q_in.rows());
+  if (m_jacobianSolver->JntToJac(q_in, jacobian) < 0)
+  {
+    std::cout << "JntToJac failed" << std::endl;
+    return -1;
+  }
+  StackOfTasks sot;
+  Task task;
+  task.jacobian = jacobian.data;
+  task.desired = VectorD::Zero(6);
+  // twistEigenToKDL
+  for(size_t i = 0; i < 6; i++)
+      task.desired(i) = v_in[i];
+  sot.push_back(task);
+  return m_ik_vel_solver->getJointVelocity(&qdot_out.data, sot, q_in.data);
+}
+
 SNS_IK::~SNS_IK(){}
 
-}
+}  // twistEigenToKDL

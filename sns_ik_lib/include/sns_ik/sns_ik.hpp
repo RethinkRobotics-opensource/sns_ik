@@ -22,6 +22,7 @@
 #include <kdl/chain.hpp>
 #include <kdl/frames.hpp>
 #include <kdl/jntarray.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
 #include <sns_ik/sns_velocity_ik.hpp>
 #include <sns_ik/osns_velocity_ik.hpp>
 #include <sns_ik/osns_sm_velocity_ik.hpp>
@@ -61,10 +62,12 @@ namespace sns_ik {
     }
 
     int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::JntArray &q_out, const KDL::Twist& bounds=KDL::Twist::Zero());
+    int CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::JntArray& qdot_out);
 
     inline void SetSolveType(SolveType type) {
       m_solvetype = type;
     }
+
 
   private:
     bool m_initialized;
@@ -78,6 +81,7 @@ namespace sns_ik {
     std::vector<KDL::JntArray> m_solutions;
     std::shared_ptr<SNSVelocityIK> m_ik_vel_solver;
     std::shared_ptr<SNSPositionIK> m_ik_pos_solver;
+    std::shared_ptr<KDL::ChainJntToJacSolver> m_jacobianSolver;
     void initialize();
 
   };
