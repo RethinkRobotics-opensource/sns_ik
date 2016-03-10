@@ -314,7 +314,7 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
 
       if (reachedSingularity) {
         if (bestScale >= 0.0) {
-          ROS_INFO("best solution %f",bestScale);
+          //ROS_INFO("best solution %f",bestScale);
           dotQn = bestDotQn;
           dotQ = bestTildeDotQ + bestInvJP * (bestScale * task - jacobian * bestTildeDotQ);
           //use the best solution found... no further saturation possible

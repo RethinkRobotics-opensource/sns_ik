@@ -126,7 +126,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
     //std::cout << "    qDot: " << qDot.transpose() << std::endl;
 
-    if (qDot.norm() < 1e-7) {  // TODO: config param
+    if (qDot.norm() < 1e-9) {  // TODO: config param
       std::cout << "ERROR: Solution stuck" << std::endl;
       return -2;
     }
