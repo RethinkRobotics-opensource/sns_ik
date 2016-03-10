@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,13 +29,13 @@ using namespace Eigen;
 
 namespace sns_ik {
 
-#define _USE_DOUBLE_  
-/*! \def _USE_DOUBLE_  
+#define _USE_DOUBLE_
+/*! \def _USE_DOUBLE_
  * use values with double precision.
  * This is used to have the possibility to switch (at compile time) between float and double precision in order to be faster or more accurate.
  * Inside the \b IKL we will use the follow definition:
  * - \b MatrixD  a dynamic sized Matrix of real numbers
- * - \b VectorD a column vector of real numbers with dynamic length 
+ * - \b VectorD a column vector of real numbers with dynamic length
  * - \b Scalar a real number
  */
 
@@ -55,7 +55,7 @@ namespace sns_ik {
    *  (\em double if \b _USE_DOUBLE_ is defined)
    */
   typedef double Scalar;
-  #define EPS 0.001 //0.15  TODO This seems too large
+  #define EPS 1e-6  //TODO This seems too large
   #define LAMBDA_MAX 0.3
   #define EPSQ 1e-10
 #else

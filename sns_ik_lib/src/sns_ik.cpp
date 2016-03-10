@@ -162,7 +162,7 @@ namespace sns_ik {
                    "SNS_IK: Could not determine joint limits for all non-continuous joints");
 
     m_jacobianSolver = std::shared_ptr<KDL::ChainJntToJacSolver>(new KDL::ChainJntToJacSolver(m_chain));
-    m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new OSNS_sm_VelocityIK(m_chain.getNrOfJoints(), 0.01)); //TODO make loop rate configurable
+    m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), 0.01)); //TODO make loop rate configurable
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver));
@@ -194,17 +194,14 @@ int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::Jn
   StackOfTasks sot;
   Task task;
   task.jacobian = jacobian.data;
-  // twistEigenToKDL
-  size_t tk = 0;
   task.desired = VectorD::Zero(6);
-  for(; tk < 3; tk++)
-      task.desired(tk) = v_in.vel.data[tk];
-  for(; tk < 6; tk++)
-      task.desired(tk) = v_in.rot.data[tk-3];
+  // twistEigenToKDL
+  for(size_t i = 0; i < 6; i++)
+      task.desired(i) = v_in[i];
   sot.push_back(task);
   return m_ik_vel_solver->getJointVelocity(&qdot_out.data, sot, q_in.data);
 }
 
 SNS_IK::~SNS_IK(){}
 
-}
+}  // twistEigenToKDL
