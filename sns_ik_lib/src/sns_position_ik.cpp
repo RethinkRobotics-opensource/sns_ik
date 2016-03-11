@@ -18,7 +18,7 @@
  */
 
 #include <sns_ik/sns_position_ik.hpp>
-
+#include <sns_ik/sns_velocity_ik.hpp>
 #include <iostream>
 
 namespace sns_ik{

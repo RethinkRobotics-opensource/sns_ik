@@ -27,10 +27,11 @@
 #include <kdl/chainfksolverpos_recursive.hpp>
 
 #include "sns_ik/sns_ik_math_utils.hpp"
-#include "sns_ik/sns_velocity_ik.hpp"
 
 namespace sns_ik {
 
+// Forward declare SNS Velocity Base Class
+class SNSVelocityIK;
 class SNSPositionIK {
   public:
     SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik);
