@@ -36,6 +36,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
 #include <kdl/framevel.hpp>
+#include <time.h>
 
 double fRand(double min, double max)
 {
@@ -57,7 +58,7 @@ bool in_vel_bounds(KDL::JntArray vals, KDL::JntArray vels)
   return true;
 }
 
-void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std::string chain_end, double timeout, std::string urdf_param)
+void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, std::string chain_start, std::string chain_end, double timeout, std::string urdf_param)
 {
 
   double eps = 1e-5;
@@ -108,7 +109,8 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
   std::vector<KDL::JntArray> JointList;
   KDL::JntArray q(chain.getNrOfJoints());
 
-  for (uint i=0; i < num_samples; i++) {
+  uint num_joint_pos = std::max(num_samples_pos, num_samples_vel);
+  for (uint i=0; i < num_joint_pos; i++) {
     for (uint j=0; j<ll.data.size(); j++) {
       q(j)=fRand(ll(j), ul(j));
     }
@@ -125,9 +127,9 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
   double total_time=0;
   uint success=0;
 
-  ROS_INFO_STREAM("*** Testing KDL with "<<num_samples<<" random samples");
+  ROS_INFO_STREAM("*** Testing KDL with "<<num_samples_pos<<" random samples");
 
-  for (uint i=0; i < num_samples; i++) {
+  for (uint i=0; i < num_samples_pos; i++) {
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
     result=nominal; // start with nominal
@@ -142,19 +144,19 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
     if (rc>=0)
       success++;
 
-    if (int((double)i/num_samples*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples*100)<<"\% done");
+    if (int((double)i/num_samples_pos*100)%10 == 0)
+      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
   }
 
-  ROS_INFO_STREAM("KDL found "<<success<<" solutions ("<<100.0*success/num_samples<<"\%) with an average of "<<total_time/num_samples<<" secs per sample");
+  ROS_INFO_STREAM("KDL found "<<success<<" solutions ("<<100.0*success/num_samples_pos<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
 
   total_time=0;
   success=0;
 
-  ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples<<" random samples");
+  ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples_pos<<" random samples");
 
-  for (uint i=0; i < num_samples; i++) {
+  for (uint i=0; i < num_samples_pos; i++) {
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
     start_time = boost::posix_time::microsec_clock::local_time();
@@ -165,11 +167,11 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
     if (rc>=0)
       success++;
 
-    if (int((double)i/num_samples*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples*100)<<"\% done");
+    if (int((double)i/num_samples_pos*100)%10 == 0)
+      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
   }
 
-  ROS_INFO_STREAM("TRAC-IK found "<<success<<" solutions ("<<100.0*success/num_samples<<"\%) with an average of "<<total_time/num_samples<<" secs per sample");
+  ROS_INFO_STREAM("TRAC-IK found "<<success<<" solutions ("<<100.0*success/num_samples_pos<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
 
   sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps);
@@ -187,11 +189,12 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
   assert(chain.getNrOfJoints() == ul.data.size());
   assert(chain.getNrOfJoints() == vl.data.size());
   assert(chain.getNrOfJoints() == al.data.size());
-  /* Position Tests
+
+  // SNS Position Tests
   total_time=0;
   success=0;
-  ROS_INFO_STREAM("*** Testing SNS-IK with "<<num_samples<<" random samples");
-  for (uint i=0; i < num_samples; i++) {
+  ROS_INFO_STREAM("*** Testing SNS-IK with "<<num_samples_pos<<" random samples");
+  for (uint i=0; i < num_samples_pos; i++) {
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
     start_time = boost::posix_time::microsec_clock::local_time();
@@ -201,11 +204,11 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
     total_time+=elapsed;
     if (rc>=0)
       success++;
-    if (int((double)i/num_samples*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples*100)<<"\% done");
+    if (int((double)i/num_samples_pos*100)%10 == 0)
+      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
   }
-  ROS_INFO_STREAM("SNS-IK found "<<success<<" solutions ("<<100.0*success/num_samples<<"\%) with an average of "<<total_time/num_samples<<" secs per sample");
-  */
+  ROS_INFO_STREAM("SNS-IK found "<<success<<" solutions ("<<100.0*success/num_samples_pos<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
+
   // Create random velocities within the limits
   total_time=0;
   success=0;
@@ -217,15 +220,17 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
   std::vector<KDL::JntArrayVel> JointVelList;
   KDL::JntArrayVel v(chain.getNrOfJoints());
   // Create Random velocities within the vel limits
-  for (uint i=0; i < num_samples; i++) {
+  for (uint i=0; i < num_samples_vel; i++) {
     v.q = JointList[i];
     for (uint j=0; j<vl.data.size(); j++) {
       v.qdot(j)=fRand(-vl(j), vl(j));
     }
     JointVelList.push_back(v);
   }
-  ROS_INFO_STREAM("*** Testing SNS-IK Velocities with "<<num_samples<<" random samples");
-  for (uint i=0; i < num_samples; i++) {
+
+  ROS_INFO("\n************************************\n");
+  ROS_INFO_STREAM("*** Testing SNS-IK Velocities with "<<num_samples_vel<<" random samples");
+  for (uint i=0; i < num_samples_vel; i++) {
     // add position to my vel
     vfk_solver.JntToCart(JointVelList[i],end_effector_vel);
     double elapsed = 0;
@@ -241,15 +246,15 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
     vfk_solver.JntToCart(result_vel_array, result_end_effector_vel);
     if (rc>=0 && in_vel_bounds(result_vel, vl) && Equal(end_effector_vel, result_end_effector_vel, 1e-3))
       success++;
-    if (int((double)i/num_samples*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples*100)<<"\% done");
+    if (int((double)i/num_samples_vel*100)%10 == 0)
+      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_vel*100)<<"\% done");
   }
-  ROS_INFO_STREAM("SNS-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples<<"\%) with an average of "<<total_time/num_samples<<" secs per sample");
+  ROS_INFO_STREAM("SNS-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples_vel<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
-  ROS_INFO_STREAM("*** Testing KDL-IK Velocities with "<<num_samples<<" random samples");
+  ROS_INFO_STREAM("*** Testing KDL-IK Velocities with "<<num_samples_vel<<" random samples");
   total_time=0;
   success=0;
-  for (uint i=0; i < num_samples; i++) {
+  for (uint i=0; i < num_samples_vel; i++) {
     // add position to my vel
     vfk_solver.JntToCart(JointVelList[i],end_effector_vel);
     double elapsed = 0;
@@ -265,25 +270,26 @@ void test(ros::NodeHandle& nh, double num_samples, std::string chain_start, std:
     vfk_solver.JntToCart(result_vel_array, result_end_effector_vel);
     if (rc>=0 && in_vel_bounds(result_vel, vl) && Equal(end_effector_vel, result_end_effector_vel, 1e-3))
       success++;
-    if (int((double)i/num_samples*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples*100)<<"\% done");
+    if (int((double)i/num_samples_vel*100)%10 == 0)
+      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_vel*100)<<"\% done");
   }
-  ROS_INFO_STREAM("KDL-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples<<"\%) with an average of "<<total_time/num_samples<<" secs per sample");
+  ROS_INFO_STREAM("KDL-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples_vel<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
 
 }
 
 int main(int argc, char** argv)
 {
-  srand(1);
+  srand(time(NULL));
   ros::init(argc, argv, "ik_tests");
   ros::NodeHandle nh("~");
 
-  int num_samples;
+  int num_samples_pos, num_samples_vel;
   std::string chain_start, chain_end, urdf_param;
   double timeout;
 
-  nh.param("num_samples", num_samples, 1000);
+  nh.param("num_samples_pos", num_samples_pos, 100);
+  nh.param("num_samples_vel", num_samples_vel, 1000);
   nh.param("chain_start", chain_start, std::string(""));
   nh.param("chain_end", chain_end, std::string(""));
 
@@ -295,10 +301,10 @@ int main(int argc, char** argv)
   nh.param("timeout", timeout, 0.005);
   nh.param("urdf_param", urdf_param, std::string("/robot_description"));
 
-  if (num_samples < 1)
-    num_samples = 1;
+  if (num_samples_pos < 1)
+    num_samples_pos = 1;
 
-  test(nh, num_samples, chain_start, chain_end, timeout, urdf_param);
+  test(nh, num_samples_pos, num_samples_vel,  chain_start, chain_end, timeout, urdf_param);
 
   // Useful when you make a script that loops over multiple launch files that test different robot chains
   std::vector<char *> commandVector;

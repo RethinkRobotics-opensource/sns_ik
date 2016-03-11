@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="num_samples" default="1000" />
+  <arg name="num_samples_pos" default="100" />
+  <arg name="num_samples_vel" default="1000" />
   <arg name="chain_start" default="base" />
   <arg name="chain_end" default="right_hand" />
   <arg name="timeout" default="0.005" />
@@ -12,7 +13,8 @@
     file="$(find sns_ik_examples)/config/example_baxter_joint_limits.yaml" />
 
   <node name="sns_ik_tests" pkg="sns_ik_examples" type="all_ik_tests" output="screen">
-    <param name="num_samples" value="$(arg num_samples)"/>
+    <param name="num_samples_pos" value="$(arg num_samples_pos)"/>
+    <param name="num_samples_vel" value="$(arg num_samples_vel)"/>
     <param name="chain_start" value="$(arg chain_start)"/>
     <param name="chain_end" value="$(arg chain_end)"/>
     <param name="timeout" value="$(arg timeout)"/>
