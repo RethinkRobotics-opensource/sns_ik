@@ -23,37 +23,43 @@
 #include <kdl/frames.hpp>
 #include <kdl/jntarray.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
-#include <sns_ik/sns_velocity_ik.hpp>
-#include <sns_ik/osns_velocity_ik.hpp>
-#include <sns_ik/osns_sm_velocity_ik.hpp>
 #include <sns_ik/sns_position_ik.hpp>
 
 namespace sns_ik {
 
-  enum SolveType { Position, Velocity };
+  enum VelocitySolveType { SNS,
+                           SNS_Optimal,
+                           SNS_OptimalScaleMargin,
+                           SNS_Fast,
+                           SNS_OptimalFast
+                         };
 
+  // Forward declare SNS Velocity Base Class
+  class SNSVelocityIK;
   class SNS_IK
   {
   public:
     SNS_IK(const std::string& base_link, const std::string& tip_link,
            const std::string& URDF_param="/robot_description",
            double maxtime=0.005, double eps=1e-5,
-           sns_ik::SolveType type=sns_ik::Velocity);
+           sns_ik::VelocitySolveType type=sns_ik::SNS);
 
     SNS_IK(const KDL::Chain& chain,
            const KDL::JntArray& q_min, const KDL::JntArray& q_max,
            const KDL::JntArray& v_max, const KDL::JntArray& a_max,
            double maxtime=0.005, double eps=1e-5,
-           sns_ik::SolveType type=sns_ik::Velocity);
+           sns_ik::VelocitySolveType type=sns_ik::SNS);
 
     ~SNS_IK();
 
-    bool getKDLChain(KDL::Chain& chain) {
+    bool setVelocitySolveType(VelocitySolveType type);
+    
+    inline bool getKDLChain(KDL::Chain& chain) {
       chain=m_chain;
       return m_initialized;
     }
 
-    bool getKDLLimits(KDL::JntArray& lb, KDL::JntArray& ub, KDL::JntArray& vel, KDL::JntArray& accel) {
+    inline bool getKDLLimits(KDL::JntArray& lb, KDL::JntArray& ub, KDL::JntArray& vel, KDL::JntArray& accel) {
       lb=m_lower_bounds;
       ub=m_upper_bounds;
       vel=m_velocity;
@@ -64,16 +70,12 @@ namespace sns_ik {
     int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::JntArray &q_out, const KDL::Twist& bounds=KDL::Twist::Zero());
     int CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::JntArray& qdot_out);
 
-    inline void SetSolveType(SolveType type) {
-      m_solvetype = type;
-    }
-
-
   private:
     bool m_initialized;
     double m_eps;
     double m_maxtime;
-    SolveType m_solvetype;
+    VelocitySolveType m_solvetype;
+    double m_looprate;
     KDL::Chain m_chain;
     KDL::JntArray m_lower_bounds, m_upper_bounds, m_velocity, m_acceleration;
     enum JointType { Revolute, Prismatic, Continuous };

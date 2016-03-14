@@ -18,16 +18,20 @@
 #include <ros/ros.h>
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
+#include <sns_ik/sns_velocity_ik.hpp>
+#include <sns_ik/osns_velocity_ik.hpp>
+#include <sns_ik/osns_sm_velocity_ik.hpp>
 
 namespace sns_ik {
 
   SNS_IK::SNS_IK(const std::string& base_link, const std::string& tip_link,
                  const std::string& URDF_param, double maxtime, double eps,
-                 sns_ik::SolveType type) :
+                 sns_ik::VelocitySolveType type) :
     m_initialized(false),
     m_eps(eps),
     m_maxtime(maxtime),
-    m_solvetype(type)
+    m_solvetype(type),
+    m_looprate(0.01)
   {
     ros::NodeHandle node_handle("~");
     urdf::Model robot_model;
@@ -120,11 +124,12 @@ namespace sns_ik {
   SNS_IK::SNS_IK(const KDL::Chain& chain, const KDL::JntArray& q_min,
                  const KDL::JntArray& q_max, const KDL::JntArray& v_max,
                  const KDL::JntArray& a_max, double maxtime, double eps,
-                 sns_ik::SolveType type):
+                 sns_ik::VelocitySolveType type):
     m_initialized(false),
     m_eps(eps),
     m_maxtime(maxtime),
     m_solvetype(type),
+    m_looprate(0.01),
     m_chain(chain),
     m_lower_bounds(q_min),
     m_upper_bounds(q_max),
@@ -158,16 +163,43 @@ namespace sns_ik {
         m_types.push_back(SNS_IK::JointType::Prismatic);
       }
     }
-    ROS_ASSERT_MSG(m_types.size()==(unsigned int)m_lower_bounds.data.size(), \
+    ROS_ASSERT_MSG(m_types.size()==(unsigned int)m_lower_bounds.data.size(),
                    "SNS_IK: Could not determine joint limits for all non-continuous joints");
 
     m_jacobianSolver = std::shared_ptr<KDL::ChainJntToJacSolver>(new KDL::ChainJntToJacSolver(m_chain));
-    m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), 0.01)); //TODO make loop rate configurable
+    ROS_ASSERT_MSG(setVelocitySolveType(m_solvetype),
+                   "SNS_IK: Failed to create a new SNS velocity and position solver."); //TODO make loop rate configurable
+  }
+
+bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
+  // If the requested solve type is different or there is no velocity solver
+  if(m_solvetype != type || !m_ik_vel_solver){
+    switch (type) {
+      case sns_ik::SNS_OptimalScaleMargin:
+        m_ik_vel_solver = std::shared_ptr<OSNS_sm_VelocityIK>(new OSNS_sm_VelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        ROS_INFO("SNS_IK: Set Velocity solver to SNS Optimal Scale Margin solver.");
+        break;
+      case sns_ik::SNS_Optimal:
+        m_ik_vel_solver = std::shared_ptr<OSNSVelocityIK>(new OSNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        ROS_INFO("SNS_IK: Set Velocity solver to SNS Optimal solver.");
+        break;
+      case sns_ik::SNS:
+        m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        ROS_INFO("SNS_IK: Set Velocity solver to Standard SNS solver.");
+        break;
+      default:
+        ROS_ERROR("SNS_IK: Unknow Velocity solver type requested.");
+        return false;
+    }
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver));
+    m_solvetype = type;
     m_initialized = true;
-  }
+    return true;
+ }
+ return false;
+}
 
 int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::JntArray &q_out, const KDL::Twist& tolerances) {
 
@@ -204,4 +236,4 @@ int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::Jn
 
 SNS_IK::~SNS_IK(){}
 
-}  // twistEigenToKDL
+} // sns_ik namespace
