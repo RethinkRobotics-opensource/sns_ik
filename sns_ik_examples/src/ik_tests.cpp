@@ -174,7 +174,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
   ROS_INFO_STREAM("TRAC-IK found "<<success<<" solutions ("<<100.0*success/num_samples_pos<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
 
-  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps);
+  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS_Fast);
   valid = snsik_solver.getKDLChain(chain);
   if (!valid) {
     ROS_ERROR("SNS: There was no valid KDL chain found");
