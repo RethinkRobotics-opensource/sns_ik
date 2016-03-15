@@ -22,6 +22,7 @@
 #include <sns_ik/osns_velocity_ik.hpp>
 #include <sns_ik/osns_sm_velocity_ik.hpp>
 #include <sns_ik/fsns_velocity_ik.hpp>
+#include <sns_ik/fosns_velocity_ik.hpp>
 
 namespace sns_ik {
 
@@ -187,6 +188,10 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
       case sns_ik::SNS_Fast:
         m_ik_vel_solver = std::shared_ptr<FSNSVelocityIK>(new FSNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
         ROS_INFO("SNS_IK: Set Velocity solver to Fast SNS solver.");
+        break;
+      case sns_ik::SNS_FastOptimal:
+        m_ik_vel_solver = std::shared_ptr<FOSNSVelocityIK>(new FOSNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        ROS_INFO("SNS_IK: Set Velocity solver to Fast Optimal SNS solver.");
         break;
       case sns_ik::SNS:
         m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));

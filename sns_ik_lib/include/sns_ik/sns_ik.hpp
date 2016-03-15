@@ -31,7 +31,7 @@ namespace sns_ik {
                            SNS_Optimal,
                            SNS_OptimalScaleMargin,
                            SNS_Fast,
-                           SNS_OptimalFast
+                           SNS_FastOptimal
                          };
 
   // Forward declare SNS Velocity Base Class

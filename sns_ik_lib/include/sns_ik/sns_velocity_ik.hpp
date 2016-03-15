@@ -61,8 +61,8 @@ class SNSVelocityIK {
     
     bool setJointsCapabilities(VectorD limit_low, VectorD limit_high,
                                VectorD maxVelocity, VectorD maxAcceleration);
-    void setNumberOfTasks(int ntasks, int dof = -1);
-    void setNumberOfDOF(int dof);
+    virtual void setNumberOfTasks(int ntasks, int dof = -1);
+    virtual void setNumberOfDOF(int dof);
 
     // The control loop period in seconds
     void setLoopPeriod(double period) { loop_period = period; }
