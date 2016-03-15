@@ -47,14 +47,25 @@ class SNSPositionIK {
     KDL::Chain getChain() { return m_chain; }
 
     // TODO: figure out the best way of providing a reference to the velocity IK solver
-    //SNSVelocityIK* getVelocityIK() { return &m_ikVelSolver; }
-    std::shared_ptr<SNSVelocityIK> getVelocityIK() { return m_ikVelSolver; }
+    inline bool getVelocityIK(std::shared_ptr<SNSVelocityIK>& velocitySolver){
+        velocitySolver = m_ikVelSolver;
+        return m_ikVelSolver != NULL;
+    }
+    void setTolerance(double linearTolerance, double angularTolerance);
+    void setStepSize(double linearMaxStepSize, double angularMaxStepSize);
+    void setSolveTimeParameters(double dt, double maxIterations);
 
   private:
     KDL::Chain m_chain;
     std::shared_ptr<SNSVelocityIK> m_ikVelSolver;
     KDL::ChainFkSolverPos_recursive m_positionFK;
     KDL::ChainJntToJacSolver m_jacobianSolver;
+    double m_linearTolerance;
+    double m_angularTolerance;
+    double m_linearMaxStepSize;
+    double m_angularMaxStepSize;
+    double m_maxIterations;
+    double m_dt;
 };
 
 }  // namespace sns_ikl
