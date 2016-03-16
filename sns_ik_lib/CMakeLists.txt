@@ -34,7 +34,13 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS} ${oroco
 link_directories(${orocos_kdl_LIBRARY_DIRS})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-add_library(sns_ik src/sns_ik.cpp src/sns_ik_math_utils.cpp src/sns_velocity_ik.cpp src/sns_position_ik.cpp
-            src/osns_velocity_ik.cpp src/osns_sm_velocity_ik.cpp)
+add_library(sns_ik src/sns_ik.cpp
+            src/sns_ik_math_utils.cpp
+            src/sns_velocity_ik.cpp
+            src/sns_position_ik.cpp
+            src/osns_velocity_ik.cpp
+            src/osns_sm_velocity_ik.cpp
+            src/fsns_velocity_ik.cpp
+            src/fosns_velocity_ik.cpp)
 target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen_LIBRARIES} ${orocos_kdl_LIBRARIES})
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

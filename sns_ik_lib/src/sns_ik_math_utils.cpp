@@ -159,7 +159,7 @@ bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps) {
   }
   FullPivLU < MatrixD > invRt(Rt);
 
-  invertible = abs(invRt.determinant()) > eps;
+  invertible = fabs(invRt.determinant()) > eps;
 
   if (invertible) {
     *invA = Y * invRt.inverse();
@@ -195,7 +195,7 @@ bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z, S
   }
 
   FullPivLU < MatrixD > invRt(Rt);
-  invertible = abs(invRt.determinant()) > eps;
+  invertible = fabs(invRt.determinant()) > eps;
 
   if (invertible) {
     *invA = Z0 * Y * invRt.inverse();

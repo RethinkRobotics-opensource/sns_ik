@@ -55,14 +55,14 @@ namespace sns_ik {
    *  (\em double if \b _USE_DOUBLE_ is defined)
    */
   typedef double Scalar;
-  #define EPS 1e-6  //TODO This seems too large
+  #define EPS 1e-6
   #define LAMBDA_MAX 0.3
   #define EPSQ 1e-10
 #else
   typedef Eigen::Matrix<float,Dynamic,Dynamic> MatrixD;
   typedef Eigen::Matrix<float,Dynamic,1> VectorD;
   typedef float Scalar;
-  #define EPS 0.15
+  #define EPS 1e-6
   #define LAMBDA_MAX 0.3
   #define EPSQ 1e-15
 #endif
