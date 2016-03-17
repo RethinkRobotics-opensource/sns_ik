@@ -23,6 +23,7 @@
 #include <sns_ik/fosns_velocity_ik.hpp>
 
 #include <ros/ros.h>
+#include <iostream>
 
 using namespace Eigen;
 using namespace sns_ik;
@@ -42,14 +43,10 @@ void FOSNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
   VectorD zv = VectorD::Zero(n_dof);
   VectorXi zvi = VectorXi::Zero(n_dof);
   B = Z;
-  //dqw = zv;
 
-  for (int i = 0; i < n_tasks; i++) {
-    //  Jw.push_back(Z);
-    S.push_back(zvi);
-    //sSat.push_back(zvi);
-    //nSat.push_back(0);
-  }
+  S.resize(n_tasks, zvi);
+  nSat.resize(n_tasks, 0);
+
   satList.resize(n_tasks);
   lagrangeMu = zv;
   lagrangeMu1 = zv;
@@ -66,8 +63,6 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
 
   // TODO: check that setJointsCapabilities has been already called
 
-  //P_0=I
-  //dq_0=0
   MatrixD P = MatrixD::Identity(n_dof, n_dof);
   MatrixD PS = MatrixD::Identity(n_dof, n_dof);
   *jointVelocity = VectorD::Zero(n_dof, 1);
@@ -84,10 +79,8 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
         sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &PS);
 
-    //if ( scaleFactors[i_task]>1)  scaleFactors[i_task]=1;
-
     if (scaleFactors[i_task] > 0.0) {
-      if (scaleFactors[i_task] * scaleMargin < (1.0)) {
+      if (scaleFactors[i_task] * scaleMargin < 1.0) {
         double taskScale = scaleFactors[i_task] * scaleMargin;
         VectorD scaledTask = sot[i_task].desired * taskScale;
         scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
@@ -134,17 +127,16 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   VectorD dqw;
   VectorD dq1_base, dq2_base;
   VectorD dqn = VectorD::Zero(n_dof);
-  VectorD dotQs;
+  //VectorD dotQs;
 
   MatrixD zin;
   VectorD bin, bout;
   Scalar dqw_in;
-  Scalar error;
 
-  Scalar mu_in;
+  //Scalar mu_in;
   Scalar mu_in1;
   Scalar mu_inp2w;
-  Scalar mu_out;
+  //Scalar mu_out;
   Scalar mu_out1;
   Scalar mu_outp2w;
   Scalar min_mu;
@@ -155,7 +147,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 
 #ifdef LOG_ACTIVE
   int n_in=0,n_out=0;
-  stringstream log;
+  std::stringstream log;
 #endif
 
   //compute the base solution
@@ -172,11 +164,11 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   getTaskScalingFactor(a, b, VectorXi::Zero(n_dof), &scalingFactor, &mostCriticalJoint);
 
 #ifdef LOG_ACTIVE
-  log<<"task "<<priority<<endl;
-  log<<"base Z norm "<<higherPriorityNull->norm()<<endl;
-  log<<"base J*Z norm"<<(jacobian*higherPriorityNull).norm()<<endl;
-  log<<"scale factor at 0 "<<scalingFactor<<endl;
-  log<<"base S "<<S[priority].transpose()<<endl;
+  log<<"task "<<priority<<std::endl;
+  log<<"base Z norm "<<higherPriorityNull.norm()<<std::endl;
+  log<<"base J*Z norm "<<(jacobian*higherPriorityNull).norm()<<std::endl;
+  log<<"scale factor at 0 "<<scalingFactor<<std::endl;
+  log<<"base S "<<S[priority].transpose()<<std::endl;
 #endif
 
   if (scalingFactor >= 1.0) {
@@ -187,14 +179,16 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
     satList[priority].clear();
     S[priority] = VectorXi::Zero(n_dof);
 #ifdef LOG_ACTIVE
-    log<<"task accomplished without saturations"<<endl;
-    log<<"scale "<<scalingFactor<<endl;
-    //log<<"last dotQ "<<higherPriorityJointVelocity->transpose()<<endl;
-    //log<<"dotQ "<<dotQ.transpose()<<endl;
-    //log<<"dotQmin "<<dotQmin.transpose()<<endl;
-    //log<<"dotQmax "<<dotQmax.transpose()<<endl;
-    if (singularTask) log<<"THE TASK IS SINGULAR"<<endl;
-    ROS_WARN("\n%s\n\n",log.str().c_str());
+    log<<"task accomplished without saturations"<<std::endl;
+    log<<"scale "<<scalingFactor<<std::endl;
+    //log<<"last dotQ "<<higherPriorityJointVelocity->transpose()<<std::endl;
+    //log<<"dotQ "<<dotQ.transpose()<<std::endl;
+    //log<<"dotQmin "<<dotQmin.transpose()<<std::endl;
+    //log<<"dotQmax "<<dotQmax.transpose()<<std::endl;
+    if (singularTask){
+      log<<"THE TASK IS SINGULAR"<<std::endl;
+      ROS_WARN("\n%s\n\n",log.str().c_str());
+    }
 #endif
     return scalingFactor;
   } else {
@@ -222,9 +216,9 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       *nullSpaceProjector = higherPriorityNull;
     }
 #ifdef LOG_ACTIVE
-    if (singularTask) log<<"the task is singular"<<endl;
-    if (base_Scale<0) log<<"base scale < 0"<<endl;
-    log<<"scale "<<scalingFactor<<endl;
+    if (singularTask) log<<"the task is singular"<<std::endl;
+    if (base_Scale<0) log<<"base scale < 0"<<std::endl;
+    log<<"scale "<<scalingFactor<<std::endl;
     //  log<<"dotQ "<<dotQ.transpose();
     //log<<"dotQmin "<<dotQmin.transpose();
     //  log<<"dotQmax "<<dotQmax.transpose();
@@ -297,9 +291,9 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       if (!invertibelZws) {
         //  ROS_WARN("Zws is not invertible... what should I do?");
 #ifdef LOG_ACTIVE_NO
-        //log<<endl<<"Z \n"<<tildeZ;
-        //log<<endl<<"Zws \n"<<Zws;
-        log<<"\nS\n"<<S[priority].transpose()<<endl<<"norm Zws ";
+        //log<<std::endl<<"Z \n"<<tildeZ;
+        //log<<std::endl<<"Zws \n"<<Zws;
+        log<<"\nS\n"<<S[priority].transpose()<<std::endl<<"norm Zws ";
         for (int i=0;i<nSat[priority];i++) {
           //for (it=satList[priority].begin(); it!=satList[priority].end(); ++it){
           //  int id=*it;
@@ -347,9 +341,9 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           int id=*it;
           if (dqn(id)>=0) scaledMU(id)=-scaledMU(id);
         }
-        log<<"/nstart scale "<< scalingFactor<<endl;
-        //log<<"/nstart scaled Mu "<< scaledMU.transpose()<<endl;
-        log<<"/nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<endl;
+        log<<"/nstart scale "<< scalingFactor<<std::endl;
+        //log<<"/nstart scaled Mu "<< scaledMU.transpose()<<std::endl;
+        log<<"/nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<std::endl;
         log<<"/nstart S "<<S[priority].transpose();
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 #endif
@@ -366,7 +360,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           }
         }
 #ifdef LOG_ACTIVE
-        log<<"/nstart Mu "<< lagrangeMu.transpose()<<endl;
+        log<<"/nstart Mu "<< lagrangeMu.transpose()<<std::endl;
 #endif
       }
     }
@@ -399,7 +393,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
        string s;
        stringstream buffer;
        streambuf * old = std::cout.rdbuf(buffer.rdbuf());
-       cout << "nSat\n" << nSat[priority]<<endl;
+       cout << "nSat\n" << nSat[priority]<<std::endl;
        s = buffer.str();
        ROS_INFO("\n p %d \n %s",priority,s.c_str());
        //#############################
@@ -414,7 +408,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       *nullSpaceProjector = higherPriorityNull;
       limit_excedeed=false;
 #ifdef LOG_ACTIVE
-      //log<<endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose()  << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<endl;
+      //log<<std::endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose()  << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<std::endl;
       log<<"last scaling factor "<< scalingFactor;
       ROS_WARN("%s",log.str().c_str());
       exit(1);
@@ -434,9 +428,9 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 
 #ifdef LOG_ACTIVE
     //if (n_in>2*n_dof-3){
-//    log<<endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose()  << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<endl;
+//    log<<std::endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose()  << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<std::endl;
     log<<" last scaling factor "<< scalingFactor;
-    log<<"\n n_in "<< n_in<<" n_out"<<n_out<<"  -> S "<<S[priority].transpose();
+    log<<"\n n_in "<< n_in<<" n_out "<<n_out<<"  -> S "<<S[priority].transpose();
 //      log<<"\n nSat"<< nSat[priority];
 
     log<<"\n best scale factor "<< best_Scale<<"\n\n";
@@ -447,9 +441,9 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       int id=*it;
       if (dqn(id)>=0) scaledMU(id)=-scaledMU(id);
     }
-    //log<<"/nstop scaled Mu "<< scaledMU.transpose()<<endl;
-    //log<<"stop scaled dq "<< (*higherPriorityJointVelocity)+scalingFactor*dq1+dq2+dqw<<endl;
-    log<<"error"<<(jacobian*dotQ - task).norm();
+    //log<<"/nstop scaled Mu "<< scaledMU.transpose()<<std::endl;
+    //log<<"stop scaled dq "<< (*higherPriorityJointVelocity)+scalingFactor*dq1+dq2+dqw<<std::endl;
+    log<<"error "<<(jacobian*dotQ - task).norm();
 
     ROS_WARN("\n%s\n\n",log.str().c_str());
     log.str("");
@@ -653,9 +647,9 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
     computedScalingFactor = true;
 
 #ifdef LOG_ACTIVE
-    log<<" I "<<idxW<< "norm zin "<<zin.norm()<<" at "<<dqw_in<<" with scale "<<scalingFactor<<endl;
-    if (scalingFactor<0) log<<"IT WAS < 0 "<<endl;
-    if (scalingFactor<1e-12) log<<"IT WAS < eps "<<endl;
+    log<<" I "<<idxW<< "norm zin "<<zin.norm()<<" at "<<dqw_in<<" with scale "<<scalingFactor<<std::endl;
+    if (scalingFactor<0) log<<"IT WAS < 0 "<<std::endl;
+    if (scalingFactor<1e-12) log<<"IT WAS < eps "<<std::endl;
     n_in++;
     //  ROS_WARN("\n%s\n\n",log.str().c_str());
     //  log.str("");
@@ -688,7 +682,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
         limit_excedeed = false;
         //continue;
 #ifdef LOG_ACTIVE_UNFEASIBLE
-        log<<endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose() << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<endl;
+        log<<std::endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose() << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<std::endl;
         log<<"last scaling factor "<< scalingFactor;
         ROS_WARN("%s",log.str().c_str());
         exit(1);

@@ -151,11 +151,8 @@ bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps) {
 
   //take the useful part of R
   for (int i = 0; i < m; i++) {
-    int j = 0;
-    while (j <= i) {
+    for (int j = 0; j <= i; j++)
       Rt(i, j) = hR(j, i);
-      j++;
-    }
   }
   FullPivLU < MatrixD > invRt(Rt);
 
@@ -187,11 +184,8 @@ bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z, S
 
   //take the useful part of R
   for (int i = 0; i < m; i++) {
-    int j = 0;
-    while (j <= i) {
+    for (int j = 0; j <= i; j++)
       Rt(i, j) = hR(j, i);
-      j++;
-    }
   }
 
   FullPivLU < MatrixD > invRt(Rt);
@@ -205,11 +199,8 @@ bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z, S
     MatrixD R = MatrixD::Zero(m, m);
     //take the useful part of R
     for (int i = 0; i < m; i++) {
-      int j = i;
-      while (j < m) {
+      for (int j = i; j < m; j++)  // TODO: is starting at i correct?
         R(i, j) = hR(i, j);
-        j++;
-      }
     }
 
     //perform the SVD of R

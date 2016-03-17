@@ -78,26 +78,6 @@ void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
     dotQopt.resize(n_tasks, dq);
     nSat.resize(n_tasks, 0);
   }
-
-  /*
-  //for the Fast version
-  MatrixD Z = MatrixD::Zero(n_dof, n_dof);
-  VectorD zv = VectorD::Zero(n_dof);
-  VectorXi zvi = VectorXi::Zero(n_dof);
-  B = Z;
-  dqw = zv;
-
-  for (int i = 0; i < n_tasks; i++) {
-    //  Jw.push_back(Z);
-    S.push_back(zvi);
-    sSat.push_back(zvi);
-    nSat.push_back(0);
-  }
-  satList.resize(n_tasks);
-  lagrangeMu = zv;
-  lagrangeMu1 = zv;
-  lagrangeMup2w = zv;
-  */
 }
 
 Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
