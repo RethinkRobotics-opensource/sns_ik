@@ -58,6 +58,24 @@ bool in_vel_bounds(KDL::JntArray vals, KDL::JntArray vels)
   return true;
 }
 
+// Compares linear velocity to see if they are scaled
+// TODO: also compare rotational velocity
+bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *scale)
+{
+  KDL::Vector v1 = fv1.p.v;
+  KDL::Vector v2 = fv2.p.v;
+  double v1norm = v1.Norm();
+  double v2norm = v2.Norm();
+  *scale = v2norm / v1norm;
+
+  // calculate innter product of two vectors
+  // theta = acos(cosTheta)
+  double cosTheta = KDL::dot(v1, v2) / (v1norm * v2norm);
+
+  // small angle approximation: std::cos(eps) ~ 1 - eps^2/2
+  return cosTheta > 1 - eps*eps/2;
+}
+
 void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, std::string chain_start, std::string chain_end, double timeout, std::string urdf_param)
 {
 
@@ -174,7 +192,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
   ROS_INFO_STREAM("TRAC-IK found "<<success<<" solutions ("<<100.0*success/num_samples_pos<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
 
-  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS_FastOptimal);
+  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS);
   valid = snsik_solver.getKDLChain(chain);
   if (!valid) {
     ROS_ERROR("SNS: There was no valid KDL chain found");
@@ -210,8 +228,9 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
   ROS_INFO_STREAM("SNS-IK found "<<success<<" solutions ("<<100.0*success/num_samples_pos<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
 
   // Create random velocities within the limits
-  total_time=0;
-  success=0;
+  total_time = 0;
+  success = 0;
+  uint successWithScaling = 0;
   KDL::JntArrayVel result_vel_array;
   KDL::JntArray result_vel;
   KDL::FrameVel end_effector_vel;
@@ -230,52 +249,68 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
 
   ROS_INFO("\n************************************\n");
   ROS_INFO_STREAM("*** Testing SNS-IK Velocities with "<<num_samples_vel<<" random samples");
+
   for (uint i=0; i < num_samples_vel; i++) {
     // add position to my vel
     vfk_solver.JntToCart(JointVelList[i],end_effector_vel);
     double elapsed = 0;
     start_time = boost::posix_time::microsec_clock::local_time();
     rc=snsik_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
-    // check to make sure vel is within limit
-
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
+
+    // check to make sure vel is within limit
     result_vel_array.q = JointVelList[i].q;
     result_vel_array.qdot = result_vel;
     vfk_solver.JntToCart(result_vel_array, result_end_effector_vel);
-    if (rc>=0 && in_vel_bounds(result_vel, vl) && Equal(end_effector_vel, result_end_effector_vel, 1e-3))
+
+    bool inVelBounds = in_vel_bounds(result_vel, vl);
+    if (rc>=0 && inVelBounds && Equal(end_effector_vel, result_end_effector_vel, 1e-3))
       success++;
+    double scale;
+    if (rc>=0 && velocityIsScaled(end_effector_vel, result_end_effector_vel, 1e-3, &scale) && inVelBounds)
+      successWithScaling++;
+
     if (int((double)i/num_samples_vel*100)%10 == 0)
       ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_vel*100)<<"\% done");
   }
-  ROS_INFO_STREAM("SNS-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples_vel<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
+  ROS_INFO_STREAM("SNS-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples_vel<<"\%) with an average of "<<total_time/num_samples_vel<<" secs per sample");
+  ROS_INFO_STREAM("SNS-IK Velocities found " << successWithScaling << " solutions ("
+                  << 100.0*successWithScaling/num_samples_vel << "\%)");
 
   ROS_INFO_STREAM("*** Testing KDL-IK Velocities with "<<num_samples_vel<<" random samples");
   total_time=0;
   success=0;
+  successWithScaling = 0;
   for (uint i=0; i < num_samples_vel; i++) {
     // add position to my vel
     vfk_solver.JntToCart(JointVelList[i],end_effector_vel);
     double elapsed = 0;
     start_time = boost::posix_time::microsec_clock::local_time();
     rc=vik_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
-    // check to make sure vel is within limit
-
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
+
+    // check to make sure vel is within limit
     result_vel_array.q = JointVelList[i].q;
     result_vel_array.qdot = result_vel;
     vfk_solver.JntToCart(result_vel_array, result_end_effector_vel);
-    if (rc>=0 && in_vel_bounds(result_vel, vl) && Equal(end_effector_vel, result_end_effector_vel, 1e-3))
+
+    bool inVelBounds = in_vel_bounds(result_vel, vl);
+    if (rc>=0 && inVelBounds && Equal(end_effector_vel, result_end_effector_vel, 1e-3))
       success++;
+    double scale;
+    if (rc>=0 && velocityIsScaled(end_effector_vel, result_end_effector_vel, 1e-3, &scale) && inVelBounds)
+      successWithScaling++;
+
     if (int((double)i/num_samples_vel*100)%10 == 0)
       ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_vel*100)<<"\% done");
   }
-  ROS_INFO_STREAM("KDL-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples_vel<<"\%) with an average of "<<total_time/num_samples_pos<<" secs per sample");
-
-
+  ROS_INFO_STREAM("KDL-IK Velocities found "<<success<<" solutions ("<<100.0*success/num_samples_vel<<"\%) with an average of "<<total_time/num_samples_vel<<" secs per sample");
+  ROS_INFO_STREAM("KDL-IK Velocities found " << successWithScaling << " solutions ("
+                    << 100.0*successWithScaling/num_samples_vel << "\%)");
 }
 
 int main(int argc, char** argv)

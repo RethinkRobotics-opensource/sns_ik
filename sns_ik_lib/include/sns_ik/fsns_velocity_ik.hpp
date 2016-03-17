@@ -28,6 +28,8 @@
 #include "sns_ik/sns_ik_math_utils.hpp"
 #include "sns_ik/sns_velocity_ik.hpp"
 
+//#define LOG_ACTIVE
+
 using namespace Eigen;
 
 namespace sns_ik {
