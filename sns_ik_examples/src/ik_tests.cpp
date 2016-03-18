@@ -238,7 +238,6 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
     // Beginnings of parameter setting. Right now this sets the pos solver to its defaults
     std::shared_ptr<sns_ik::SNSPositionIK> pos_solver;
     snsik_solver.getPositionSolver(pos_solver);
-    pos_solver->setTolerance(linearTolerance*5, angularTolerance*5);
     // pos solver param setting end
     total_time=0;
     success=0;

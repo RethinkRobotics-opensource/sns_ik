@@ -44,15 +44,13 @@ class SNSPositionIK {
 
     // TODO: looks like this would require the KDL solvers to be wrapped in smart pointers
     //void setChain(const KDL::Chain chain);
-    inline bool getChain(std::shared_ptr<KDL::Chain>& chain) {
-      chain = m_chain;
-      return m_chain != NULL;
-    }
+    KDL::Chain getChain() { return m_chain; }
 
     inline bool getVelocityIK(std::shared_ptr<SNSVelocityIK>& velocitySolver) {
       velocitySolver = m_ikVelSolver;
       return m_ikVelSolver != NULL;
     }
+
     inline void setStepSize(double linearMaxStepSize, double angularMaxStepSize){
       m_linearMaxStepSize = linearMaxStepSize;
       m_angularMaxStepSize = angularMaxStepSize;
