@@ -218,48 +218,47 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
     double                avg_time;
   };
   std::vector<velocitySolverData> vel_solver_data;
-  velocitySolverData sns = {sns_ik::SNS,"SNS",0.0,0.0};
+  velocitySolverData sns = {sns_ik::SNS,"SNS",0.0,0.0,0.0};
   vel_solver_data.push_back(sns);
-  velocitySolverData sns_optimalsm = {sns_ik::SNS_OptimalScaleMargin,"SNS Optimal Scale Margin",0.0,0.0};
+  velocitySolverData sns_optimalsm = {sns_ik::SNS_OptimalScaleMargin,"SNS Optimal Scale Margin",0.0,0.0,0.0};
   vel_solver_data.push_back(sns_optimalsm);
-  velocitySolverData sns_optimal = {sns_ik::SNS_Optimal,"SNS Optimal",0.0,0.0};
+  velocitySolverData sns_optimal = {sns_ik::SNS_Optimal,"SNS Optimal",0.0,0.0,0.0};
   vel_solver_data.push_back(sns_optimal);
-  velocitySolverData sns_fast = {sns_ik::SNS_Fast,"SNS Fast",0.0,0.0};
+  velocitySolverData sns_fast = {sns_ik::SNS_Fast,"SNS Fast",0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fast);
-  velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0};
+  velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fastoptimal);
-  double linearTolerance = 0.001;
-  double angularTolerance = 0.001;
-  double linearMaxStepSize = 0.001;
-  double angularMaxStepSize = 0.001;
-  double maxIterations = 5;
-  double dt=0.01;
+  // These values are not used yet
+  double posIK_linearMaxStepSize = 0.05;
+  double posIK_angularMaxStepSize = 0.05;
+  double posIK_maxIterations = 150;
+  double posIK_dt=0.2;
   for(auto& vst: vel_solver_data){
-  snsik_solver.setVelocitySolveType(vst.type);
-  // Beginnings of parameter setting. Right now this sets the pos solver to its defaults
-  std::shared_ptr<sns_ik::SNSPositionIK> pos_solver;
-  snsik_solver.getPositionSolver(pos_solver);
-  pos_solver->setTolerance(linearTolerance*5, angularTolerance*5);
-  // pos solver param setting end
-  total_time=0;
-  success=0;
-  ROS_INFO_STREAM("*** Testing SNS-IK with "<<num_samples_pos<<" random samples");
-  for (uint i=0; i < num_samples_pos; i++) {
-    fk_solver.JntToCart(JointList[i],end_effector_pose);
-    double elapsed = 0;
-    start_time = boost::posix_time::microsec_clock::local_time();
-    rc=snsik_solver.CartToJnt(nominal,end_effector_pose,result);
-    diff = boost::posix_time::microsec_clock::local_time() - start_time;
-    elapsed = diff.total_nanoseconds() / 1e9;
-    total_time+=elapsed;
-    if (rc>=0)
-      success++;
-    if (int((double)i/num_samples_pos*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
-  }
-  vst.score=100.0*success/num_samples_pos;
-  vst.avg_time=total_time/num_samples_pos;
-  ROS_INFO_STREAM(vst.name<<" found "<<success<<" solutions ("<<vst.score<<"\%) with an average of "<<vst.avg_time<<" secs per sample");
+    snsik_solver.setVelocitySolveType(vst.type);
+    // Beginnings of parameter setting. Right now this sets the pos solver to its defaults
+    std::shared_ptr<sns_ik::SNSPositionIK> pos_solver;
+    snsik_solver.getPositionSolver(pos_solver);
+    pos_solver->setTolerance(linearTolerance*5, angularTolerance*5);
+    // pos solver param setting end
+    total_time=0;
+    success=0;
+    ROS_INFO_STREAM("*** Testing SNS-IK with "<<num_samples_pos<<" random samples");
+    for (uint i=0; i < num_samples_pos; i++) {
+      fk_solver.JntToCart(JointList[i],end_effector_pose);
+      double elapsed = 0;
+      start_time = boost::posix_time::microsec_clock::local_time();
+      rc=snsik_solver.CartToJnt(nominal,end_effector_pose,result);
+      diff = boost::posix_time::microsec_clock::local_time() - start_time;
+      elapsed = diff.total_nanoseconds() / 1e9;
+      total_time+=elapsed;
+      if (rc>=0)
+        success++;
+      if (int((double)i/num_samples_pos*100)%10 == 0)
+        ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
+    }
+    vst.score=100.0*success/num_samples_pos;
+    vst.avg_time=total_time/num_samples_pos;
+    ROS_INFO_STREAM(vst.name<<" found "<<success<<" solutions ("<<vst.score<<"\%) with an average of "<<vst.avg_time<<" secs per sample");
   }
   ROS_INFO("\n************************************");
   ROS_INFO("Position IK Summary:");

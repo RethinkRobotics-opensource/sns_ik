@@ -28,11 +28,9 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_ikVelSolver(velocity_ik),
     m_positionFK(chain),
     m_jacobianSolver(chain),
-    m_linearTolerance(1e-5),
-    m_angularTolerance(1e-5),
     m_linearMaxStepSize(0.05),
     m_angularMaxStepSize(0.05),
-    m_maxIterations(200),
+    m_maxIterations(150),
     m_dt(0.2)
 {
 }
@@ -41,32 +39,14 @@ SNSPositionIK::~SNSPositionIK()
 {
 }
 
-void SNSPositionIK::setTolerance(double linearTolerance, double angularTolerance)
-{
-  m_linearTolerance = linearTolerance;
-  m_angularTolerance = angularTolerance;
-}
-
-void SNSPositionIK::setStepSize(double linearMaxStepSize, double angularMaxStepSize)
-{
-  m_linearMaxStepSize = linearMaxStepSize;
-  m_angularMaxStepSize = angularMaxStepSize;
-}
-
-void SNSPositionIK::setSolveTimeParameters(double dt, double maxIterations)
-{
-  m_maxIterations = maxIterations;
-  m_dt = dt;
-}
-
-
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& goal_pose,
                              KDL::JntArray* return_joints,
                              const KDL::Twist& tolerances)
 {
   // TODO: use tolerance twist
-
+  double linearTolerance = 1e-5;
+  double angularTolerance = 1e-5;
   VectorD jl_low = m_ikVelSolver->getJointLimitLow();
   VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
 
@@ -95,7 +75,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
-    if (L <= m_linearTolerance && theta <= m_angularTolerance) {
+    if (L <= linearTolerance && theta <= angularTolerance) {
       solutionFound = true;
       break;
     }
