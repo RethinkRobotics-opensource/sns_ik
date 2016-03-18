@@ -44,17 +44,37 @@ class SNSPositionIK {
 
     // TODO: looks like this would require the KDL solvers to be wrapped in smart pointers
     //void setChain(const KDL::Chain chain);
-    KDL::Chain getChain() { return m_chain; }
+    inline bool getChain(std::shared_ptr<KDL::Chain>& chain) {
+      chain = m_chain;
+      return m_chain != NULL;
+    }
 
-    // TODO: figure out the best way of providing a reference to the velocity IK solver
-    //SNSVelocityIK* getVelocityIK() { return &m_ikVelSolver; }
-    std::shared_ptr<SNSVelocityIK> getVelocityIK() { return m_ikVelSolver; }
+    inline bool getVelocityIK(std::shared_ptr<SNSVelocityIK>& velocitySolver) {
+      velocitySolver = m_ikVelSolver;
+      return m_ikVelSolver != NULL;
+    }
+    inline void setStepSize(double linearMaxStepSize, double angularMaxStepSize){
+      m_linearMaxStepSize = linearMaxStepSize;
+      m_angularMaxStepSize = angularMaxStepSize;
+    }
+
+    inline void setMaxIterations(double maxIterations) {
+      m_maxIterations = maxIterations;
+    }
+
+    void setDeltaTime(double dt) {
+      m_dt = dt;
+    }
 
   private:
     KDL::Chain m_chain;
     std::shared_ptr<SNSVelocityIK> m_ikVelSolver;
     KDL::ChainFkSolverPos_recursive m_positionFK;
     KDL::ChainJntToJacSolver m_jacobianSolver;
+    double m_linearMaxStepSize;
+    double m_angularMaxStepSize;
+    double m_maxIterations;
+    double m_dt;
 };
 
 }  // namespace sns_ikl

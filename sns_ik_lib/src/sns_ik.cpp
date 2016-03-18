@@ -27,13 +27,12 @@
 namespace sns_ik {
 
   SNS_IK::SNS_IK(const std::string& base_link, const std::string& tip_link,
-                 const std::string& URDF_param, double maxtime, double eps,
+                 const std::string& URDF_param, double looprate, double eps,
                  sns_ik::VelocitySolveType type) :
     m_initialized(false),
+    m_looprate(looprate),
     m_eps(eps),
-    m_maxtime(maxtime),
-    m_solvetype(type),
-    m_looprate(0.01)
+    m_solvetype(type)
   {
     ros::NodeHandle node_handle("~");
     urdf::Model robot_model;
@@ -125,13 +124,12 @@ namespace sns_ik {
 
   SNS_IK::SNS_IK(const KDL::Chain& chain, const KDL::JntArray& q_min,
                  const KDL::JntArray& q_max, const KDL::JntArray& v_max,
-                 const KDL::JntArray& a_max, double maxtime, double eps,
+                 const KDL::JntArray& a_max, double looprate, double eps,
                  sns_ik::VelocitySolveType type):
     m_initialized(false),
+    m_looprate(looprate),
     m_eps(eps),
-    m_maxtime(maxtime),
     m_solvetype(type),
-    m_looprate(0.01),
     m_chain(chain),
     m_lower_bounds(q_min),
     m_upper_bounds(q_max),

@@ -41,19 +41,29 @@ namespace sns_ik {
   public:
     SNS_IK(const std::string& base_link, const std::string& tip_link,
            const std::string& URDF_param="/robot_description",
-           double maxtime=0.005, double eps=1e-5,
+           double looprate=0.005, double eps=1e-5,
            sns_ik::VelocitySolveType type=sns_ik::SNS);
 
     SNS_IK(const KDL::Chain& chain,
            const KDL::JntArray& q_min, const KDL::JntArray& q_max,
            const KDL::JntArray& v_max, const KDL::JntArray& a_max,
-           double maxtime=0.005, double eps=1e-5,
+           double looprate=0.005, double eps=1e-5,
            sns_ik::VelocitySolveType type=sns_ik::SNS);
 
     ~SNS_IK();
 
     bool setVelocitySolveType(VelocitySolveType type);
-    
+
+    inline bool getPositionSolver(std::shared_ptr<sns_ik::SNSPositionIK>& positionSolver) {
+      positionSolver=m_ik_pos_solver;
+      return m_initialized;
+    }
+
+    inline bool getVelocitySolver(std::shared_ptr<sns_ik::SNSVelocityIK>& velocitySolver) {
+      velocitySolver=m_ik_vel_solver;
+      return m_initialized;
+    }
+
     inline bool getKDLChain(KDL::Chain& chain) {
       chain=m_chain;
       return m_initialized;
@@ -73,9 +83,8 @@ namespace sns_ik {
   private:
     bool m_initialized;
     double m_eps;
-    double m_maxtime;
-    VelocitySolveType m_solvetype;
     double m_looprate;
+    VelocitySolveType m_solvetype;
     KDL::Chain m_chain;
     KDL::JntArray m_lower_bounds, m_upper_bounds, m_velocity, m_acceleration;
     enum JointType { Revolute, Prismatic, Continuous };

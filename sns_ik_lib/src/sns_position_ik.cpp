@@ -27,7 +27,11 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_chain(chain),
     m_ikVelSolver(velocity_ik),
     m_positionFK(chain),
-    m_jacobianSolver(chain)
+    m_jacobianSolver(chain),
+    m_linearMaxStepSize(0.05),
+    m_angularMaxStepSize(0.05),
+    m_maxIterations(150),
+    m_dt(0.2)
 {
 }
 
@@ -35,29 +39,14 @@ SNSPositionIK::~SNSPositionIK()
 {
 }
 
-/*
-void SNSPositionIK::setChain(const KDL::Chain chain)
-{
-  m_chain = chain;
-  m_positionFK = KDL::ChainFkSolverPos_recursive(chain);
-  m_jacobianSolver = KDL::ChainJntToJacSolver(chain);
-}
-*/
-
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& goal_pose,
                              KDL::JntArray* return_joints,
                              const KDL::Twist& tolerances)
 {
-  // TODO: config params
   // TODO: use tolerance twist
   double linearTolerance = 1e-5;
   double angularTolerance = 1e-5;
-  double linearMaxStepSize = 0.05;
-  double angularMaxStepSize = 0.05;
-  int maxInterations = 200;
-  double dt = 0.2;
-
   VectorD jl_low = m_ikVelSolver->getJointLimitLow();
   VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
 
@@ -68,7 +57,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   StackOfTasks sot(1);
   sot[0].desired = VectorD::Zero(6);
 
-  for (int ii = 0; ii < maxInterations; ++ii) {
+  for (int ii = 0; ii < m_maxIterations; ++ii) {
     if (m_positionFK.JntToCart(q_i, pose_i) < 0)
     {
       // ERROR
@@ -91,17 +80,17 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       break;
     }
 
-    if (L > linearMaxStepSize) {
-      trans = linearMaxStepSize / L * trans;
+    if (L > m_linearMaxStepSize) {
+      trans = m_linearMaxStepSize / L * trans;
     }
 
-    if (theta > angularMaxStepSize) {
-      theta = angularMaxStepSize;
+    if (theta > m_angularMaxStepSize) {
+      theta = m_angularMaxStepSize;
     }
 
     // Calculate the desired Cartesian twist
-    sot[0].desired.head<3>() = (1.0/dt) * trans;
-    sot[0].desired.tail<3>() = theta/dt * rotAxisVec;
+    sot[0].desired.head<3>() = (1.0/m_dt) * trans;
+    sot[0].desired.tail<3>() = theta/m_dt * rotAxisVec;
 
     KDL::Jacobian jacobian;
     jacobian.resize(q_i.rows());
@@ -116,7 +105,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     VectorD qDot(n_dof);
     m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
-    q_i.data += dt * qDot;
+    q_i.data += m_dt * qDot;
 
     for (int j = 0; j < jl_low.rows(); ++j) {
       q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
