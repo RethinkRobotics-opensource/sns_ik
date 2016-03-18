@@ -88,7 +88,7 @@ namespace sns_ik {
             lower = joint->limits->lower;
             upper = joint->limits->upper;
           }
-          velocity = std::abs(joint->limits->velocity);
+          velocity = std::fabs(joint->limits->velocity);
         }
         // Checking the Param server for limit modifications
         // and acceleration limits
@@ -103,14 +103,17 @@ namespace sns_ik {
         }
         double vel;
         if(node_handle.getParam(prefix + "max_velocity", vel)){
-          velocity = std::min(velocity, std::abs(vel));
+          if (velocity > 0)
+            velocity = std::min(velocity, std::fabs(vel));
+          else
+            velocity = std::fabs(vel);
         }
         node_handle.getParam(prefix + "max_acceleration", acceleration);
 
         m_lower_bounds(joint_num)=lower;
         m_upper_bounds(joint_num)=upper;
         m_velocity(joint_num) = velocity;
-        m_acceleration(joint_num) = std::abs(acceleration);
+        m_acceleration(joint_num) = std::fabs(acceleration);
 
         ROS_INFO_STREAM("sns_ik Using joint "<<joint->name<<" lb:"
                         <<m_lower_bounds(joint_num)<<" ub:"<<m_upper_bounds(joint_num)
