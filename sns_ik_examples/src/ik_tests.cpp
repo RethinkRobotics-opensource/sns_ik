@@ -58,8 +58,7 @@ bool in_vel_bounds(KDL::JntArray vals, KDL::JntArray vels)
   return true;
 }
 
-// Compares linear velocity to see if they are scaled
-// TODO: also compare rotational velocity
+// Compares linear and rotational velocities to see if they are they are scaled properly
 bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *scale)
 {
   KDL::Vector v1 = fv1.p.v;
@@ -68,12 +67,34 @@ bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *
   double v2norm = v2.Norm();
   *scale = v2norm / v1norm;
 
-  // calculate innter product of two vectors
+  // calculate inner product of the velocity vectors
   // theta = acos(cosTheta)
   double cosTheta = KDL::dot(v1, v2) / (v1norm * v2norm);
 
   // small angle approximation: std::cos(eps) ~ 1 - eps^2/2
-  return cosTheta > 1 - eps*eps/2;
+  if (cosTheta < 1 - eps*eps/2) {
+    return false; // linear velocity not scaled correctly
+  }
+
+  // compare rotation scaling
+  KDL::Vector w1 = fv1.M.w;
+  KDL::Vector w2 = fv2.M.w;
+  double w1norm = w1.Norm();
+  double w2norm = w2.Norm();
+  double rotScale = w2norm / w1norm;
+
+  // Check if the rotation scale matches the linear scale
+  if (w1norm > eps && std::fabs(*scale-rotScale) > eps) {
+    return false;
+  }
+
+  // calculate inner product of the roational velocity vectors
+  double cosThetaW = KDL::dot(w1, w2) / (w1norm * w2norm);
+  if (cosThetaW < 1 - eps*eps/2) {
+    return false; // rotational velocity not scaled correctly
+  }
+
+  return true;
 }
 
 
