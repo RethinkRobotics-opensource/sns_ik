@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="num_samples_pos" default="100" />
+  <arg name="num_samples_pos" default="200" />
   <arg name="num_samples_vel" default="1000" />
   <arg name="chain_start" default="base" />
   <arg name="chain_end" default="right_hand" />

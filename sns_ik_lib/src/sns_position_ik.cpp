@@ -56,8 +56,11 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   int n_dof = joint_seed.rows();
   StackOfTasks sot(1);
   sot[0].desired = VectorD::Zero(6);
+  double stepScale = 1.0;
+  double lineErr, rotErr;
 
-  for (int ii = 0; ii < m_maxIterations; ++ii) {
+  int ii;
+  for (ii = 0; ii < m_maxIterations; ++ii) {
     if (m_positionFK.JntToCart(q_i, pose_i) < 0)
     {
       // ERROR
@@ -71,21 +74,23 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     KDL::Vector rotAxis;
     KDL::Rotation rot = goal_pose.M * pose_i.M.Inverse();
     double theta = rot.GetRotAngle(rotAxis);  // returns [0 ... pi]
+    rotErr = theta;
+    lineErr = L;
     Eigen::Vector3d rotAxisVec(rotAxis.data);
 
     //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
-    if (L <= linearTolerance && theta <= angularTolerance) {
+    if (lineErr <= linearTolerance && rotErr <= angularTolerance) {
       solutionFound = true;
       break;
     }
 
-    if (L > m_linearMaxStepSize) {
-      trans = m_linearMaxStepSize / L * trans;
+    if (L > stepScale * m_linearMaxStepSize) {
+      trans = (stepScale * m_linearMaxStepSize / L) * trans;
     }
 
-    if (theta > m_angularMaxStepSize) {
-      theta = m_angularMaxStepSize;
+    if (theta > stepScale * m_angularMaxStepSize) {
+      theta = stepScale * m_angularMaxStepSize;
     }
 
     // Calculate the desired Cartesian twist
@@ -103,7 +108,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     sot[0].jacobian = jacobian.data;
 
     VectorD qDot(n_dof);
-    m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+    double sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     q_i.data += m_dt * qDot;
 
@@ -115,16 +120,26 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
     //std::cout << "    qDot: " << qDot.transpose() << std::endl;
 
-    if (qDot.norm() < 1e-9) {  // TODO: config param
-      //std::cout << "ERROR: Solution stuck" << std::endl;
+    if (qDot.norm() < 1e-7) {  // TODO: config param
+      //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -2;
     }
+    /*
+    if (sf < stepScale) {
+      stepScale = std::max(0.8*stepScale, 0.01);
+      //std::cout << "New step scale (" << ii << "): " << stepScale << std::endl;
+    } else if (stepScale < 1.0) {
+      stepScale = std::min(1.1*stepScale, 1.0);
+    }
+    */
   }
 
   if (solutionFound) {
       *return_joints = q_i;
+      //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
       return 1;  // TODO: return success/fail code
     } else {
+      //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -1;
     }
   }

@@ -129,7 +129,8 @@ Scalar SNSVelocityIK::getJointVelocity(VectorD *jointVelocity, const StackOfTask
         sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
   }
 
-  return 1.0;
+  //return 1.0;
+  return scaleFactors[0];
 }
 
 void SNSVelocityIK::shapeJointVelocityBound(const VectorD &actualJointConfiguration, double margin) {
