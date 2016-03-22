@@ -98,7 +98,9 @@ bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *
 }
 
 
-void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, std::string chain_start, std::string chain_end, double timeout, std::string urdf_param)
+void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
+          std::string chain_start, std::string chain_end, double timeout,
+          std::string urdf_param, bool randomPositionSeed)
 {
 
   double eps = 1e-5;
@@ -172,7 +174,11 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
   for (uint i=0; i < num_samples_pos; i++) {
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
-    result=nominal; // start with nominal
+    // set seed
+    if (i == 0 || !randomPositionSeed)
+      result = nominal;
+    else
+      result = JointList[i-1];
     start_time = boost::posix_time::microsec_clock::local_time();
     do {
       q=result; // when iterating start with last solution
@@ -202,7 +208,10 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
     start_time = boost::posix_time::microsec_clock::local_time();
-    rc=tracik_solver.CartToJnt(nominal,end_effector_pose,result);
+    if (i == 0 || !randomPositionSeed)
+      rc=tracik_solver.CartToJnt(nominal,end_effector_pose,result);
+    else
+      rc=tracik_solver.CartToJnt(JointList[i-1],end_effector_pose,result);
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
@@ -274,7 +283,10 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
       fk_solver.JntToCart(JointList[i],end_effector_pose);
       double elapsed = 0;
       start_time = boost::posix_time::microsec_clock::local_time();
-      rc=snsik_solver.CartToJnt(nominal,end_effector_pose,result);
+      if (i == 0 || !randomPositionSeed)
+        rc=snsik_solver.CartToJnt(nominal,end_effector_pose,result);
+      else
+        rc=snsik_solver.CartToJnt(JointList[i-1],end_effector_pose,result);
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
       total_time+=elapsed;
@@ -293,13 +305,13 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
   ROS_INFO("\n************************************");
   ROS_INFO("Position IK Summary:");
   for(auto& vst: vel_solver_data){
-      ROS_INFO("%s: %.2f%% success rate with an average time of %.6f seconds",
-               vst.name.c_str(), 100*vst.successRate, vst.avg_time);
+      ROS_INFO("%s: %.2f%% success rate with an average time of %.2f ms",
+               vst.name.c_str(), 100*vst.successRate, 1000*vst.avg_time);
   }
-  ROS_INFO("KDL: %.2f%% success rate with an average time of %.6f seconds",
-           100.*kdlPos_successRate, kdlPos_avgTime);
-  ROS_INFO("TRAC: %.2f%% success rate with an average time of %.6f seconds",
-           100.*tracPos_successRate, tracPos_avgTime);
+  ROS_INFO("KDL: %.2f%% success rate with an average time of %.2f ms",
+           100.*kdlPos_successRate, 1000*kdlPos_avgTime);
+  ROS_INFO("TRAC: %.2f%% success rate with an average time of %.2f ms",
+           100.*tracPos_successRate, 1000*tracPos_avgTime);
   ROS_INFO("\n************************************\n");
 
   // Create random velocities within the limits
@@ -398,11 +410,11 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel, s
   ROS_INFO("\n************************************");
   ROS_INFO("Velocity IK Summary:");
   for(auto& vst: vel_solver_data){
-      ROS_INFO("%s: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.6f seconds",
-               vst.name.c_str(), 100*vst.successRate, 100*vst.scaling_successRate, vst.avg_time);
+      ROS_INFO("%s: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.2f ms",
+               vst.name.c_str(), 100*vst.successRate, 100*vst.scaling_successRate, 1000*vst.avg_time);
   }
-  ROS_INFO("KDL Velocity: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.6f seconds",
-           100*kdlVel_successRate, 100*kdlVel_scalingSuccessRate, kdlVel_avgTime);
+  ROS_INFO("KDL Velocity: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.2f ms",
+           100*kdlVel_successRate, 100*kdlVel_scalingSuccessRate, 1000*kdlVel_avgTime);
   ROS_INFO("\n************************************");
 
 }
@@ -416,11 +428,13 @@ int main(int argc, char** argv)
   int num_samples_pos, num_samples_vel;
   std::string chain_start, chain_end, urdf_param;
   double timeout;
+  bool randomPositionSeed;
 
   nh.param("num_samples_pos", num_samples_pos, 100);
   nh.param("num_samples_vel", num_samples_vel, 1000);
   nh.param("chain_start", chain_start, std::string(""));
   nh.param("chain_end", chain_end, std::string(""));
+  nh.param("random_position_seed", randomPositionSeed, false);
 
   if (chain_start=="" || chain_end=="") {
     ROS_FATAL("Missing chain info in launch file");
@@ -433,7 +447,7 @@ int main(int argc, char** argv)
   if (num_samples_pos < 1)
     num_samples_pos = 1;
 
-  test(nh, num_samples_pos, num_samples_vel,  chain_start, chain_end, timeout, urdf_param);
+  test(nh, num_samples_pos, num_samples_vel,  chain_start, chain_end, timeout, urdf_param, randomPositionSeed);
 
   // Useful when you make a script that loops over multiple launch files that test different robot chains
   std::vector<char *> commandVector;
