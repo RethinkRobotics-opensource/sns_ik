@@ -56,7 +56,7 @@ namespace sns_ik {
    */
   typedef double Scalar;
   #define EPS 1e-6
-  #define LAMBDA_MAX 0.3
+  #define LAMBDA_MAX 1e-6 //0.3
   #define EPSQ 1e-10
 #else
   typedef Eigen::Matrix<float,Dynamic,Dynamic> MatrixD;
