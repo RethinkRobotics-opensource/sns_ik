@@ -30,7 +30,8 @@ using namespace sns_ik;
 
 SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) :
   n_dof(0),
-  n_tasks(0)
+  n_tasks(0),
+  m_usePositionLimits(true)
 {
   setNumberOfDOF(dof);
   setLoopPeriod(loop_period);
@@ -135,23 +136,31 @@ Scalar SNSVelocityIK::getJointVelocity(VectorD *jointVelocity, const StackOfTask
 
 void SNSVelocityIK::shapeJointVelocityBound(const VectorD &actualJointConfiguration, double margin) {
 
-  //it could be written using the Eigen::Array potentiality
+  // it could be written using the Eigen::Array potentiality
   double step, max, stop;
 
   for (int i = 0; i < n_dof; i++) {
-    //for the minimum bound
-    step = (jointLimit_low(i) - actualJointConfiguration(i)) / loop_period;
+    // for the minimum bound
     max = -maxJointVelocity(i);
-    stop = -std::sqrt(2 * maxJointAcceleration(i) * (actualJointConfiguration(i) - jointLimit_low(i)));
-    //dotQmin(i) = (step > max) ? ((step > stop) ? step : stop) : ((max > stop) ? max : stop);  //take the maximum
-    dotQmin(i) = std::max({step, max, stop});
+    if (m_usePositionLimits) {
+      step = (jointLimit_low(i) - actualJointConfiguration(i)) / loop_period;
+      stop = -std::sqrt(2 * maxJointAcceleration(i) * (actualJointConfiguration(i) - jointLimit_low(i)));
+      // take the maximum
+      dotQmin(i) = std::max({step, max, stop});
+    } else {
+      dotQmin(i) = max;
+    }
 
-    //for the maximum bound
-    step = (jointLimit_high(i) - actualJointConfiguration(i)) / loop_period;
+    // for the maximum bound
     max = maxJointVelocity(i);
-    stop = std::sqrt(2 * maxJointAcceleration(i) * (jointLimit_high(i) - actualJointConfiguration(i)));
-    //dotQmax(i) = (step < max) ? ((step < stop) ? step : stop) : ((max < stop) ? max : stop);  //take the minimum
-    dotQmax(i) = std::min({step, max, stop});
+    if (m_usePositionLimits) {
+      step = (jointLimit_high(i) - actualJointConfiguration(i)) / loop_period;
+      stop = std::sqrt(2 * maxJointAcceleration(i) * (jointLimit_high(i) - actualJointConfiguration(i)));
+      // take the minimum
+      dotQmax(i) = std::min({step, max, stop});
+    } else {
+      dotQmax(i) = max;
+    }
   }
 
   dotQmin *= margin;

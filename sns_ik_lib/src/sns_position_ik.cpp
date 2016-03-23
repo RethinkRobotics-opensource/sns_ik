@@ -28,8 +28,8 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_ikVelSolver(velocity_ik),
     m_positionFK(chain),
     m_jacobianSolver(chain),
-    m_linearMaxStepSize(0.05),
-    m_angularMaxStepSize(0.05),
+    m_linearMaxStepSize(0.2),
+    m_angularMaxStepSize(0.2),
     m_maxIterations(150),
     m_dt(0.2)
 {
@@ -50,6 +50,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   VectorD jl_low = m_ikVelSolver->getJointLimitLow();
   VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
 
+  // initialize variables
   bool solutionFound = false;
   KDL::JntArray q_i = joint_seed;
   KDL::Frame pose_i;
@@ -57,7 +58,15 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   StackOfTasks sot(1);
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
+
+  double L, theta;
   double lineErr, rotErr;
+  VectorD qDot(n_dof);
+  KDL::Jacobian jacobian;
+  jacobian.resize(q_i.rows());
+  KDL::Vector rotAxis, trans;
+  KDL::Rotation rot;
+  double sf;
 
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
@@ -69,14 +78,12 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
 
     // Calculate the offset transform
-    Eigen::Vector3d trans((goal_pose.p - pose_i.p).data);
-    double L = trans.norm();
-    KDL::Vector rotAxis;
-    KDL::Rotation rot = goal_pose.M * pose_i.M.Inverse();
-    double theta = rot.GetRotAngle(rotAxis);  // returns [0 ... pi]
+    trans = goal_pose.p - pose_i.p;
+    L = trans.Norm();
+    rot = goal_pose.M * pose_i.M.Inverse();
+    theta = rot.GetRotAngle(rotAxis);  // returns [0 ... pi]
     rotErr = theta;
     lineErr = L;
-    Eigen::Vector3d rotAxisVec(rotAxis.data);
 
     //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
@@ -94,11 +101,15 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
 
     // Calculate the desired Cartesian twist
-    sot[0].desired.head<3>() = (1.0/m_dt) * trans;
-    sot[0].desired.tail<3>() = theta/m_dt * rotAxisVec;
+    //sot[0].desired.head<3>() = (1.0/m_dt) * trans.data;
+    //sot[0].desired.tail<3>() = theta/m_dt * rotAxis.data;
+    sot[0].desired(0) = trans.data[0] / m_dt;
+    sot[0].desired(1) = trans.data[1] / m_dt;
+    sot[0].desired(2) = trans.data[2] / m_dt;
+    sot[0].desired(3) = theta * rotAxis.data[0] / m_dt;
+    sot[0].desired(4) = theta * rotAxis.data[1] / m_dt;
+    sot[0].desired(5) = theta * rotAxis.data[2] / m_dt;
 
-    KDL::Jacobian jacobian;
-    jacobian.resize(q_i.rows());
     if (m_jacobianSolver.JntToJac(q_i, jacobian) < 0)
     {
       // ERROR
@@ -107,8 +118,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
     sot[0].jacobian = jacobian.data;
 
-    VectorD qDot(n_dof);
-    double sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+    sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     q_i.data += m_dt * qDot;
 
@@ -124,14 +134,13 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -2;
     }
-    /*
-    if (sf < stepScale) {
-      stepScale = std::max(0.8*stepScale, 0.01);
-      //std::cout << "New step scale (" << ii << "): " << stepScale << std::endl;
-    } else if (stepScale < 1.0) {
-      stepScale = std::min(1.1*stepScale, 1.0);
-    }
-    */
+
+//    if (sf < stepScale) {
+//      stepScale = std::max(0.8*stepScale, 0.01);
+//      //std::cout << "New step scale (" << ii << "): " << stepScale << std::endl;
+//    } else if (stepScale < 1.0) {
+//      stepScale = std::min(1.1*stepScale, 1.0);
+//    }
   }
 
   if (solutionFound) {

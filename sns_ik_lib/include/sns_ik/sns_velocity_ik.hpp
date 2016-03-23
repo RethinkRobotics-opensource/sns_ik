@@ -85,6 +85,8 @@ class SNSVelocityIK {
     VectorD getJointLimitLow() { return jointLimit_low; }
     VectorD getJointLimitHigh() { return jointLimit_high; }
 
+    void usePositionLimits(bool use) { m_usePositionLimits = use; }
+
   protected:
 
     // Shape the joint velocity bound dotQmin and dotQmax
@@ -108,6 +110,7 @@ class SNSVelocityIK {
     VectorD jointLimit_high;  // high joint limit
     VectorD maxJointVelocity;  // maximum joint velocity
     VectorD maxJointAcceleration;  // maximum joint acceleration
+    bool m_usePositionLimits;
 
     Array<Scalar, Dynamic, 1> dotQmin;  // lower joint velocity bound
     Array<Scalar, Dynamic, 1> dotQmax;  // higher joint velocity bound
