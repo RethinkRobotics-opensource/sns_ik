@@ -30,7 +30,7 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_jacobianSolver(chain),
     m_linearMaxStepSize(0.2),
     m_angularMaxStepSize(0.2),
-    m_maxIterations(150),
+    m_maxIterations(100),
     m_dt(0.2)
 {
 }
@@ -130,7 +130,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
     //std::cout << "    qDot: " << qDot.transpose() << std::endl;
 
-    if (qDot.norm() < 1e-7) {  // TODO: config param
+    if (qDot.norm() < 1e-5) {  // TODO: config param
       //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -2;
     }

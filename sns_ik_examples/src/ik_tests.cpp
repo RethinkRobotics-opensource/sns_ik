@@ -180,12 +180,13 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     else
       result = JointList[i-1];
     start_time = boost::posix_time::microsec_clock::local_time();
+    int cnt = 0;
     do {
       q=result; // when iterating start with last solution
       rc=kdl_solver.CartToJnt(q,end_effector_pose,result);
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
-    } while (rc < 0 && elapsed < timeout);
+    } while (rc < 0 && elapsed < timeout && cnt++ < 100);
     total_time+=elapsed;
     if (rc>=0)
       success++;
