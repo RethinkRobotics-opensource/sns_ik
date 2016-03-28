@@ -8,7 +8,8 @@
   <arg name="urdf_param" default="/robot_description" />
   <arg name="load_robot_description" default="true"/>
   <arg name="random_position_seed" default="false"/>
-  <arg name="close_position_seed" default="false"/>
+  <arg name="close_position_seed" default="true"/>
+  <arg name="position_seed_delta" default="0.2"/>
 
   <param if="$(arg load_robot_description)" name="$(arg urdf_param)"
     command="cat $(find baxter_description)/urdf/baxter.urdf"/>
@@ -24,6 +25,7 @@
     <param name="urdf_param" value="$(arg urdf_param)"/>
     <param name="random_position_seed" value="$(arg random_position_seed)"/>
     <param name="close_position_seed" value="$(arg close_position_seed)"/>
+    <param name="position_seed_delta" value="$(arg position_seed_delta)"/>
   </node>
 
 </launch>

@@ -47,20 +47,16 @@ double fRand(double min, double max)
 double getDeltaWithLimits(double value, double desired_delta,
                           double limit_min, double limit_max)
 {
-  double valid_delta;
-  double lower_delta = value-desired_delta;
-  double upper_delta = value+desired_delta;
-  double upper_side = (double)rand() / RAND_MAX >= 0.5;
-  if( upper_side && upper_delta > limit_max ){
-      valid_delta = lower_delta;
-  } else if( upper_side && upper_delta <= limit_max) {
-      valid_delta = upper_delta;
-  } else if( !upper_side && lower_delta < limit_min ){
-      valid_delta = upper_delta;
-  } else if( !upper_side && lower_delta >= limit_min ){
-      valid_delta = lower_delta;
+  // Validate delta is not more than half of joint limits
+  double input_delta = std::min(desired_delta, (limit_max-limit_min)/2.0);
+  double lower_delta = value-input_delta;
+  double upper_delta = value+input_delta;
+  // Randomize between upper delta and lower delta
+  if( rand() % 2 ) {
+    return upper_delta > limit_max ? lower_delta : upper_delta;
+  } else {
+    return lower_delta < limit_min ? upper_delta : lower_delta;
   }
-  return valid_delta;
 }
 
 bool in_vel_bounds(KDL::JntArray vals, KDL::JntArray vels)
@@ -119,7 +115,8 @@ bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *
 
 void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
           std::string chain_start, std::string chain_end, double timeout,
-          std::string urdf_param, bool randomPositionSeed, bool closePositionSeed)
+          std::string urdf_param, bool randomPositionSeed, bool closePositionSeed,
+          double position_seed_delta)
 {
 
   double eps = 1e-5;
@@ -175,7 +172,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   for (uint i=0; i < num_joint_pos; i++) {
     for (uint j=0; j<ll.data.size(); j++) {
       q(j)=fRand(ll(j), ul(j));
-      q_delta(j)=getDeltaWithLimits(q(j), 0.2, ll(j), ul(j));
+      q_delta(j)=getDeltaWithLimits(q(j), position_seed_delta, ll(j), ul(j));
     }
     JointList.push_back(q);
     JointDeltaSeed.push_back(q_delta);
@@ -460,12 +457,14 @@ int main(int argc, char** argv)
   double timeout;
   bool randomPositionSeed;
   bool closePositionSeed;
+  double position_seed_delta;
   nh.param("num_samples_pos", num_samples_pos, 100);
   nh.param("num_samples_vel", num_samples_vel, 1000);
   nh.param("chain_start", chain_start, std::string(""));
   nh.param("chain_end", chain_end, std::string(""));
   nh.param("random_position_seed", randomPositionSeed, false);
   nh.param("close_position_seed", closePositionSeed, false);
+  nh.param("position_seed_delta", position_seed_delta, 0.2);
 
   if (chain_start=="" || chain_end=="") {
     ROS_FATAL("Missing chain info in launch file");
@@ -478,7 +477,9 @@ int main(int argc, char** argv)
   if (num_samples_pos < 1)
     num_samples_pos = 1;
 
-  test(nh, num_samples_pos, num_samples_vel,  chain_start, chain_end, timeout, urdf_param, randomPositionSeed, closePositionSeed);
+  test(nh, num_samples_pos, num_samples_vel,
+       chain_start, chain_end, timeout, urdf_param,
+       randomPositionSeed, closePositionSeed, position_seed_delta);
 
   // Useful when you make a script that loops over multiple launch files that test different robot chains
   std::vector<char *> commandVector;
