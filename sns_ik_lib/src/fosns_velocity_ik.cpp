@@ -90,6 +90,9 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
         scaleFactors[i_task] = 1.0;
         P = PS;
       }
+
+      // TESTING - Is this right?
+      P = P * P.transpose();
     }
   }
 

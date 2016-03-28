@@ -67,6 +67,7 @@ namespace sns_ik {
     m_upper_bounds.resize(m_chain.getNrOfJoints());
     m_velocity.resize(m_chain.getNrOfJoints());
     m_acceleration.resize(m_chain.getNrOfJoints());
+    m_jointNames.resize(m_chain.getNrOfJoints());
 
     unsigned int joint_num=0;
     for(std::size_t i = 0; i < chain_segments.size(); ++i) {
@@ -114,10 +115,10 @@ namespace sns_ik {
         m_upper_bounds(joint_num)=upper;
         m_velocity(joint_num) = velocity;
         m_acceleration(joint_num) = std::fabs(acceleration);
+        m_jointNames[joint_num] = joint->name;
 
-        ROS_INFO_STREAM("sns_ik Using joint "<<joint->name<<" lb:"
-                        <<m_lower_bounds(joint_num)<<" ub:"<<m_upper_bounds(joint_num)
-                        << " v:"<<m_velocity(joint_num)<<" a:"<<m_acceleration(joint_num));
+        ROS_INFO("sns_ik: Using joint %s lb: %.3f, ub: %.3f, v: %.3f, a: %.3f", joint->name.c_str(),
+                 m_lower_bounds(joint_num), m_upper_bounds(joint_num), m_velocity(joint_num), m_acceleration(joint_num));
         joint_num++;
       }
     }
@@ -127,8 +128,8 @@ namespace sns_ik {
 
   SNS_IK::SNS_IK(const KDL::Chain& chain, const KDL::JntArray& q_min,
                  const KDL::JntArray& q_max, const KDL::JntArray& v_max,
-                 const KDL::JntArray& a_max, double looprate, double eps,
-                 sns_ik::VelocitySolveType type):
+                 const KDL::JntArray& a_max, const std::vector<std::string>& jointNames,
+                 double looprate, double eps, sns_ik::VelocitySolveType type):
     m_initialized(false),
     m_looprate(looprate),
     m_eps(eps),
@@ -137,32 +138,36 @@ namespace sns_ik {
     m_lower_bounds(q_min),
     m_upper_bounds(q_max),
     m_velocity(v_max),
-    m_acceleration(a_max)
+    m_acceleration(a_max),
+    m_jointNames(jointNames)
   {
     initialize();
   }
 
   void SNS_IK::initialize() {
 
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints()==m_lower_bounds.data.size(), \
+    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_lower_bounds.rows(),
                 "SNS_IK: Number of joint lower bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints()==m_upper_bounds.data.size(), \
+    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_upper_bounds.rows(),
                 "SNS_IK: Number of joint upper bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints()==m_velocity.data.size(), \
+    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_velocity.rows(),
                 "SNS_IK: Number of max joint velocity bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints()==m_acceleration.data.size(), \
+    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_acceleration.rows(),
                 "SNS_IK: Number of max joint acceleration bounds does not equal number of joints");
+    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_jointNames.size(),
+                    "SNS_IK: Number of joint names does not equal number of joints");
+
     // Populate a vector cooresponding to the type for every joint
-    for (std::size_t i=0; i<m_chain.segments.size(); i++) {
+    for (std::size_t i = 0; i < m_chain.segments.size(); i++) {
       std::string type = m_chain.segments[i].getJoint().getTypeName();
-      if (type.find("Rot")!=std::string::npos) {
-        if (m_upper_bounds(m_types.size())>=std::numeric_limits<float>::max() &&
-            m_lower_bounds(m_types.size())<=std::numeric_limits<float>::lowest()){
+      if (type.find("Rot") != std::string::npos) {
+        if (m_upper_bounds(m_types.size()) >= std::numeric_limits<float>::max() &&
+            m_lower_bounds(m_types.size()) <= std::numeric_limits<float>::lowest()){
           m_types.push_back(SNS_IK::JointType::Continuous);
         } else {
           m_types.push_back(SNS_IK::JointType::Revolute);
         }
-      } else if (type.find("Trans")!=std::string::npos) {
+      } else if (type.find("Trans") != std::string::npos) {
         m_types.push_back(SNS_IK::JointType::Prismatic);
       }
     }
@@ -213,7 +218,8 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
  return false;
 }
 
-int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::JntArray &q_out, const KDL::Twist& tolerances) {
+int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
+                      KDL::JntArray &q_out, const KDL::Twist& tolerances) {
 
   if (!m_initialized) {
     ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
@@ -222,12 +228,16 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::
   return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, tolerances);
 }
 
-int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::JntArray& qdot_out) {
-
+int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in,
+                      const KDL::JntArray& q_bias,
+                      const std::vector<std::string>& biasNames,
+                      KDL::JntArray& qdot_out)
+{
   if (!m_initialized) {
     ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
     return -1;
   }
+
   KDL::Jacobian jacobian;
   jacobian.resize(q_in.rows());
   if (m_jacobianSolver->JntToJac(q_in, jacobian) < 0)
@@ -235,6 +245,7 @@ int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::Jn
     std::cout << "JntToJac failed" << std::endl;
     return -1;
   }
+
   StackOfTasks sot;
   Task task;
   task.jacobian = jacobian.data;
@@ -243,6 +254,32 @@ int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::Jn
   for(size_t i = 0; i < 6; i++)
       task.desired(i) = v_in[i];
   sot.push_back(task);
+
+  // Calculate the nullspace goal as a configuration-space task.
+  // Creates a task Jacobian which maps the provided nullspace joints to
+  // the full joint state.
+  if (q_bias.rows()) {
+    ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differe");
+    Task task2;
+    task2.jacobian = MatrixD::Zero(q_in.rows(), q_bias.rows());
+    task2.desired = VectorD::Zero(q_bias.rows());
+    std::vector<std::string>::iterator it;
+    for (int ii = 0; ii < q_bias.rows(); ++ii) {
+      it = std::find(m_jointNames.begin(), m_jointNames.end(), biasNames[ii]);
+      if (it == m_jointNames.end())
+      {
+        std::cout << "Could not find bias joint name: " << biasNames[ii] << std::endl;
+        return -1;
+      }
+      int indx = std::distance(m_jointNames.begin(), it);
+      // This calculates a "nullspace velocity".
+      // There is an arbitrary scale factor which will be set by the max scale factor.
+      task2.desired(ii) = (q_bias(ii) - q_in(ii)) / m_looprate;
+      // TODO: may want to limit the NS velocity to 90% of max joint velocity
+      task2.jacobian(ii, indx) = 1;
+    }
+    sot.push_back(task2);
+  }
   return m_ik_vel_solver->getJointVelocity(&qdot_out.data, sot, q_in.data);
 }
 

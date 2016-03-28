@@ -60,6 +60,9 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     
     if (scaleFactors[i_task] > 1)
           scaleFactors[i_task] = 1;
+
+    // TESTING - Is this right?
+    P = P * P.transpose();
   }
 
   // TODO: what is being returned here?
@@ -125,7 +128,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
 
   if (singularTask) {
     // the task is singular so return a scaled damped solution (no SNS possible)
-    ROS_ERROR("singular");
+    //ROS_ERROR("singular");
     if (scalingFactor >= 0.0) {
       nSat[priority] = 0;
       (*jointVelocity) = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;

@@ -47,6 +47,7 @@ namespace sns_ik {
     SNS_IK(const KDL::Chain& chain,
            const KDL::JntArray& q_min, const KDL::JntArray& q_max,
            const KDL::JntArray& v_max, const KDL::JntArray& a_max,
+           const std::vector<std::string>& jointNames,
            double looprate=0.005, double eps=1e-5,
            sns_ik::VelocitySolveType type=sns_ik::SNS);
 
@@ -77,8 +78,32 @@ namespace sns_ik {
       return m_initialized;
     }
 
-    int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in, KDL::JntArray &q_out, const KDL::Twist& bounds=KDL::Twist::Zero());
-    int CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in, KDL::JntArray& qdot_out);
+    inline bool getJointNames(std::vector<std::string> jointNames) {
+      jointNames = m_jointNames;
+      return m_initialized;
+    }
+
+    int CartToJnt(const KDL::JntArray &q_init,
+                  const KDL::Frame &p_in,
+                  KDL::JntArray &q_out,
+                  const KDL::Twist& bounds=KDL::Twist::Zero());
+
+    int CartToJnt(const KDL::JntArray& q_in,
+                  const KDL::Twist& v_in,
+                  KDL::JntArray& qdot_out)
+    { return CartToJnt(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(), qdot_out); }
+
+    int CartToJnt(const KDL::JntArray& q_in,
+                  const KDL::Twist& v_in,
+                  const KDL::JntArray& q_bias,
+                  KDL::JntArray& qdot_out)
+    { return CartToJnt(q_in, v_in, q_bias, m_jointNames, qdot_out); }
+
+    int CartToJnt(const KDL::JntArray& q_in,
+                  const KDL::Twist& v_in,
+                  const KDL::JntArray& q_bias,
+                  const std::vector<std::string>& biasNames,
+                  KDL::JntArray& qdot_out);
 
   private:
     bool m_initialized;
@@ -89,6 +114,8 @@ namespace sns_ik {
     KDL::JntArray m_lower_bounds, m_upper_bounds, m_velocity, m_acceleration;
     enum JointType { Revolute, Prismatic, Continuous };
     std::vector<JointType> m_types;
+    std::vector<std::string> m_jointNames;
+
     std::vector<KDL::JntArray> m_solutions;
     std::shared_ptr<SNSVelocityIK> m_ik_vel_solver;
     std::shared_ptr<SNSPositionIK> m_ik_pos_solver;
