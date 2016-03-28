@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="urdf_param" default="/robot_description" />
+  <arg name="load_robot_description" default="true"/>
+
+  <param if="$(arg load_robot_description)" name="$(arg urdf_param)"
+    command="cat $(find baxter_description)/urdf/baxter.urdf"/>
+  <rosparam command="load" ns="$(arg urdf_param)_planning"
+    file="$(find sns_ik_examples)/config/example_baxter_joint_limits.yaml" />
+
+  <include file="$(find sns_ik_examples)/launch/test_ik_solvers.launch">
+     <param name="urdf_param" value="$(arg urdf_param)"/>
+  </include>
+</launch>
