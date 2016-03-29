@@ -91,6 +91,7 @@ namespace sns_ik {
                        q_out, tolereances);
     }
 
+    // Assumes the NS bias is for all the joints in the correct order
     int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
                   const KDL::JntArray& q_bias,
                   KDL::JntArray &q_out,
@@ -110,6 +111,7 @@ namespace sns_ik {
                   KDL::JntArray& qdot_out)
     { return CartToJnt(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(), qdot_out); }
 
+    // Assumes the NS bias is for all the joints in the correct order
     int CartToJnt(const KDL::JntArray& q_in,
                   const KDL::Twist& v_in,
                   const KDL::JntArray& q_bias,
