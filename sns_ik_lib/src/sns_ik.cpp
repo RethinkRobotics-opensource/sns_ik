@@ -219,13 +219,27 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
 }
 
 int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
+                      const KDL::JntArray& q_bias,
+                      const std::vector<std::string>& biasNames,
                       KDL::JntArray &q_out, const KDL::Twist& tolerances) {
 
   if (!m_initialized) {
     ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
     return -1;
   }
-  return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, tolerances);
+
+  if (q_bias.rows()) {
+    MatrixD ns_jacobian;
+    std::vector<int> indicies;
+    if (!nullspaceBiasTask(q_bias, biasNames, &ns_jacobian, &indicies)) {
+      ROS_ERROR("Could not create nullspace bias task");
+      return -1;
+    }
+    return m_ik_pos_solver->CartToJnt(q_init, p_in, q_bias, ns_jacobian, indicies,
+                                      &q_out, tolerances);
+  } else {
+    return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, tolerances);
+  }
 }
 
 int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in,
@@ -259,28 +273,46 @@ int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in,
   // Creates a task Jacobian which maps the provided nullspace joints to
   // the full joint state.
   if (q_bias.rows()) {
-    ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differe");
     Task task2;
-    task2.jacobian = MatrixD::Zero(q_in.rows(), q_bias.rows());
+    std::vector<int> indicies;
+    if (!nullspaceBiasTask(q_bias, biasNames, &(task2.jacobian), &indicies)) {
+      ROS_ERROR("Could not create nullspace bias task");
+      return -1;
+    }
     task2.desired = VectorD::Zero(q_bias.rows());
-    std::vector<std::string>::iterator it;
     for (int ii = 0; ii < q_bias.rows(); ++ii) {
-      it = std::find(m_jointNames.begin(), m_jointNames.end(), biasNames[ii]);
-      if (it == m_jointNames.end())
-      {
-        std::cout << "Could not find bias joint name: " << biasNames[ii] << std::endl;
-        return -1;
-      }
-      int indx = std::distance(m_jointNames.begin(), it);
       // This calculates a "nullspace velocity".
       // There is an arbitrary scale factor which will be set by the max scale factor.
-      task2.desired(ii) = (q_bias(ii) - q_in(ii)) / m_looprate;
-      // TODO: may want to limit the NS velocity to 90% of max joint velocity
-      task2.jacobian(ii, indx) = 1;
+      task2.desired(ii) = (q_bias(ii) - q_in(indicies[ii])) / m_looprate;
+      // TODO: may want to limit the NS velocity to 70-90% of max joint velocity
     }
     sot.push_back(task2);
   }
   return m_ik_vel_solver->getJointVelocity(&qdot_out.data, sot, q_in.data);
+}
+
+bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
+                               const std::vector<std::string>& biasNames,
+                               MatrixD* jacobian,
+                               std::vector<int>* indicies)
+{
+  ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differe");
+  Task task2;
+  *jacobian = MatrixD::Zero(m_jointNames.size(), q_bias.rows());
+  indicies->resize(q_bias.rows(), 0);
+  std::vector<std::string>::iterator it;
+  for (int ii = 0; ii < q_bias.rows(); ++ii) {
+    it = std::find(m_jointNames.begin(), m_jointNames.end(), biasNames[ii]);
+    if (it == m_jointNames.end())
+    {
+      std::cout << "Could not find bias joint name: " << biasNames[ii] << std::endl;
+      return false;
+    }
+    int indx = std::distance(m_jointNames.begin(), it);
+    (*jacobian)(ii, indx) = 1;
+    indicies->at(ii) = indx;
+  }
+  return true;
 }
 
 SNS_IK::~SNS_IK(){}

@@ -285,7 +285,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       double elapsed = 0;
       start_time = boost::posix_time::microsec_clock::local_time();
       if (i == 0 || !randomPositionSeed)
-        rc=snsik_solver.CartToJnt(nominal,end_effector_pose,result);
+        rc=snsik_solver.CartToJnt(nominal,end_effector_pose,nominal,result);
       else
         rc=snsik_solver.CartToJnt(JointList[i-1],end_effector_pose,result);
       diff = boost::posix_time::microsec_clock::local_time() - start_time;

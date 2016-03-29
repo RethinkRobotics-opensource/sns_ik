@@ -86,7 +86,24 @@ namespace sns_ik {
     int CartToJnt(const KDL::JntArray &q_init,
                   const KDL::Frame &p_in,
                   KDL::JntArray &q_out,
-                  const KDL::Twist& bounds=KDL::Twist::Zero());
+                  const KDL::Twist& tolereances=KDL::Twist::Zero())
+    { return CartToJnt(q_init, p_in, KDL::JntArray(0), std::vector<std::string>(),
+                       q_out, tolereances);
+    }
+
+    int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
+                  const KDL::JntArray& q_bias,
+                  KDL::JntArray &q_out,
+                  const KDL::Twist& tolerances=KDL::Twist::Zero())
+    { return CartToJnt(q_init, p_in, q_bias, m_jointNames,
+                       q_out, tolerances);
+    }
+
+    int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
+                  const KDL::JntArray& q_bias,
+                  const std::vector<std::string>& biasNames,
+                  KDL::JntArray &q_out,
+                  const KDL::Twist& tolerances=KDL::Twist::Zero());
 
     int CartToJnt(const KDL::JntArray& q_in,
                   const KDL::Twist& v_in,
@@ -120,7 +137,12 @@ namespace sns_ik {
     std::shared_ptr<SNSVelocityIK> m_ik_vel_solver;
     std::shared_ptr<SNSPositionIK> m_ik_pos_solver;
     std::shared_ptr<KDL::ChainJntToJacSolver> m_jacobianSolver;
+
     void initialize();
+
+    bool nullspaceBiasTask(const KDL::JntArray& q_bias,
+                           const std::vector<std::string>& biasNames,
+                           MatrixD* jacobian, std::vector<int>* indicies);
 
   };
 }  //namespace

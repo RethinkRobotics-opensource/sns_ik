@@ -84,6 +84,7 @@ class SNSVelocityIK {
 
     VectorD getJointLimitLow() { return jointLimit_low; }
     VectorD getJointLimitHigh() { return jointLimit_high; }
+    VectorD getJointVelocityMax() { return maxJointVelocity; }
 
     void usePositionLimits(bool use) { m_usePositionLimits = use; }
 

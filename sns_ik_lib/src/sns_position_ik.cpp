@@ -41,6 +41,9 @@ SNSPositionIK::~SNSPositionIK()
 
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& goal_pose,
+                             const KDL::JntArray& joint_ns_bias,
+                             const MatrixD& ns_jacobian,
+                             const std::vector<int>& ns_indicies,
                              KDL::JntArray* return_joints,
                              const KDL::Twist& tolerances)
 {
@@ -49,6 +52,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   double angularTolerance = 1e-5;
   VectorD jl_low = m_ikVelSolver->getJointLimitLow();
   VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
+  VectorD maxJointVel = m_ikVelSolver->getJointVelocityMax();
 
   // initialize variables
   bool solutionFound = false;
@@ -58,6 +62,15 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   StackOfTasks sot(1);
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
+
+  // If there's a nullspace bias, create a secondary task
+  if (joint_ns_bias.rows()) {
+    Task nsTask;
+    nsTask.jacobian = ns_jacobian;
+    nsTask.desired = VectorD::Zero(joint_ns_bias.rows());
+    // the desired task to apply the NS bias will change with each iteration
+    sot.push_back(nsTask);
+  }
 
   double L, theta;
   double lineErr, rotErr;
@@ -117,6 +130,19 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       return -1;
     }
     sot[0].jacobian = jacobian.data;
+
+    if (joint_ns_bias.rows()) {
+      for (int jj = 0; jj < joint_ns_bias.rows(); ++jj) {
+        // This calculates a "nullspace velocity".
+        // There is an arbitrary scale factor which will be set by the max scale factor.
+        int indx = ns_indicies[jj];
+        double vel = 0.1 * (joint_ns_bias(jj) - q_i(indx)) / m_dt; // TODO: step size needs to be optimized
+        // TODO: may want to limit the NS velocity to 50% of max joint velocity
+        //vel = std::max(-0.5*maxJointVel(indx), std::min(0.5*maxJointVel(indx), vel));
+        sot[1].desired(jj) = vel;
+      }
+
+    }
 
     sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
