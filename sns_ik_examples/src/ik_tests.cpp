@@ -112,6 +112,14 @@ bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *
   return true;
 }
 
+double standardDeviation(std::vector<double> values, double mean){
+  double val_sum = 0;
+  for(double sample: values){
+    val_sum += std::pow((sample - mean), 2);
+  }
+  return std::pow(val_sum/double(values.size()), 0.5);
+}
+
 
 void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
           std::string chain_start, std::string chain_end, double timeout,
@@ -196,6 +204,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   double total_time=0;
   uint success=0;
+  std::vector<double> kdlPos_indivTime;
 
   ROS_INFO_STREAM("*** Testing KDL with "<<num_samples_pos<<" random samples");
 
@@ -211,6 +220,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       elapsed = diff.total_nanoseconds() / 1e9;
     } while (rc < 0 && elapsed < timeout);
     total_time+=elapsed;
+    kdlPos_indivTime.push_back(elapsed);
     if (rc>=0)
       success++;
 
@@ -220,11 +230,13 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   double kdlPos_successRate = success/num_samples_pos;
   double kdlPos_avgTime = total_time/num_samples_pos;
+  double kdlPos_stdDev = standardDeviation(kdlPos_indivTime, kdlPos_avgTime);
   ROS_INFO_STREAM("KDL found " << success << " solutions (" << 100.0 * kdlPos_successRate
                   << "\%) with an average of " << kdlPos_avgTime << " secs per sample");
 
   total_time=0;
   success=0;
+  std::vector<double> tracPos_indivTime;
 
   ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples_pos<<" random samples");
 
@@ -236,6 +248,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
+    tracPos_indivTime.push_back(elapsed);
     if (rc>=0)
       success++;
 
@@ -245,6 +258,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   double tracPos_successRate = success/num_samples_pos;
   double tracPos_avgTime = total_time/num_samples_pos;
+  double tracPos_stdDev = standardDeviation(tracPos_indivTime, tracPos_avgTime);
+
   ROS_INFO_STREAM("TRAC-IK found " << success << " solutions (" << 100.0 * tracPos_successRate
                   << "\%) with an average of " << tracPos_avgTime << " secs per sample");
 
@@ -271,6 +286,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     double             successRate;
     double     scaling_successRate;
     double                avg_time;
+    std::vector<double>  indiv_time;
   };
 
   std::vector<velocitySolverData> vel_solver_data;
@@ -309,6 +325,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
       total_time+=elapsed;
+      vst.indiv_time.push_back(elapsed);
       if (rc>=0)
         success++;
       if (int((double)i/num_samples_pos*100)%10 == 0)
@@ -324,13 +341,14 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   ROS_INFO("\n************************************");
   ROS_INFO("Position IK Summary:");
   for(auto& vst: vel_solver_data){
-      ROS_INFO("%s: %.2f%% success rate with an average time of %.2f ms",
-               vst.name.c_str(), 100*vst.successRate, 1000*vst.avg_time);
+      double std_dev = standardDeviation(vst.indiv_time, vst.avg_time);
+      ROS_INFO("%s: %.2f%% success rate with (time mean: %.2f ms, std dev: %.2f ms)",
+               vst.name.c_str(), 100*vst.successRate, 1000*vst.avg_time, 1000*std_dev);
   }
-  ROS_INFO("KDL: %.2f%% success rate with an average time of %.2f ms",
-           100.*kdlPos_successRate, 1000*kdlPos_avgTime);
-  ROS_INFO("TRAC: %.2f%% success rate with an average time of %.2f ms",
-           100.*tracPos_successRate, 1000*tracPos_avgTime);
+  ROS_INFO("KDL: %.2f%% success rate with (time mean: %.2f ms, std dev: %.2f ms)",
+           100.*kdlPos_successRate, 1000*kdlPos_avgTime, 1000*kdlPos_stdDev);
+  ROS_INFO("TRAC: %.2f%% success rate with (time mean: %.2f ms, std dev: %.2f ms)",
+           100.*tracPos_successRate, 1000*tracPos_avgTime, 1000*tracPos_stdDev);
   ROS_INFO("\n************************************\n");
 
   // Create random velocities within the limits
