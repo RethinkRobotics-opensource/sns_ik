@@ -115,8 +115,8 @@ bool velocityIsScaled(KDL::FrameVel fv1, KDL::FrameVel fv2, double eps, double *
 
 void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
           std::string chain_start, std::string chain_end, double timeout,
-          std::string urdf_param, bool randomPositionSeed, bool closePositionSeed,
-          double position_seed_delta)
+          std::string urdf_param, bool use_random_position_seed,
+          bool use_delta_position_seed, double delta_position_seed_value)
 {
 
   double eps = 1e-5;
@@ -164,7 +164,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   // Create desired number of valid, random joint configurations
   std::vector<KDL::JntArray> JointList;
-  std::vector<KDL::JntArray> JointDeltaSeed;
+  std::vector<KDL::JntArray> JointSeed;
   KDL::JntArray q(chain.getNrOfJoints());
   KDL::JntArray q_delta(chain.getNrOfJoints());
 
@@ -172,10 +172,19 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   for (uint i=0; i < num_joint_pos; i++) {
     for (uint j=0; j<ll.data.size(); j++) {
       q(j)=fRand(ll(j), ul(j));
-      q_delta(j)=getDeltaWithLimits(q(j), position_seed_delta, ll(j), ul(j));
+      q_delta(j)=getDeltaWithLimits(q(j), delta_position_seed_value, ll(j), ul(j));
     }
     JointList.push_back(q);
-    JointDeltaSeed.push_back(q_delta);
+    // Set joint seed
+    if (use_delta_position_seed){
+      JointSeed.push_back(q_delta);
+    }
+    else if (i == 0 || !use_random_position_seed){
+      JointSeed.push_back(nominal);
+    }
+    else { // "random" seed
+      JointSeed.push_back(JointList[i-1]);
+    }
   }
 
   boost::posix_time::ptime start_time;
@@ -193,13 +202,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   for (uint i=0; i < num_samples_pos; i++) {
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
-    // set seed
-    if (closePositionSeed)
-      result = JointDeltaSeed[i];
-    else if (i == 0 || !randomPositionSeed)
-      result = nominal;
-    else
-      result = JointList[i-1];
+    result = JointSeed[i];
     start_time = boost::posix_time::microsec_clock::local_time();
     do {
       q=result; // when iterating start with last solution
@@ -228,14 +231,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   for (uint i=0; i < num_samples_pos; i++) {
     fk_solver.JntToCart(JointList[i],end_effector_pose);
     double elapsed = 0;
-    if (closePositionSeed)
-      q = JointDeltaSeed[i];
-    else if (i == 0 || !randomPositionSeed)
-      q = nominal;
-    else // "random" seed
-      q = JointList[i-1];
     start_time = boost::posix_time::microsec_clock::local_time();
-    rc=tracik_solver.CartToJnt(q,end_effector_pose,result);
+    rc=tracik_solver.CartToJnt(JointSeed[i],end_effector_pose,result);
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
@@ -306,14 +303,9 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     for (uint i=0; i < num_samples_pos; i++) {
       fk_solver.JntToCart(JointList[i],end_effector_pose);
       double elapsed = 0;
-      if (closePositionSeed)
-        q = JointDeltaSeed[i];
-      else if (i == 0 || !randomPositionSeed)
-        q = nominal;
-      else // "random" seed
-        q = JointList[i-1];
+
       start_time = boost::posix_time::microsec_clock::local_time();
-      rc=snsik_solver.CartToJnt(q,end_effector_pose,result);
+      rc=snsik_solver.CartToJnt(JointSeed[i],end_effector_pose,result);
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
       total_time+=elapsed;
@@ -455,16 +447,16 @@ int main(int argc, char** argv)
   int num_samples_pos, num_samples_vel;
   std::string chain_start, chain_end, urdf_param;
   double timeout;
-  bool randomPositionSeed;
-  bool closePositionSeed;
-  double position_seed_delta;
+  bool use_random_position_seed;
+  bool use_delta_position_seed;
+  double delta_position_seed_value;
   nh.param("num_samples_pos", num_samples_pos, 100);
   nh.param("num_samples_vel", num_samples_vel, 1000);
   nh.param("chain_start", chain_start, std::string(""));
   nh.param("chain_end", chain_end, std::string(""));
-  nh.param("random_position_seed", randomPositionSeed, false);
-  nh.param("close_position_seed", closePositionSeed, false);
-  nh.param("position_seed_delta", position_seed_delta, 0.2);
+  nh.param("use_random_position_seed", use_random_position_seed, false);
+  nh.param("use_delta_position_seed", use_delta_position_seed, false);
+  nh.param("delta_position_seed_value", delta_position_seed_value, 0.2);
 
   if (chain_start=="" || chain_end=="") {
     ROS_FATAL("Missing chain info in launch file");
@@ -479,7 +471,8 @@ int main(int argc, char** argv)
 
   test(nh, num_samples_pos, num_samples_vel,
        chain_start, chain_end, timeout, urdf_param,
-       randomPositionSeed, closePositionSeed, position_seed_delta);
+       use_random_position_seed, use_delta_position_seed,
+       delta_position_seed_value);
 
   // Useful when you make a script that loops over multiple launch files that test different robot chains
   std::vector<char *> commandVector;
