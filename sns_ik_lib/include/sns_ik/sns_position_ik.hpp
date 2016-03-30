@@ -40,6 +40,16 @@ class SNSPositionIK {
     int CartToJnt(const KDL::JntArray& joint_seed,
                   const KDL::Frame& goal_pose,
                   KDL::JntArray* return_joints,
+                  const KDL::Twist& tolerances)
+    { return CartToJnt(joint_seed, goal_pose, KDL::JntArray(0), MatrixD(0,0),
+                       std::vector<int>(0), return_joints, tolerances); }
+
+    int CartToJnt(const KDL::JntArray& joint_seed,
+                  const KDL::Frame& goal_pose,
+                  const KDL::JntArray& joint_ns_bias,
+                  const MatrixD& ns_jacobian,
+                  const std::vector<int>& ns_indicies,
+                  KDL::JntArray* return_joints,
                   const KDL::Twist& tolerances);
 
     // TODO: looks like this would require the KDL solvers to be wrapped in smart pointers

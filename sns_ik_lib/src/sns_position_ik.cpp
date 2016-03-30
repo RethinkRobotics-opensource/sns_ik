@@ -30,7 +30,7 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_jacobianSolver(chain),
     m_linearMaxStepSize(0.2),
     m_angularMaxStepSize(0.2),
-    m_maxIterations(150),
+    m_maxIterations(100),
     m_dt(0.2)
 {
 }
@@ -41,6 +41,9 @@ SNSPositionIK::~SNSPositionIK()
 
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& goal_pose,
+                             const KDL::JntArray& joint_ns_bias,
+                             const MatrixD& ns_jacobian,
+                             const std::vector<int>& ns_indicies,
                              KDL::JntArray* return_joints,
                              const KDL::Twist& tolerances)
 {
@@ -49,6 +52,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   double angularTolerance = 1e-5;
   VectorD jl_low = m_ikVelSolver->getJointLimitLow();
   VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
+  VectorD maxJointVel = m_ikVelSolver->getJointVelocityMax();
 
   // initialize variables
   bool solutionFound = false;
@@ -59,6 +63,15 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
 
+  // If there's a nullspace bias, create a secondary task
+  if (joint_ns_bias.rows()) {
+    Task nsTask;
+    nsTask.jacobian = ns_jacobian;
+    nsTask.desired = VectorD::Zero(joint_ns_bias.rows());
+    // the desired task to apply the NS bias will change with each iteration
+    sot.push_back(nsTask);
+  }
+
   double L, theta;
   double lineErr, rotErr;
   VectorD qDot(n_dof);
@@ -66,7 +79,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   jacobian.resize(q_i.rows());
   KDL::Vector rotAxis, trans;
   KDL::Rotation rot;
-  double sf;
+  //double sf;
 
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
@@ -118,7 +131,21 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
     sot[0].jacobian = jacobian.data;
 
-    sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+    if (joint_ns_bias.rows()) {
+      for (size_t jj = 0; jj < joint_ns_bias.rows(); ++jj) {
+        // This calculates a "nullspace velocity".
+        // There is an arbitrary scale factor which will be set by the max scale factor.
+        int indx = ns_indicies[jj];
+        double vel = 0.1 * (joint_ns_bias(jj) - q_i(indx)) / m_dt; // TODO: step size needs to be optimized
+        // TODO: may want to limit the NS velocity to 50% of max joint velocity
+        //vel = std::max(-0.5*maxJointVel(indx), std::min(0.5*maxJointVel(indx), vel));
+        sot[1].desired(jj) = vel;
+      }
+
+    }
+
+    //sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+    m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     q_i.data += m_dt * qDot;
 
@@ -130,7 +157,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
     //std::cout << "    qDot: " << qDot.transpose() << std::endl;
 
-    if (qDot.norm() < 1e-7) {  // TODO: config param
+    if (qDot.norm() < 1e-5) {  // TODO: config param
       //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -2;
     }

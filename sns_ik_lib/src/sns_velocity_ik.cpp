@@ -256,12 +256,12 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
       limit_excedeed = true;
       if (singularTask) {
         // the task is singular so return a scaled damped solution (no SNS possible)
-        ROS_WARN("task %d is singular, scaling factor: %f",priority,scalingFactor);
+        //ROS_WARN("task %d is singular, scaling factor: %f",priority,scalingFactor);
         if (scalingFactor >= 0.0) {
           (*jointVelocity) = tildeDotQ + JPinverse * (scalingFactor * task - jacobian * tildeDotQ);
         } else {
           // the task is not executed
-          ROS_INFO("task not executed: J sing");
+          //ROS_INFO("task not executed: J sing");
           //W[priority]=I;
           //dotQn=VectorD::Zero(n_dof);
           *jointVelocity = higherPriorityJointVelocity;

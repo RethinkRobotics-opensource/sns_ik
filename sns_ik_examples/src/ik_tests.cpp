@@ -128,6 +128,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 {
 
   double eps = 1e-5;
+
   // This constructor parses the URDF loaded in rosparm urdf_param into the
   // needed KDL structures.  We then pull these out to compare against the KDL
   // IK solver.
@@ -213,12 +214,13 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     double elapsed = 0;
     result = JointSeed[i];
     start_time = boost::posix_time::microsec_clock::local_time();
+    int cnt = 0;  // keep track of iteration count to enforce max number of iterations
     do {
       q=result; // when iterating start with last solution
       rc=kdl_solver.CartToJnt(q,end_effector_pose,result);
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
-    } while (rc < 0 && elapsed < timeout);
+    } while (rc < 0 && elapsed < timeout && cnt++ < 100);
     total_time+=elapsed;
     kdlPos_indivTime.push_back(elapsed);
     if (rc>=0)
@@ -380,7 +382,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       vfk_solver.JntToCart(JointVelList[i],end_effector_vel);
       double elapsed = 0;
       start_time = boost::posix_time::microsec_clock::local_time();
-      rc=snsik_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
+      rc=snsik_solver.CartToJntVel(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
 
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
