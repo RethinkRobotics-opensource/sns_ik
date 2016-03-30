@@ -123,7 +123,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   VectorD best_dq1;
   VectorD best_dq2;
   VectorD best_dqw;
-  int best_nSat;
+  //int best_nSat;
 
   MatrixD tildeZ;
   VectorD dq1, dq2;
@@ -202,7 +202,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       best_dq1 = dq1;
       best_dq2 = dq2;
       best_dqw = dqw;
-      best_nSat = nSat[priority];
+      //best_nSat = nSat[priority];
     }
   }
 
@@ -537,7 +537,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
         best_dq1 = dq1;
         best_dq2 = dq2;
         best_dqw = dqw;
-        best_nSat = nSat[priority];
+        //best_nSat = nSat[priority];
       }
       //check if the scaled solution is the optimum
       scaledMU = scalingFactor * lagrangeMu1 + lagrangeMup2w;

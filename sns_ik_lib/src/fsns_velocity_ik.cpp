@@ -92,14 +92,13 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
   VectorD best_dq1;
   VectorD best_dq2;
   VectorD best_dqw;
-  int best_nSat;
+  //int best_nSat;
 
   MatrixD tildeZ;
   VectorD dq1, dq2, dqw;
 
   MatrixD bin, zin;
   Scalar dqw_in;
-  Scalar error;
 
   //initialization
   nSat[priority] = 0;
@@ -150,7 +149,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
     best_dq1 = dq1;
     best_dq2 = dq2;
     best_dqw = dqw;
-    best_nSat = 0;
+    //best_nSat = 0;
 
   }
 
@@ -239,7 +238,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
         best_dq1 = dq1;
         best_dq2 = dq2;
         best_dqw = dqw;
-        best_nSat = nSat[priority];
+        //best_nSat = nSat[priority];
       }
     }
 

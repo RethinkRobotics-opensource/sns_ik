@@ -30,8 +30,8 @@ namespace sns_ik {
                  const std::string& URDF_param, double looprate, double eps,
                  sns_ik::VelocitySolveType type) :
     m_initialized(false),
-    m_looprate(looprate),
     m_eps(eps),
+    m_looprate(looprate),
     m_solvetype(type)
   {
     ros::NodeHandle node_handle("~");
@@ -131,8 +131,8 @@ namespace sns_ik {
                  const KDL::JntArray& a_max, const std::vector<std::string>& jointNames,
                  double looprate, double eps, sns_ik::VelocitySolveType type):
     m_initialized(false),
-    m_looprate(looprate),
     m_eps(eps),
+    m_looprate(looprate),
     m_solvetype(type),
     m_chain(chain),
     m_lower_bounds(q_min),
@@ -280,7 +280,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
       return -1;
     }
     task2.desired = VectorD::Zero(q_bias.rows());
-    for (int ii = 0; ii < q_bias.rows(); ++ii) {
+    for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
       // This calculates a "nullspace velocity".
       // There is an arbitrary scale factor which will be set by the max scale factor.
       task2.desired(ii) = (q_bias(ii) - q_in(indicies[ii])) / m_looprate;
@@ -301,7 +301,7 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
   *jacobian = MatrixD::Zero(m_jointNames.size(), q_bias.rows());
   indicies->resize(q_bias.rows(), 0);
   std::vector<std::string>::iterator it;
-  for (int ii = 0; ii < q_bias.rows(); ++ii) {
+  for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
     it = std::find(m_jointNames.begin(), m_jointNames.end(), biasNames[ii]);
     if (it == m_jointNames.end())
     {

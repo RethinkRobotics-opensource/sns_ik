@@ -79,7 +79,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   jacobian.resize(q_i.rows());
   KDL::Vector rotAxis, trans;
   KDL::Rotation rot;
-  double sf;
+  //double sf;
 
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
@@ -132,7 +132,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     sot[0].jacobian = jacobian.data;
 
     if (joint_ns_bias.rows()) {
-      for (int jj = 0; jj < joint_ns_bias.rows(); ++jj) {
+      for (size_t jj = 0; jj < joint_ns_bias.rows(); ++jj) {
         // This calculates a "nullspace velocity".
         // There is an arbitrary scale factor which will be set by the max scale factor.
         int indx = ns_indicies[jj];
@@ -144,7 +144,8 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     }
 
-    sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+    //sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+    m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     q_i.data += m_dt * qDot;
 
