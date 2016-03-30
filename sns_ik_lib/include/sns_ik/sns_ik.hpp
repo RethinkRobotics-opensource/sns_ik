@@ -86,9 +86,9 @@ namespace sns_ik {
     int CartToJnt(const KDL::JntArray &q_init,
                   const KDL::Frame &p_in,
                   KDL::JntArray &q_out,
-                  const KDL::Twist& tolereances=KDL::Twist::Zero())
+                  const KDL::Twist& tolerances=KDL::Twist::Zero())
     { return CartToJnt(q_init, p_in, KDL::JntArray(0), std::vector<std::string>(),
-                       q_out, tolereances);
+                       q_out, tolerances);
     }
 
     // Assumes the NS bias is for all the joints in the correct order
@@ -106,23 +106,23 @@ namespace sns_ik {
                   KDL::JntArray &q_out,
                   const KDL::Twist& tolerances=KDL::Twist::Zero());
 
-    int CartToJnt(const KDL::JntArray& q_in,
-                  const KDL::Twist& v_in,
-                  KDL::JntArray& qdot_out)
-    { return CartToJnt(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(), qdot_out); }
+    int CartToJntVel(const KDL::JntArray& q_in,
+                    const KDL::Twist& v_in,
+                    KDL::JntArray& qdot_out)
+    { return CartToJntVel(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(), qdot_out); }
 
     // Assumes the NS bias is for all the joints in the correct order
-    int CartToJnt(const KDL::JntArray& q_in,
-                  const KDL::Twist& v_in,
-                  const KDL::JntArray& q_bias,
-                  KDL::JntArray& qdot_out)
-    { return CartToJnt(q_in, v_in, q_bias, m_jointNames, qdot_out); }
+    int CartToJntVel(const KDL::JntArray& q_in,
+                    const KDL::Twist& v_in,
+                    const KDL::JntArray& q_bias,
+                    KDL::JntArray& qdot_out)
+    { return CartToJntVel(q_in, v_in, q_bias, m_jointNames, qdot_out); }
 
-    int CartToJnt(const KDL::JntArray& q_in,
-                  const KDL::Twist& v_in,
-                  const KDL::JntArray& q_bias,
-                  const std::vector<std::string>& biasNames,
-                  KDL::JntArray& qdot_out);
+    int CartToJntVel(const KDL::JntArray& q_in,
+                    const KDL::Twist& v_in,
+                    const KDL::JntArray& q_bias,
+                    const std::vector<std::string>& biasNames,
+                    KDL::JntArray& qdot_out);
 
   private:
     bool m_initialized;

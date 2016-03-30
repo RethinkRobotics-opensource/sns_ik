@@ -242,10 +242,10 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
   }
 }
 
-int SNS_IK::CartToJnt(const KDL::JntArray& q_in, const KDL::Twist& v_in,
-                      const KDL::JntArray& q_bias,
-                      const std::vector<std::string>& biasNames,
-                      KDL::JntArray& qdot_out)
+int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
+                        const KDL::JntArray& q_bias,
+                        const std::vector<std::string>& biasNames,
+                        KDL::JntArray& qdot_out)
 {
   if (!m_initialized) {
     ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
