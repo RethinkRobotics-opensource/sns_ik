@@ -14,23 +14,22 @@ else()
 endif()
 
 find_package(orocos_kdl REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(catkin REQUIRED
   COMPONENTS
   roscpp
   std_msgs
   kdl_parser
 )
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(eigen3 REQUIRED eigen3)
 
 catkin_package(
   INCLUDE_DIRS include
-  DEPENDS eigen3 orocos_kdl
+  DEPENDS Eigen3 orocos_kdl
   CATKIN_DEPENDS roscpp std_msgs
   LIBRARIES sns_ik
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${eigen3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
@@ -42,5 +41,5 @@ add_library(sns_ik src/sns_ik.cpp
             src/osns_sm_velocity_ik.cpp
             src/fsns_velocity_ik.cpp
             src/fosns_velocity_ik.cpp)
-target_link_libraries(sns_ik ${catkin_LIBRARIES} ${eigen3_INCLUDE_DIRS} ${orocos_kdl_LIBRARIES})
+target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen3_INCLUDE_DIRS} ${orocos_kdl_LIBRARIES})
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
