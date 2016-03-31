@@ -83,6 +83,10 @@ class SNSPositionIK {
     double m_angularMaxStepSize;
     double m_maxIterations;
     double m_dt;
+
+    bool calcPositionAndError(const KDL::JntArray& q, const KDL::Frame& goal,
+                              KDL::Frame* pose, double* errL, double* errR,
+                              KDL::Vector* trans, KDL::Vector* rotAxis);
 };
 
 }  // namespace sns_ikl

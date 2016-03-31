@@ -209,7 +209,7 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
     }
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
-    m_ik_vel_solver->usePositionLimits(false);
+    //m_ik_vel_solver->usePositionLimits(false);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver));
     m_solvetype = type;
     m_initialized = true;

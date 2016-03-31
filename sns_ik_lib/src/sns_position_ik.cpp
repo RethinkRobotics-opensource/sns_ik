@@ -38,7 +38,7 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
 SNSPositionIK::~SNSPositionIK()
 {
 }
-
+/*
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& goal_pose,
                              const KDL::JntArray& joint_ns_bias,
@@ -83,18 +83,10 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
-    if (m_positionFK.JntToCart(q_i, pose_i) < 0)
-    {
+    if (!calcPositionAndError(q_i, goal_pose, &pose_i, &L, &theta, &trans, &rotAxis)) {
       // ERROR
-      std::cout << "JntToCart failed" << std::endl;
       return -1;
     }
-
-    // Calculate the offset transform
-    trans = goal_pose.p - pose_i.p;
-    L = trans.Norm();
-    rot = goal_pose.M * pose_i.M.Inverse();
-    theta = rot.GetRotAngle(rotAxis);  // returns [0 ... pi]
     rotErr = theta;
     lineErr = L;
 
@@ -171,12 +163,177 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   }
 
   if (solutionFound) {
-      *return_joints = q_i;
-      //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
-      return 1;  // TODO: return success/fail code
-    } else {
-      //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
-      return -1;
-    }
+    *return_joints = q_i;
+    //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
+    return 1;  // TODO: return success/fail code
+  } else {
+    //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
+    return -1;
   }
 }
+*/
+
+bool SNSPositionIK::calcPositionAndError(const KDL::JntArray& q,
+                                         const KDL::Frame& goal,
+                                         KDL::Frame* pose,
+                                         double* errL,
+                                         double* errR,
+                                         KDL::Vector* trans,
+                                         KDL::Vector* rotAxis)
+{
+  if (m_positionFK.JntToCart(q, *pose) < 0)
+  {
+    // ERROR
+    std::cout << "JntToCart failed" << std::endl;
+    return false;
+  }
+
+  // Calculate the offset transform
+  *trans = goal.p - pose->p;
+  *errL = trans->Norm();
+  KDL::Rotation rot = goal.M * pose->M.Inverse();
+  *errR = rot.GetRotAngle(*rotAxis);  // returns [0 ... pi]
+  return true;
+}
+
+int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
+                             const KDL::Frame& goal_pose,
+                             const KDL::JntArray& joint_ns_bias,
+                             const MatrixD& ns_jacobian,
+                             const std::vector<int>& ns_indicies,
+                             KDL::JntArray* return_joints,
+                             const KDL::Twist& tolerances)
+{
+  // TODO: use tolerance twist
+  double linearTolerance = 1e-5;
+  double angularTolerance = 1e-5;
+  VectorD jl_low = m_ikVelSolver->getJointLimitLow();
+  VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
+  VectorD maxJointVel = m_ikVelSolver->getJointVelocityMax();
+
+  // initialize variables
+  bool solutionFound = false;
+  KDL::JntArray q_i = joint_seed;
+  KDL::JntArray q_next;
+  KDL::Frame pose_i;
+  int n_dof = joint_seed.rows();
+  StackOfTasks sot(1);
+  sot[0].desired = VectorD::Zero(6);
+  double stepScale = 1.0;
+
+  // If there's a nullspace bias, create a secondary task
+  if (joint_ns_bias.rows()) {
+    Task nsTask;
+    nsTask.jacobian = ns_jacobian;
+    nsTask.desired = VectorD::Zero(joint_ns_bias.rows());
+    // the desired task to apply the NS bias will change with each iteration
+    sot.push_back(nsTask);
+  }
+
+  //double L, theta;
+  double lineErr, rotErr;
+  VectorD qDot(n_dof);
+  KDL::Jacobian jacobian;
+  jacobian.resize(q_i.rows());
+  KDL::Vector rotAxis, trans;
+  KDL::Rotation rot;
+  double dt = 0.2;
+
+  if (!calcPositionAndError(q_i, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis)) {
+    // ERROR
+    return -1;
+  }
+
+  int ii;
+  for (ii = 0; ii < m_maxIterations; ++ii) {
+    //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
+
+    if (lineErr <= linearTolerance && rotErr <= angularTolerance) {
+      solutionFound = true;
+      break;
+    }
+
+    // Calculate the desired Cartesian twist
+    sot[0].desired(0) = trans.data[0] / dt;
+    sot[0].desired(1) = trans.data[1] / dt;
+    sot[0].desired(2) = trans.data[2] / dt;
+    sot[0].desired(3) = rotErr * rotAxis.data[0] / dt;
+    sot[0].desired(4) = rotErr * rotAxis.data[1] / dt;
+    sot[0].desired(5) = rotErr * rotAxis.data[2] / dt;
+//    sot[0].desired(0) = 1000 * trans.data[0];
+//    sot[0].desired(1) = 1000 * trans.data[1];
+//    sot[0].desired(2) = 1000 * trans.data[2];
+//    sot[0].desired(3) = 1000 * rotErr * rotAxis.data[0];
+//    sot[0].desired(4) = 1000 * rotErr * rotAxis.data[1];
+//    sot[0].desired(5) = 1000 * rotErr * rotAxis.data[2];
+
+    if (m_jacobianSolver.JntToJac(q_i, jacobian) < 0)
+    {
+      // ERROR
+      std::cout << "JntToJac failed" << std::endl;
+      return -1;
+    }
+    sot[0].jacobian = jacobian.data;
+
+    if (joint_ns_bias.rows()) {
+      for (size_t jj = 0; jj < joint_ns_bias.rows(); ++jj) {
+        // This calculates a "nullspace velocity".
+        // There is an arbitrary scale factor which will be set by the max scale factor.
+        int indx = ns_indicies[jj];
+        double vel = 0.1 * (joint_ns_bias(jj) - q_i(indx)) / m_dt; // TODO: step size needs to be optimized
+        // TODO: may want to limit the NS velocity to 50% of max joint velocity
+        //vel = std::max(-0.5*maxJointVel(indx), std::min(0.5*maxJointVel(indx), vel));
+        sot[1].desired(jj) = vel;
+      }
+
+    }
+
+    m_ikVelSolver->setLoopPeriod(dt);
+    m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
+
+    // Max time step to guarantee joint limits
+    dt = std::min(3*dt, 0.5);
+    for (int j = 0; j < jl_low.rows(); ++j) {
+          //q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
+      if (qDot(j) > 1e-9) {
+        dt = std::min(dt, (jl_high[j] - q_i.data[j]) / qDot(j));
+      } else if (qDot(j) < -1e-9) {
+        dt = std::min(dt, (jl_low[j] - q_i.data[j]) / qDot(j));
+      }
+    }
+
+    // search for a time step that decreases the error
+    double currentErr = lineErr + rotErr;
+    double stepErr = INF;
+    while (stepErr > currentErr && dt > 0.001) {
+      q_next.data = q_i.data + dt * qDot;
+      calcPositionAndError(q_next, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis);
+      stepErr = lineErr + rotErr;
+      dt /= 2;
+    }
+
+     q_i = q_next;
+    //std::cout << ii <<": dt("<< dt<<"), stepErr: " << stepErr << "("<<lineErr<<", "<<rotErr<<")" << std::endl;
+
+    //std::cout << "    q: " << q_i.data.transpose() << std::endl;
+    //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
+    //std::cout << "    qDot: " << qDot.transpose() << std::endl;
+
+    if (qDot.norm() < 1e-9) {  // TODO: config param
+      std::cout << "ERROR: Solution stuck, iter: "<<ii<<", qDot.norm: "<<qDot.norm()<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
+      return -2;
+    }
+
+  }
+
+  if (solutionFound) {
+    *return_joints = q_i;
+    //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
+    return 1;  // TODO: return success/fail code
+  } else {
+    //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
+    return -1;
+  }
+}
+
+}  // namespace sns_ik
