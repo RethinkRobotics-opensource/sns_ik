@@ -344,12 +344,12 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   ROS_INFO("Position IK Summary:");
   for(auto& vst: vel_solver_data){
       double std_dev = standardDeviation(vst.indiv_time, vst.avg_time);
-      ROS_INFO("%s: %.2f%% success rate with (time mean: %.2f ms, std dev: %.2f ms)",
+      ROS_INFO("%s: %.2f%% success rate with (time: %.2f \u00b1 %.2f ms)",
                vst.name.c_str(), 100*vst.successRate, 1000*vst.avg_time, 1000*std_dev);
   }
-  ROS_INFO("KDL: %.2f%% success rate with (time mean: %.2f ms, std dev: %.2f ms)",
+  ROS_INFO("KDL: %.2f%% success rate with (time: %.2f \u00b1 %.2f ms)",
            100.*kdlPos_successRate, 1000*kdlPos_avgTime, 1000*kdlPos_stdDev);
-  ROS_INFO("TRAC: %.2f%% success rate with (time mean: %.2f ms, std dev: %.2f ms)",
+  ROS_INFO("TRAC: %.2f%% success rate with (time: %.2f \u00b1 %.2f ms)",
            100.*tracPos_successRate, 1000*tracPos_avgTime, 1000*tracPos_stdDev);
   ROS_INFO("\n************************************\n");
 
@@ -449,10 +449,10 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   ROS_INFO("\n************************************");
   ROS_INFO("Velocity IK Summary:");
   for(auto& vst: vel_solver_data){
-      ROS_INFO("%s: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.2f ms",
+      ROS_INFO("%s: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.3f ms",
                vst.name.c_str(), 100*vst.successRate, 100*vst.scaling_successRate, 1000*vst.avg_time);
   }
-  ROS_INFO("KDL Velocity: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.2f ms",
+  ROS_INFO("KDL Velocity: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.3f ms",
            100*kdlVel_successRate, 100*kdlVel_scalingSuccessRate, 1000*kdlVel_avgTime);
   ROS_INFO("\n************************************");
 
@@ -463,6 +463,8 @@ int main(int argc, char** argv)
   srand(time(NULL));
   ros::init(argc, argv, "ik_tests");
   ros::NodeHandle nh("~");
+
+  setlocale(LC_CTYPE,"");  // needed to print ±
 
   int num_samples_pos, num_samples_vel;
   std::string chain_start, chain_end, urdf_param;
