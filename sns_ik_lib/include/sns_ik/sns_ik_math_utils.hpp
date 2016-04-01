@@ -55,16 +55,16 @@ namespace sns_ik {
    *  (\em double if \b _USE_DOUBLE_ is defined)
    */
   typedef double Scalar;
-  #define EPS 1e-6
-  #define LAMBDA_MAX 1e-6 //0.3
-  #define EPSQ 1e-10
+  const double EPS = 1e-6;
+  const double LAMBDA_MAX = 1e-6; //0.3
+  const double EPSQ = 1e-10;
 #else
   typedef Eigen::Matrix<float,Dynamic,Dynamic> MatrixD;
   typedef Eigen::Matrix<float,Dynamic,1> VectorD;
   typedef float Scalar;
-  #define EPS 1e-6
-  #define LAMBDA_MAX 0.3
-  #define EPSQ 1e-15
+  const float EPS = 1e-6;
+  const float LAMBDA_MAX = 0.3;
+  const float EPSQ = 1e-15;
 #endif
 
 #define INF 1e20;  // Should this be the std INF?
