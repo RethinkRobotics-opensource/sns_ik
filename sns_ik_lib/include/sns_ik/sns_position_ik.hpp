@@ -83,6 +83,7 @@ class SNSPositionIK {
     double m_angularMaxStepSize;
     double m_maxIterations;
     double m_dt;
+    double dt_step;
 
     bool calcPositionAndError(const KDL::JntArray& q, const KDL::Frame& goal,
                               KDL::Frame* pose, double* errL, double* errR,

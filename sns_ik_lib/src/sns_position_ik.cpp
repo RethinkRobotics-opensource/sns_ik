@@ -31,7 +31,8 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_linearMaxStepSize(0.2),
     m_angularMaxStepSize(0.2),
     m_maxIterations(100),
-    m_dt(0.2)
+    m_dt(0.002),
+    dt_step(0.02)
 {
 }
 
@@ -220,6 +221,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   StackOfTasks sot(1);
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
+  double Tstep_max = INF;
 
   // If there's a nullspace bias, create a secondary task
   if (joint_ns_bias.rows()) {
@@ -237,7 +239,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   jacobian.resize(q_i.rows());
   KDL::Vector rotAxis, trans;
   KDL::Rotation rot;
-  double dt = 0.2;
+
 
   if (!calcPositionAndError(q_i, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis)) {
     // ERROR
@@ -254,12 +256,12 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     }
 
     // Calculate the desired Cartesian twist
-    sot[0].desired(0) = trans.data[0] / dt;
-    sot[0].desired(1) = trans.data[1] / dt;
-    sot[0].desired(2) = trans.data[2] / dt;
-    sot[0].desired(3) = rotErr * rotAxis.data[0] / dt;
-    sot[0].desired(4) = rotErr * rotAxis.data[1] / dt;
-    sot[0].desired(5) = rotErr * rotAxis.data[2] / dt;
+    sot[0].desired(0) = trans.data[0] / m_dt;
+    sot[0].desired(1) = trans.data[1] / m_dt;
+    sot[0].desired(2) = trans.data[2] / m_dt;
+    sot[0].desired(3) = rotErr * rotAxis.data[0] / m_dt;
+    sot[0].desired(4) = rotErr * rotAxis.data[1] / m_dt;
+    sot[0].desired(5) = rotErr * rotAxis.data[2] / m_dt;
 //    sot[0].desired(0) = 1000 * trans.data[0];
 //    sot[0].desired(1) = 1000 * trans.data[1];
 //    sot[0].desired(2) = 1000 * trans.data[2];
@@ -271,6 +273,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     {
       // ERROR
       std::cout << "JntToJac failed" << std::endl;
+
       return -1;
     }
     sot[0].jacobian = jacobian.data;
@@ -288,28 +291,31 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     }
 
-    m_ikVelSolver->setLoopPeriod(dt);
+    m_ikVelSolver->setLoopPeriod(m_dt);
     m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     // Max time step to guarantee joint limits
-    dt = std::min(3*dt, 0.5);
+    dt_step = std::min(5.0*dt_step, 5.0);
     for (int j = 0; j < jl_low.rows(); ++j) {
           //q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
       if (qDot(j) > 1e-9) {
-        dt = std::min(dt, (jl_high[j] - q_i.data[j]) / qDot(j));
+        Tstep_max = std::min(Tstep_max, (jl_high[j] - q_i.data[j]) / qDot(j));
       } else if (qDot(j) < -1e-9) {
-        dt = std::min(dt, (jl_low[j] - q_i.data[j]) / qDot(j));
+        Tstep_max = std::min(Tstep_max, (jl_low[j] - q_i.data[j]) / qDot(j));
       }
     }
+    dt_step=(dt_step>Tstep_max)?Tstep_max:(dt_step<0.001)?0.001:dt_step;
+
+
 
     // search for a time step that decreases the error
     double currentErr = lineErr + rotErr;
     double stepErr = INF;
-    while (stepErr > currentErr && dt > 0.001) {
-      q_next.data = q_i.data + dt * qDot;
+    while (stepErr > currentErr && dt_step > 0.001) {
+      q_next.data = q_i.data + dt_step * qDot;
       calcPositionAndError(q_next, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis);
       stepErr = lineErr + rotErr;
-      dt /= 2;
+      dt_step /= 2;
     }
 
      q_i = q_next;
