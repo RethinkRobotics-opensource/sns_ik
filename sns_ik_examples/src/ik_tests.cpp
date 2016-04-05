@@ -292,16 +292,16 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   };
 
   std::vector<velocitySolverData> vel_solver_data;
-  velocitySolverData sns = {sns_ik::SNS,"SNS",0.0,0.0,0.0};
-  vel_solver_data.push_back(sns);
-  velocitySolverData sns_optimalsm = {sns_ik::SNS_OptimalScaleMargin,"SNS Optimal Scale Margin",0.0,0.0,0.0};
-  vel_solver_data.push_back(sns_optimalsm);
-  velocitySolverData sns_optimal = {sns_ik::SNS_Optimal,"SNS Optimal",0.0,0.0,0.0};
-  vel_solver_data.push_back(sns_optimal);
+  //velocitySolverData sns = {sns_ik::SNS,"SNS",0.0,0.0,0.0};
+  //vel_solver_data.push_back(sns);
+  //velocitySolverData sns_optimalsm = {sns_ik::SNS_OptimalScaleMargin,"SNS Optimal Scale Margin",0.0,0.0,0.0};
+  //vel_solver_data.push_back(sns_optimalsm);
+  //velocitySolverData sns_optimal = {sns_ik::SNS_Optimal,"SNS Optimal",0.0,0.0,0.0};
+  //vel_solver_data.push_back(sns_optimal);
   velocitySolverData sns_fast = {sns_ik::SNS_Fast,"SNS Fast",0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fast);
-  velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0};
-  vel_solver_data.push_back(sns_fastoptimal);
+ // velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0};
+//  vel_solver_data.push_back(sns_fastoptimal);
 
   // These values are not used yet
   double posIK_linearMaxStepSize = 0.05;
