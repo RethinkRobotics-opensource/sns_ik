@@ -124,10 +124,16 @@ namespace sns_ik {
                     const std::vector<std::string>& biasNames,
                     KDL::JntArray& qdot_out);
 
+    // Nullspace gain should be specified between 0 and 1.0
+    double getNullspaceGain() { return m_nullspaceGain; }
+    void setNullspaceGain(double gain)
+    { m_nullspaceGain = std::max(std::min(gain, 1.0), 0.0); }
+
   private:
     bool m_initialized;
     double m_eps;
     double m_looprate;
+    double m_nullspaceGain;
     VelocitySolveType m_solvetype;
     KDL::Chain m_chain;
     KDL::JntArray m_lower_bounds, m_upper_bounds, m_velocity, m_acceleration;

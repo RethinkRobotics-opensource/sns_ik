@@ -9,6 +9,8 @@
   <arg name="use_random_position_seed" default="false"/>
   <arg name="use_delta_position_seed" default="false"/>
   <arg name="delta_position_seed_value" default="0.2"/>
+  <arg name="nullspace_bias_task" default="false"/>
+  <arg name="nullspace_gain" default="0.3"/>
 
   <node name="sns_ik_tests" pkg="sns_ik_examples" type="all_ik_tests" output="screen">
     <param name="num_samples_pos" value="$(arg num_samples_pos)"/>
@@ -20,6 +22,8 @@
     <param name="use_random_position_seed" value="$(arg use_random_position_seed)"/>
     <param name="use_delta_position_seed" value="$(arg use_delta_position_seed)"/>
     <param name="delta_position_seed_value" value="$(arg delta_position_seed_value)"/>
+    <param name="nullspace_bias_task" value="$(arg nullspace_bias_task)"/>
+    <param name="nullspace_gain" value="$(arg nullspace_gain)"/>
   </node>
 
 </launch>

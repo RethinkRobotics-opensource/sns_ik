@@ -32,6 +32,7 @@ namespace sns_ik {
     m_initialized(false),
     m_eps(eps),
     m_looprate(looprate),
+    m_nullspaceGain(1.0),
     m_solvetype(type)
   {
     ros::NodeHandle node_handle("~");
@@ -133,6 +134,7 @@ namespace sns_ik {
     m_initialized(false),
     m_eps(eps),
     m_looprate(looprate),
+    m_nullspaceGain(1.0),
     m_solvetype(type),
     m_chain(chain),
     m_lower_bounds(q_min),
@@ -236,7 +238,7 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
       return -1;
     }
     return m_ik_pos_solver->CartToJnt(q_init, p_in, q_bias, ns_jacobian, indicies,
-                                      &q_out, tolerances);
+                                      m_nullspaceGain, &q_out, tolerances);
   } else {
     return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, tolerances);
   }
@@ -283,7 +285,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
     for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
       // This calculates a "nullspace velocity".
       // There is an arbitrary scale factor which will be set by the max scale factor.
-      task2.desired(ii) = (q_bias(ii) - q_in(indicies[ii])) / m_looprate;
+      task2.desired(ii) = m_nullspaceGain * (q_bias(ii) - q_in(indicies[ii])) / m_looprate;
       // TODO: may want to limit the NS velocity to 70-90% of max joint velocity
     }
     sot.push_back(task2);
