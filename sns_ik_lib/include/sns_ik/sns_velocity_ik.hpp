@@ -87,6 +87,7 @@ class SNSVelocityIK {
     VectorD getJointVelocityMax() { return maxJointVelocity; }
 
     void usePositionLimits(bool use) { m_usePositionLimits = use; }
+    virtual Scalar pureSelfMotion(const VectorD &CStask, VectorD *jointVelocity){return 0;/*Not implemented*/}
 
   protected:
 
@@ -97,6 +98,7 @@ class SNSVelocityIK {
     virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
                      const MatrixD &higherPriorityNull, const MatrixD &jacobian,
                      const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
+
 
     void getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
                               const Array<Scalar, Dynamic, 1> &b,

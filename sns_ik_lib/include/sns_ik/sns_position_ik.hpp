@@ -84,6 +84,7 @@ class SNSPositionIK {
     double m_maxIterations;
     double m_dt;
     double dt_step;
+    KDL::JntArray q_0;
 
     bool calcPositionAndError(const KDL::JntArray& q, const KDL::Frame& goal,
                               KDL::Frame* pose, double* errL, double* errR,

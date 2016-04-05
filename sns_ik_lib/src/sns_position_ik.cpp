@@ -222,7 +222,10 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
   double Tstep_max = INF;
+  double dt_step_self;
 
+  q_0=q_i;
+/*
   // If there's a nullspace bias, create a secondary task
   if (joint_ns_bias.rows()) {
     Task nsTask;
@@ -231,6 +234,18 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     // the desired task to apply the NS bias will change with each iteration
     sot.push_back(nsTask);
   }
+  */
+
+
+/*
+  Task nsTask;
+  nsTask.jacobian = MatrixD::Identity(n_dof,n_dof);
+  nsTask.desired = VectorD::Zero(n_dof);
+  // the desired task to apply the NS bias will change with each iteration
+  sot.push_back(nsTask);
+*/
+
+
 
   //double L, theta;
   double lineErr, rotErr;
@@ -277,25 +292,24 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       return -1;
     }
     sot[0].jacobian = jacobian.data;
-
-    if (joint_ns_bias.rows()) {
-      for (size_t jj = 0; jj < joint_ns_bias.rows(); ++jj) {
+/*
+      for (size_t jj = 0; jj < n_dof; ++jj) {
         // This calculates a "nullspace velocity".
         // There is an arbitrary scale factor which will be set by the max scale factor.
-        int indx = ns_indicies[jj];
-        double vel = 0.1 * (joint_ns_bias(jj) - q_i(indx)) / m_dt; // TODO: step size needs to be optimized
+        double vel =  100*(q_0(jj) - q_i(jj)) ; // TODO: step size needs to be optimized
         // TODO: may want to limit the NS velocity to 50% of max joint velocity
         //vel = std::max(-0.5*maxJointVel(indx), std::min(0.5*maxJointVel(indx), vel));
         sot[1].desired(jj) = vel;
       }
-
-    }
+*/
 
     m_ikVelSolver->setLoopPeriod(m_dt);
     m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
+
     // Max time step to guarantee joint limits
-    dt_step = std::min(5.0*dt_step, 5.0);
+    dt_step = 0.2;//std::min(2.0*dt_step, 0.2);
+    Tstep_max = INF;
     for (int j = 0; j < jl_low.rows(); ++j) {
           //q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
       if (qDot(j) > 1e-9) {
@@ -311,15 +325,33 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     // search for a time step that decreases the error
     double currentErr = lineErr + rotErr;
     double stepErr = INF;
-    while (stepErr > currentErr && dt_step > 0.001) {
+
+
+    while (stepErr > currentErr && dt_step >= 0.001) {
       q_next.data = q_i.data + dt_step * qDot;
       calcPositionAndError(q_next, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis);
       stepErr = lineErr + rotErr;
-      dt_step /= 2;
+      dt_step /= 2.0;
+    }
+    if (stepErr < currentErr) dt_step *= 2.0;
+
+
+
+    //remove stuck situation
+    if (qDot.norm() < 1e-9  || dt_step < 0.001) {  // TODO: config param
+
+        for (size_t jj = 0; jj < n_dof; ++jj) {
+          qDot(jj) =  1*( - q_i(jj)) ;
+        }
+        dt_step=0.02;
+        q_next.data = q_i.data + dt_step * qDot;
+
     }
 
+
+
      q_i = q_next;
-    //std::cout << ii <<": dt("<< dt<<"), stepErr: " << stepErr << "("<<lineErr<<", "<<rotErr<<")" << std::endl;
+  //  std::cout << ii <<": dt("<< dt_step<<"), stepErr: " << stepErr << "("<<lineErr<<", "<<rotErr<<")" << std::endl;
 
     //std::cout << "    q: " << q_i.data.transpose() << std::endl;
     //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
@@ -334,7 +366,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
   if (solutionFound) {
     *return_joints = q_i;
-    //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
+  //  std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
     return 1;  // TODO: return success/fail code
   } else {
     //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
