@@ -30,6 +30,7 @@ using namespace sns_ik;
 FSNSVelocityIK::FSNSVelocityIK(int dof, Scalar loop_period) :
   SNSVelocityIK(dof, loop_period)
 {
+
 }
 
 
@@ -59,6 +60,8 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     if (! isIdentity(sot[i_task].jacobian)){
         scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
             sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
+        // TESTING - Is this right?
+        P = P * P.transpose();
     }else{
         scaleFactors[i_task] = SNSsingleCS(i_task, higherPriorityJointVelocity, higherPriorityNull,
              sot[i_task].desired, jointVelocity);
@@ -67,8 +70,6 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     if (scaleFactors[i_task] > 1)
           scaleFactors[i_task] = 1;
 
-    // TESTING - Is this right?
-    P = P * P.transpose();
   }
 
   // TODO: what is being returned here?
@@ -297,7 +298,7 @@ Scalar FSNSVelocityIK::SNSsingleCS(int priority, const VectorD &higherPriorityJo
                     const MatrixD &higherPriorityNull,
                     const VectorD &task, VectorD *jointVelocity)
 {
-    int n_dof=task.rows();
+    //int n_dof=task.rows();
     Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
     VectorD dq1;
     MatrixD W=MatrixD::Zero(n_dof,n_dof);
@@ -306,6 +307,7 @@ Scalar FSNSVelocityIK::SNSsingleCS(int priority, const VectorD &higherPriorityJo
     Scalar scalingFactor = 1.0;
     int mostCriticalJoint;
 
+    projectorNullSpaceCSLastExecution=higherPriorityNull;
 
     for (int i=0; i<n_dof; ++i){
         if (S[priority-1](i)){
@@ -318,6 +320,8 @@ Scalar FSNSVelocityIK::SNSsingleCS(int priority, const VectorD &higherPriorityJo
     Pcs= (I - invPcs)*higherPriorityNull;
 
 
+    //std::cout <<" PCS1 "<<std::endl<<Pcs<<std::endl;
+
     dq1 = Pcs * task;
 
     dotQ = higherPriorityJointVelocity + dq1;
@@ -326,6 +330,7 @@ Scalar FSNSVelocityIK::SNSsingleCS(int priority, const VectorD &higherPriorityJo
     getTaskScalingFactor(a, b, S[priority-1], &scalingFactor, &mostCriticalJoint);
 
 
+    //if (priority==1) std::cout << scalingFactor <<" - "<< higherPriorityJointVelocity.transpose() <<std::endl;
     if (scalingFactor >= 1.0) {
       // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
       (*jointVelocity) = dotQ;
@@ -337,3 +342,43 @@ Scalar FSNSVelocityIK::SNSsingleCS(int priority, const VectorD &higherPriorityJo
     return scalingFactor;
 
 }
+
+Scalar FSNSVelocityIK::pureSelfMotion(const VectorD &CStask, VectorD *jointVelocity){
+    Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
+    VectorD dq1;
+    MatrixD Pcs;
+    Scalar scalingFactor = 1.0;
+    int mostCriticalJoint;
+    VectorXi SnoSat=VectorXi::Zero(n_dof);
+
+    *jointVelocity = VectorD::Zero(n_dof, 1);
+
+
+    Pcs= MatrixD::Identity(n_dof,n_dof);//projectorNullSpaceCSLastExecution;
+
+   // std::cout <<" PCS2 "<<std::endl<<Pcs<<std::endl;
+
+
+    dq1 = Pcs * CStask;
+
+    dotQ =  dq1;
+
+    a = dq1.array();
+    b = dotQ.array() - a;
+    getTaskScalingFactor(a, b, SnoSat, &scalingFactor, &mostCriticalJoint);
+
+    //std::cout << scalingFactor <<std::endl;
+
+
+    if (scalingFactor >= 1.0) {
+      // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
+      (*jointVelocity) = dotQ;
+      return scalingFactor;
+    }
+
+    dotQ =  scalingFactor*dq1;
+    (*jointVelocity) =  dotQ;
+    return scalingFactor;
+}
+
+
