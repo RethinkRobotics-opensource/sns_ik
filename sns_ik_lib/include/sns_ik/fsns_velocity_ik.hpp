@@ -56,6 +56,12 @@ class FSNSVelocityIK : public SNSVelocityIK {
     
     // TODO: Does this need to be a member variable?
     std::vector<VectorXi> S;  //the i-th element is zero if the i-th joint is not saturate, otherwise contains the position in B
+
+  private:
+    Scalar SNSsingleCS(int priority, const VectorD &higherPriorityJointVelocity,
+                        const MatrixD &higherPriorityNull,
+                        const VectorD &task, VectorD *jointVelocity);
+
 };
 
 }  // namespace sns_ikl

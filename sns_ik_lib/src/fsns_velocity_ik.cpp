@@ -55,9 +55,15 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
   for (int i_task = 0; i_task < n_tasks; i_task++) {  //consider all tasks
     higherPriorityJointVelocity = *jointVelocity;
     higherPriorityNull = P;
-    scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
-        sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
-    
+
+    if (! isIdentity(sot[i_task].jacobian)){
+        scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
+            sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
+    }else{
+        scaleFactors[i_task] = SNSsingleCS(i_task, higherPriorityJointVelocity, higherPriorityNull,
+             sot[i_task].desired, jointVelocity);
+
+    }
     if (scaleFactors[i_task] > 1)
           scaleFactors[i_task] = 1;
 
@@ -284,4 +290,50 @@ void FSNSVelocityIK::getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
   } else {
     (*scalingFactor) = smax;
   }
+}
+
+
+Scalar FSNSVelocityIK::SNSsingleCS(int priority, const VectorD &higherPriorityJointVelocity,
+                    const MatrixD &higherPriorityNull,
+                    const VectorD &task, VectorD *jointVelocity)
+{
+    int n_dof=task.rows();
+    Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
+    VectorD dq1;
+    MatrixD W=MatrixD::Zero(n_dof,n_dof);
+    MatrixD invPcs=MatrixD::Zero(n_dof,n_dof);
+    MatrixD Pcs;
+    Scalar scalingFactor = 1.0;
+    int mostCriticalJoint;
+
+
+    for (int i=0; i<n_dof; ++i){
+        if (S[priority-1](i)){
+            W(i,i)=1.0;
+        }
+    }
+
+    Pcs=W*higherPriorityNull;
+    pinv(Pcs,&invPcs);
+    Pcs= (I - invPcs)*higherPriorityNull;
+
+
+    dq1 = Pcs * task;
+
+    dotQ = higherPriorityJointVelocity + dq1;
+    a = dq1.array();
+    b = dotQ.array() - a;
+    getTaskScalingFactor(a, b, S[priority-1], &scalingFactor, &mostCriticalJoint);
+
+
+    if (scalingFactor >= 1.0) {
+      // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
+      (*jointVelocity) = dotQ;
+      return scalingFactor;
+    }
+
+    dotQ = higherPriorityJointVelocity + scalingFactor*dq1;
+    (*jointVelocity) = dotQ;
+    return scalingFactor;
+
 }
