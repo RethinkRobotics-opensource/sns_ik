@@ -126,7 +126,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
           std::string chain_start, std::string chain_end, double timeout,
           std::string urdf_param, bool use_random_position_seed,
           bool use_delta_position_seed, double delta_position_seed_value,
-          bool nullspace_bias_task, double nullspace_gain)
+          bool use_nullspace_bias_task, double nullspace_gain,
+          bool nominal_nullspace, bool delta_nullspace, double delta_nullspace_value)
 {
 
   double eps = 1e-5;
@@ -165,9 +166,6 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     nominal(j) = (ll(j)+ul(j))/2.0;
   }
 
-  // TODO: this should be configurable
-  KDL::JntArray ns_bias = nominal;
-
   // Set up KDL IK
   KDL::ChainFkSolverPos_recursive fk_solver(chain); // Forward kin. solver
   KDL::ChainIkSolverVel_pinv vik_solver(chain); // PseudoInverse vel solver
@@ -176,7 +174,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   // PseudoInverse vel solver with nullspace optimization
   KDL::ChainIkSolverVel_pinv_nso vik_nso_solver(chain);
-  vik_nso_solver.setOptPos(ns_bias);
+  vik_nso_solver.setOptPos(nominal);
   vik_nso_solver.setAlpha(nullspace_gain);
   KDL::JntArray nsWeights(chain.getNrOfJoints());
   nsWeights.data = Eigen::VectorXd::Ones(chain.getNrOfJoints());
@@ -186,18 +184,22 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   // Create desired number of valid, random joint configurations
   std::vector<KDL::JntArray> JointList;
   std::vector<KDL::JntArray> JointSeed;
+  std::vector<KDL::JntArray> NullSpaceBias;
   KDL::JntArray q(chain.getNrOfJoints());
   KDL::JntArray q_delta(chain.getNrOfJoints());
+  KDL::JntArray q_nullspace(chain.getNrOfJoints());
 
   uint num_joint_pos = std::max(num_samples_pos, num_samples_vel);
   for (uint i=0; i < num_joint_pos; i++) {
     for (uint j=0; j<ll.data.size(); j++) {
       q(j)=fRand(ll(j), ul(j));
-      q_delta(j)=getDeltaWithLimits(q(j), delta_position_seed_value, ll(j), ul(j));
     }
     JointList.push_back(q);
     // Set joint seed
     if (use_delta_position_seed){
+      for (uint j=0; j<ll.data.size(); j++) {
+        q_delta(j)=getDeltaWithLimits(q(j), delta_position_seed_value, ll(j), ul(j));
+      }
       JointSeed.push_back(q_delta);
     }
     else if (i == 0 || !use_random_position_seed){
@@ -205,6 +207,23 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     }
     else { // "random" seed
       JointSeed.push_back(JointList[i-1]);
+    }
+    // Determine the NullSpace
+    if (use_nullspace_bias_task) {
+      if(delta_nullspace){
+        for (uint j=0; j<ll.data.size(); j++) {
+          q_nullspace(j)=getDeltaWithLimits(q(j), delta_nullspace_value, ll(j), ul(j));
+        }
+      }
+      else if (nominal_nullspace){
+        q_nullspace=nominal;
+      }
+      else { // random nullspace
+        for (uint j=0; j<ll.data.size(); j++) {
+          q_nullspace(j)=fRand(ll(j), ul(j));
+        }
+      }
+      NullSpaceBias.push_back(q_nullspace);
     }
   }
 
@@ -229,7 +248,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     int cnt = 0;  // keep track of iteration count to enforce max number of iterations
     do {
       q = result; // when iterating start with last solution
-      if (nullspace_bias_task)
+      if (use_nullspace_bias_task)
         rc = kdl_nso_solver.CartToJnt(q, end_effector_pose, result);
       else
         rc = kdl_solver.CartToJnt(q, end_effector_pose, result);
@@ -257,7 +276,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   std::vector<double> tracPos_indivTime;
 
   ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples_pos<<" random samples");
-  if (nullspace_bias_task)
+  if (use_nullspace_bias_task)
     ROS_WARN("TRAC-IK does not support secondary tasks.");
 
   for (uint i=0; i < num_samples_pos; i++) {
@@ -343,8 +362,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
       start_time = boost::posix_time::microsec_clock::local_time();
 
-      if(nullspace_bias_task)
-        rc = snsik_solver.CartToJnt(JointSeed[i], end_effector_pose, ns_bias, result);
+      if(use_nullspace_bias_task)
+        rc = snsik_solver.CartToJnt(JointSeed[i], end_effector_pose, NullSpaceBias[i], result);
       else
         rc = snsik_solver.CartToJnt(JointSeed[i], end_effector_pose, result);
 
@@ -407,8 +426,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       double elapsed = 0;
       start_time = boost::posix_time::microsec_clock::local_time();
 
-      if(nullspace_bias_task)
-        rc = snsik_solver.CartToJntVel(JointVelList[i].q, end_effector_vel.GetTwist(), ns_bias, result_vel);
+      if(use_nullspace_bias_task)
+        rc = snsik_solver.CartToJntVel(JointVelList[i].q, end_effector_vel.GetTwist(), NullSpaceBias[i], result_vel);
       else
         rc = snsik_solver.CartToJntVel(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
 
@@ -448,11 +467,13 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     double elapsed = 0;
     start_time = boost::posix_time::microsec_clock::local_time();
 
-    if (nullspace_bias_task)
+    if (use_nullspace_bias_task) {
+      vik_nso_solver.setOptPos(NullSpaceBias[i]);
       rc = vik_nso_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
-    else
+    }
+    else {
       rc = vik_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
-
+    }
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
@@ -505,8 +526,10 @@ int main(int argc, char** argv)
   bool use_random_position_seed;
   bool use_delta_position_seed;
   double delta_position_seed_value;
-  bool nullspace_bias_task;
+  bool use_nullspace_bias_task;
   double nullspace_gain;
+  bool nominal_nullspace, delta_nullspace;
+  double delta_nullspace_value;
   nh.param("num_samples_pos", num_samples_pos, 100);
   nh.param("num_samples_vel", num_samples_vel, 1000);
   nh.param("chain_start", chain_start, std::string(""));
@@ -514,8 +537,11 @@ int main(int argc, char** argv)
   nh.param("use_random_position_seed", use_random_position_seed, false);
   nh.param("use_delta_position_seed", use_delta_position_seed, false);
   nh.param("delta_position_seed_value", delta_position_seed_value, 0.2);
-  nh.param("nullspace_bias_task", nullspace_bias_task, false);
+  nh.param("use_nullspace_bias_task", use_nullspace_bias_task, false);
   nh.param("nullspace_gain", nullspace_gain, 0.3);
+  nh.param("nominal_nullspace", nominal_nullspace, false);
+  nh.param("delta_nullspace", delta_nullspace, false);
+  nh.param("delta_nullspace_value", delta_nullspace_value, 0.1);
 
   if (chain_start=="" || chain_end=="") {
     ROS_FATAL("Missing chain info in launch file");
@@ -529,9 +555,11 @@ int main(int argc, char** argv)
     num_samples_pos = 1;
 
   test(nh, num_samples_pos, num_samples_vel,
-       chain_start, chain_end, timeout, urdf_param,
-       use_random_position_seed, use_delta_position_seed,
-       delta_position_seed_value, nullspace_bias_task, nullspace_gain);
+       chain_start, chain_end, timeout,
+       urdf_param, use_random_position_seed,
+       use_delta_position_seed, delta_position_seed_value,
+       use_nullspace_bias_task, nullspace_gain,
+       nominal_nullspace, delta_nullspace, delta_nullspace_value);
 
   // Useful when you make a script that loops over multiple launch files that test different robot chains
   std::vector<char *> commandVector;

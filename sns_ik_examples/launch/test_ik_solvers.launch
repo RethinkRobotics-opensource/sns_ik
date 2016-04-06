@@ -9,8 +9,12 @@
   <arg name="use_random_position_seed" default="false"/>
   <arg name="use_delta_position_seed" default="false"/>
   <arg name="delta_position_seed_value" default="0.2"/>
-  <arg name="nullspace_bias_task" default="false"/>
+
+  <arg name="use_nullspace_bias_task" default="true"/>
   <arg name="nullspace_gain" default="0.3"/>
+  <arg name="nominal_nullspace" default="false"/>
+  <arg name="delta_nullspace" default="false"/>
+  <arg name="delta_nullspace_value" default="0.1"/>
 
   <node name="sns_ik_tests" pkg="sns_ik_examples" type="all_ik_tests" output="screen">
     <param name="num_samples_pos" value="$(arg num_samples_pos)"/>
@@ -19,11 +23,17 @@
     <param name="chain_end" value="$(arg chain_end)"/>
     <param name="timeout" value="$(arg timeout)"/>
     <param name="urdf_param" value="$(arg urdf_param)"/>
+
     <param name="use_random_position_seed" value="$(arg use_random_position_seed)"/>
     <param name="use_delta_position_seed" value="$(arg use_delta_position_seed)"/>
     <param name="delta_position_seed_value" value="$(arg delta_position_seed_value)"/>
-    <param name="nullspace_bias_task" value="$(arg nullspace_bias_task)"/>
+
+    <param name="use_nullspace_bias_task" value="$(arg use_nullspace_bias_task)"/>
     <param name="nullspace_gain" value="$(arg nullspace_gain)"/>
+    <param name="nominal_nullspace" value="$(arg nominal_nullspace)"/>
+    <param name="delta_nullspace" value="$(arg delta_nullspace)"/>
+    <param name="delta_nullspace_value" value="$(arg delta_nullspace_value)"/>
+
   </node>
 
 </launch>
