@@ -90,9 +90,6 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
         scaleFactors[i_task] = 1.0;
         P = PS;
       }
-
-      // TESTING - Is this right?
-      P = P * P.transpose();
     }
   }
 
@@ -154,11 +151,11 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 #endif
 
   //compute the base solution
-  singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, nullSpaceProjector);
+  singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, &tildeZ);
+  *nullSpaceProjector = tildeZ * tildeZ.transpose();
   dq1 = JPinverse * task;
   dq2 = -JPinverse * jacobian * higherPriorityJointVelocity;
   dqw = VectorD::Zero(n_dof);
-  tildeZ = *nullSpaceProjector;
   dq1_base = dq1;
   dq2_base = dq2;
   dotQ = higherPriorityJointVelocity + dq1 + dq2;
@@ -212,6 +209,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
     if (scalingFactor > 0.0) {
       (*jointVelocity) = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
       //dotQopt[priority]=(*jointVelocity);
+      *nullSpaceProjector = tildeZ * tildeZ.transpose();
     } else {
       // the task is not executed
       *jointVelocity = higherPriorityJointVelocity;
@@ -332,7 +330,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
         dqw = Bws * dqw_ws;
         dotQ = higherPriorityJointVelocity + dq1 + dq2 + dqw;
 
-        tildeZ = *nullSpaceProjector - Bws * Zws;
+        tildeZ = tildeZ - Bws * Zws;
 #ifdef LOG_ACTIVE
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         a=dq1.array();
@@ -486,7 +484,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
         Scalar dq1X = dq1_base(id_min_mu);
         Scalar dq2X = dq2_base(id_min_mu);
         Scalar dqwX = dqn(id_min_mu);
-        MatrixD ZX = nullSpaceProjector->row(id_min_mu);
+        MatrixD ZX = tildeZ.row(id_min_mu);
         for (it = satList[priority].begin(); it != satList[priority].end(); ++it) {
           int id = *it;
           lagrangeMu1(id) += bout(id) * mu_out1;
@@ -495,7 +493,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           dq1X -= B(id_min_mu, id) * dq1_base(id);
           dq2X -= B(id_min_mu, id) * dq2_base(id);
           dqwX -= B(id_min_mu, id) * dqn(id);
-          ZX -= B(id_min_mu, id) * nullSpaceProjector->row(id);
+          ZX -= B(id_min_mu, id) * tildeZ.row(id);
 
         }
         dq1 += bout * dq1X;
@@ -525,7 +523,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       // task accomplished
       *jointVelocity = dotQ;
       //dotQopt[priority]=(*jointVelocity);
-      *nullSpaceProjector = tildeZ;  //if start net task from previous saturations
+      *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
 //        ROS_INFO("n_in %d n_out %d",n_in,n_out);
 
       return scalingFactor;
@@ -585,7 +583,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
         Scalar dq1X = dq1_base(id_min_mu);
         Scalar dq2X = dq2_base(id_min_mu);
         Scalar dqwX = dqn(id_min_mu);
-        MatrixD ZX = nullSpaceProjector->row(id_min_mu);
+        MatrixD ZX = tildeZ.row(id_min_mu);
         for (it = satList[priority].begin(); it != satList[priority].end(); ++it) {
           int id = *it;
           lagrangeMu1(id) += bout(id) * mu_out1;
@@ -594,7 +592,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           dq1X -= B(id_min_mu, id) * dq1_base(id);
           dq2X -= B(id_min_mu, id) * dq2_base(id);
           dqwX -= B(id_min_mu, id) * dqn(id);
-          ZX -= B(id_min_mu, id) * nullSpaceProjector->row(id);
+          ZX -= B(id_min_mu, id) * tildeZ.row(id);
 
         }
         dq1 += bout * dq1X;
@@ -665,7 +663,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
         *jointVelocity = higherPriorityJointVelocity + best_Scale * best_dq1 + best_dq2 + best_dqw;
         //dotQopt[priority]=(*jointVelocity);
         //nSat[priority]=best_nSat;
-        *nullSpaceProjector = tildeZ;  //if start net task from previous saturations
+        *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
 //        ROS_INFO("n_in %d n_out %d",n_in,n_out);
         if (best_Scale == base_Scale) {
           //no saturation was needed to obtain the best scale
@@ -722,6 +720,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 
   } while (limit_excedeed);  //actually in this implementation if we use while(1) it would be the same
 
+  *nullSpaceProjector = tildeZ * tildeZ.transpose();
   (*jointVelocity) = dotQ;
   //dotQopt[priority]=(*jointVelocity);
   return scalingFactor;

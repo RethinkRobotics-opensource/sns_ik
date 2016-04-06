@@ -60,9 +60,6 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     
     if (scaleFactors[i_task] > 1)
           scaleFactors[i_task] = 1;
-
-    // TESTING - Is this right?
-    P = P * P.transpose();
   }
 
   // TODO: what is being returned here?
@@ -105,11 +102,11 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
   S[priority] = VectorXi::Zero(n_dof);
 
   //compute the base solution
-  singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, nullSpaceProjector);
+  singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, &tildeZ);
+  *nullSpaceProjector = tildeZ * tildeZ.transpose();
   dq1 = JPinverse * task;
   dq2 = -JPinverse * jacobian * higherPriorityJointVelocity;
   dqw = VectorD::Zero(n_dof);
-  tildeZ = *nullSpaceProjector;
 
   dotQ = higherPriorityJointVelocity + dq1 + dq2;
   a = dq1.array();
@@ -189,7 +186,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
         *jointVelocity = higherPriorityJointVelocity + best_Scale * best_dq1 + best_dq2 + best_dqw;
         dotQopt[priority] = (*jointVelocity);
         //nSat[priority]=best_nSat;
-        *nullSpaceProjector = tildeZ;  //if start net task from previous saturations
+        *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
         return best_Scale;
       } else {
         //no solution
@@ -229,7 +226,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
       // task accomplished
       *jointVelocity = dotQ;
       dotQopt[priority] = (*jointVelocity);
-      *nullSpaceProjector = tildeZ;  //if start net task from previous saturations
+      *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
       return scalingFactor;
     } else {
       if ((scalingFactor > best_Scale)) {
@@ -244,7 +241,8 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
 
   } while (limit_excedeed);  //actually in this implementation if we use while(1) it would be the same
 
-  (*jointVelocity) = dotQ;
+  *nullSpaceProjector = tildeZ * tildeZ.transpose();
+  *jointVelocity = dotQ;
   return 1.0;
 }
 
