@@ -232,6 +232,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   KDL::JntArray result;
   KDL::Frame end_effector_pose;
+  KDL::Frame end_effector_pose_check;
   int rc;
 
   double total_time=0;
@@ -258,7 +259,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     } while (rc < 0 && elapsed < timeout && cnt++ < 100);
     total_time += elapsed;
     kdlPos_indivTime.push_back(elapsed);
-    if (rc>=0)
+    fk_solver.JntToCart(result, end_effector_pose_check);
+    if (rc>=0 && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
       success++;
 
     if (int((double)i/num_samples_pos*100)%10 == 0)
@@ -288,7 +290,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     elapsed = diff.total_nanoseconds() / 1e9;
     total_time+=elapsed;
     tracPos_indivTime.push_back(elapsed);
-    if (rc>=0)
+    fk_solver.JntToCart(result, end_effector_pose_check);
+    if (rc>=0 && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
       success++;
 
     if (int((double)i/num_samples_pos*100)%10 == 0)
@@ -371,7 +374,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       elapsed = diff.total_nanoseconds() / 1e9;
       total_time+=elapsed;
       vst.indiv_time.push_back(elapsed);
-      if (rc>=0)
+      fk_solver.JntToCart(result, end_effector_pose_check);
+      if (rc>=0 && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
         success++;
       if (int((double)i/num_samples_pos*100)%10 == 0)
         ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
