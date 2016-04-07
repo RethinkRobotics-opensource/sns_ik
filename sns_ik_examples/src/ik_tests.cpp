@@ -60,17 +60,24 @@ double getDeltaWithLimits(double value, double desired_delta,
   }
 }
 
-bool in_vel_bounds(KDL::JntArray vals, KDL::JntArray vels)
+bool in_vel_bounds(const KDL::JntArray& vals, const KDL::JntArray& vels)
 {
   for(size_t i; i < vels.data.size(); i++){
       if(vals(i) < -vels(i) || vals(i) > vels(i)){
           return false;
       }
-      /*else{
-          std::cout<<vals(i)<<' ';
-      }*/
   }
-  //std::cout<<std::endl;
+  return true;
+}
+
+bool in_pos_bounds(const KDL::JntArray& jnt_values, const KDL::JntArray& jnt_lower,
+                   const KDL::JntArray& jnt_upper)
+{
+  for(size_t i; i < jnt_values.data.size(); i++){
+      if(jnt_values(i) < jnt_lower(i) || jnt_values(i) > jnt_upper(i)){
+          return false;
+      }
+  }
   return true;
 }
 
@@ -260,7 +267,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     total_time += elapsed;
     kdlPos_indivTime.push_back(elapsed);
     fk_solver.JntToCart(result, end_effector_pose_check);
-    if (rc>=0 && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
+    bool inPosBounds = in_pos_bounds(result, ll, ul);
+    if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
       success++;
 
     if (int((double)i/num_samples_pos*100)%10 == 0)
@@ -291,7 +299,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     total_time+=elapsed;
     tracPos_indivTime.push_back(elapsed);
     fk_solver.JntToCart(result, end_effector_pose_check);
-    if (rc>=0 && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
+    bool inPosBounds = in_pos_bounds(result, ll, ul);
+    if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
       success++;
 
     if (int((double)i/num_samples_pos*100)%10 == 0)
@@ -375,7 +384,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       total_time+=elapsed;
       vst.indiv_time.push_back(elapsed);
       fk_solver.JntToCart(result, end_effector_pose_check);
-      if (rc>=0 && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
+      bool inPosBounds = in_pos_bounds(result, ll, ul);
+      if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
         success++;
       if (int((double)i/num_samples_pos*100)%10 == 0)
         ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
