@@ -137,7 +137,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
         // This calculates a "nullspace velocity".
         // There is an arbitrary scale factor which will be set by the max scale factor.
         int indx = ns_indicies[jj];
-        double vel = ns_gain * (joint_ns_bias(jj) - q_i(indx)) / m_dt; // TODO: step size needs to be optimized
+        double vel = ns_gain * (joint_ns_bias(jj) - q_i(indx)); // TODO: step size needs to be optimized
         // TODO: may want to limit the NS velocity to 50% of max joint velocity
         //vel = std::max(-0.5*maxJointVel(indx), std::min(0.5*maxJointVel(indx), vel));
         sot[1].desired(jj) = vel;
