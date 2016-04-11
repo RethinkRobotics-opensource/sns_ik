@@ -6,15 +6,16 @@
   <arg name="chain_end" default="right_hand" />
   <arg name="timeout" default="0.005" />
   <arg name="urdf_param" default="/robot_description" />
+
   <arg name="use_random_position_seed" default="false"/>
-  <arg name="use_delta_position_seed" default="false"/>
-  <arg name="delta_position_seed_value" default="0.2"/>
+  <arg name="use_delta_position_seed" default="true"/>
+  <arg name="delta_position_seed_value" default="0.5"/>
 
   <arg name="use_nullspace_bias_task" default="true"/>
   <arg name="nullspace_gain" default="0.3"/>
   <arg name="nominal_nullspace" default="false"/>
-  <arg name="delta_nullspace" default="false"/>
-  <arg name="delta_nullspace_value" default="0.1"/>
+  <arg name="delta_nullspace" default="true"/>
+  <arg name="delta_nullspace_value" default="0.2"/>
 
   <node name="sns_ik_tests" pkg="sns_ik_examples" type="all_ik_tests" output="screen">
     <param name="num_samples_pos" value="$(arg num_samples_pos)"/>
