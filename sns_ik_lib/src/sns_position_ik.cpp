@@ -82,6 +82,8 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   KDL::Rotation rot;
   //double sf;
 
+  double limitAlpha = 0.1;
+
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
     if (m_positionFK.JntToCart(q_i, pose_i) < 0)
@@ -150,15 +152,19 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     q_i.data += m_dt * qDot;
 
+    double limitScale = 1 - limitAlpha;
     for (int j = 0; j < jl_low.rows(); ++j) {
-      q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
+      double limitOffset = (jl_high[j] - jl_low[j]) * limitAlpha;
+      q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j] - limitOffset), jl_low[j] + limitOffset);
     }
+
+    limitAlpha *= 0.95;
 
     //std::cout << "    q: " << q_i.data.transpose() << std::endl;
     //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
     //std::cout << "    qDot: " << qDot.transpose() << std::endl;
 
-    if (qDot.norm() < 1e-5) {  // TODO: config param
+    if (qDot.norm() < 1e-7) {  // TODO: config param
       //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -2;
     }
