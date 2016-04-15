@@ -30,13 +30,39 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_jacobianSolver(chain),
     m_linearMaxStepSize(0.2),
     m_angularMaxStepSize(0.2),
-    m_maxIterations(100),
-    m_dt(0.2)
+    m_maxIterations(150),
+    m_dt(0.2),
+    m_useBarrierFunction(true),
+    m_barrierInitAlpha(0.1),
+    m_barrierDecay(0.8)
 {
 }
 
 SNSPositionIK::~SNSPositionIK()
 {
+}
+
+bool SNSPositionIK::calcPositionAndError(const KDL::JntArray& q,
+                                         const KDL::Frame& goal,
+                                         KDL::Frame* pose,
+                                         double* errL,
+                                         double* errR,
+                                         KDL::Vector* trans,
+                                         KDL::Vector* rotAxis)
+{
+  if (m_positionFK.JntToCart(q, *pose) < 0)
+  {
+    // ERROR
+    std::cout << "JntToCart failed" << std::endl;
+    return false;
+  }
+
+  // Calculate the offset transform
+  *trans = goal.p - pose->p;
+  *errL = trans->Norm();
+  KDL::Rotation rot = goal.M * pose->M.Inverse();
+  *errR = rot.GetRotAngle(*rotAxis);  // returns [0 ... pi]
+  return true;
 }
 
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
@@ -73,33 +99,23 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     sot.push_back(nsTask);
   }
 
-  double L, theta;
+  double theta;
   double lineErr, rotErr;
   VectorD qDot(n_dof);
   KDL::Jacobian jacobian;
   jacobian.resize(q_i.rows());
   KDL::Vector rotAxis, trans;
   KDL::Rotation rot;
-  //double sf;
 
-  double limitAlpha = 0.1;
+  double barrierAlpha = m_barrierInitAlpha;
 
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
-    if (m_positionFK.JntToCart(q_i, pose_i) < 0)
-    {
+
+    if (!calcPositionAndError(q_i, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis)) {
       // ERROR
-      std::cout << "JntToCart failed" << std::endl;
       return -1;
     }
-
-    // Calculate the offset transform
-    trans = goal_pose.p - pose_i.p;
-    L = trans.Norm();
-    rot = goal_pose.M * pose_i.M.Inverse();
-    theta = rot.GetRotAngle(rotAxis);  // returns [0 ... pi]
-    rotErr = theta;
-    lineErr = L;
 
     //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
@@ -108,17 +124,16 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       break;
     }
 
-    if (L > stepScale * m_linearMaxStepSize) {
-      trans = (stepScale * m_linearMaxStepSize / L) * trans;
+    if (lineErr > stepScale * m_linearMaxStepSize) {
+      trans = (stepScale * m_linearMaxStepSize / lineErr) * trans;
     }
 
+    theta = rotErr;
     if (theta > stepScale * m_angularMaxStepSize) {
       theta = stepScale * m_angularMaxStepSize;
     }
 
     // Calculate the desired Cartesian twist
-    //sot[0].desired.head<3>() = (1.0/m_dt) * trans.data;
-    //sot[0].desired.tail<3>() = theta/m_dt * rotAxis.data;
     sot[0].desired(0) = trans.data[0] / m_dt;
     sot[0].desired(1) = trans.data[1] / m_dt;
     sot[0].desired(2) = trans.data[2] / m_dt;
@@ -147,34 +162,30 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     }
 
-    //sf = m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
     m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
-    q_i.data += m_dt * qDot;
-
-    double limitScale = 1 - limitAlpha;
-    for (int j = 0; j < jl_low.rows(); ++j) {
-      double limitOffset = (jl_high[j] - jl_low[j]) * limitAlpha;
-      q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j] - limitOffset), jl_low[j] + limitOffset);
-    }
-
-    limitAlpha *= 0.95;
-
-    //std::cout << "    q: " << q_i.data.transpose() << std::endl;
-    //std::cout << "    cart vel: " << sot[0].desired.transpose() << std::endl;
-    //std::cout << "    qDot: " << qDot.transpose() << std::endl;
-
-    if (qDot.norm() < 1e-7) {  // TODO: config param
+    if (qDot.norm() < 1e-6) {  // TODO: config param
       //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
       return -2;
     }
 
-//    if (sf < stepScale) {
-//      stepScale = std::max(0.8*stepScale, 0.01);
-//      //std::cout << "New step scale (" << ii << "): " << stepScale << std::endl;
-//    } else if (stepScale < 1.0) {
-//      stepScale = std::min(1.1*stepScale, 1.0);
-//    }
+    q_i.data += m_dt * qDot;
+
+    // Apply a decaying barrier function
+    // u = upper limit;  l = lower limit
+    // theta(x) = -log(u - x) - log(-l + x)
+    // -alpha * dTheta(x)/dx = alpha*(1/(x-l) + 1/(x-u))
+    if (m_useBarrierFunction && (lineErr > 0.5 || rotErr > 0.5) ) {
+      for (int j = 0; j < jl_low.rows(); ++j) {
+        q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j] - 1e-7), jl_low[j] + 1e-7);
+        q_i.data[j] += barrierAlpha * (1/(q_i.data[j] - jl_low[j]) + 1/(q_i.data[j] - jl_high[j]));
+      }
+      barrierAlpha *= m_barrierDecay;
+    } else {
+      for (int j = 0; j < jl_low.rows(); ++j) {
+        q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j]), jl_low[j]);
+      }
+    }
   }
 
   if (solutionFound) {
