@@ -63,7 +63,7 @@ double getDeltaWithLimits(double value, double desired_delta,
 bool in_vel_bounds(const KDL::JntArray& vals, const KDL::JntArray& vels)
 {
   for(size_t i; i < vels.data.size(); i++){
-      if(vals(i) < -vels(i) || vals(i) > vels(i)){
+      if(vals(i)-1e-6 < -vels(i) || vals(i) > vels(i)+1e-6){
           return false;
       }
   }
@@ -74,29 +74,23 @@ bool in_pos_bounds(const KDL::JntArray& jnt_values, const KDL::JntArray& jnt_low
                    const KDL::JntArray& jnt_upper)
 {
   for(size_t i; i < jnt_values.data.size(); i++){
-      if(jnt_values(i) < jnt_lower(i) || jnt_values(i) > jnt_upper(i)){
+      if(jnt_values(i)-1e-6 < jnt_lower(i) || jnt_values(i) > jnt_upper(i)+1e-6){
           return false;
       }
   }
   return true;
 }
 
-double nullspace_influence(const KDL::JntArray& jnt_result, const KDL::JntArray& jnt_ns_result,
+double nullspace_l2_norm_ratio(const KDL::JntArray& jnt_result, const KDL::JntArray& jnt_ns_result,
                            const KDL::JntArray&  jnt_ns_bias)
 {
-  double influence = 0.0;
-  double natural_jnt_delta = 0.0;
-  double nullspace_jnt_delta = 0.0;
+  double error = 0;
+  double ns_error = 0;
   for(size_t i; i < jnt_ns_bias.data.size(); i++){
-      natural_jnt_delta = std::abs(jnt_result(i) - jnt_ns_bias(i));
-      nullspace_jnt_delta = std::abs(jnt_ns_result(i) - jnt_ns_bias(i));
-      if(natural_jnt_delta > nullspace_jnt_delta){
-          influence += nullspace_jnt_delta;
-      } else {
-          influence -= natural_jnt_delta;
-      }
+      error += std::pow(jnt_result(i) - jnt_ns_bias(i), 2);
+      ns_error += std::pow(jnt_ns_result(i) - jnt_ns_bias(i), 2);
   }
-  return influence / jnt_ns_bias.data.size();
+  return std::pow(ns_error, 0.5) / std::pow(error, 0.5);
 }
 
 // Compares linear and rotational velocities to see if they are they are scaled properly
@@ -226,11 +220,9 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
         q_delta(j)=getDeltaWithLimits(q(j), delta_position_seed_value, ll(j), ul(j));
       }
       JointSeed.push_back(q_delta);
-    }
-    else if (i == 0 || !use_random_position_seed){
+    } else if (i == 0 || !use_random_position_seed){
       JointSeed.push_back(nominal);
-    }
-    else { // "random" seed
+    } else { // "random" seed
       JointSeed.push_back(JointList[i-1]);
     }
     // Determine the NullSpace
@@ -239,11 +231,9 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
         for (uint j=0; j<ll.data.size(); j++) {
           q_nullspace(j)=getDeltaWithLimits(q(j), delta_nullspace_value, ll(j), ul(j));
         }
-      }
-      else if (nominal_nullspace){
+      } else if (nominal_nullspace){
         q_nullspace=nominal;
-      }
-      else { // random nullspace
+      } else { // random nullspace
         for (uint j=0; j<ll.data.size(); j++) {
           q_nullspace(j)=fRand(ll(j), ul(j));
         }
@@ -259,20 +249,27 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   KDL::JntArray ns_result;
   KDL::Frame end_effector_pose;
   KDL::Frame end_effector_pose_check;
-  KDL::Frame ns_end_effector_pose;
-  int rc;
-
+  int rc, ns_rc;
+  int both_success_cnt=0;
+  bool both_success=false;
   double total_time=0;
+  double ns_total_time=0;
+  double elapsed = 0;
   uint success=0;
-  double total_ns_influence=0.0;
+  uint ns_success=0;
+  double total_ns_l2_norm_ratio=0.0;
 
   std::vector<double> kdlPos_indivTime;
 
   ROS_INFO_STREAM("*** Testing KDL with "<<num_samples_pos<<" random samples");
 
   for (uint i=0; i < num_samples_pos; i++) {
+    elapsed = 0;
+    both_success=false;
+
+    // Solve End effector pose for both natural and nullspace
     fk_solver.JntToCart(JointList[i], end_effector_pose);
-    double elapsed = 0;
+
     result = JointSeed[i];
     int cnt = 0;  // keep track of iteration count to enforce max number of iterations
     start_time = boost::posix_time::microsec_clock::local_time();
@@ -286,32 +283,52 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     kdlPos_indivTime.push_back(elapsed);
     fk_solver.JntToCart(result, end_effector_pose_check);
     bool inPosBounds = in_pos_bounds(result, ll, ul);
-    if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
+    if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3)) {
       success++;
+      both_success=true;
+    }
+
+    // Compare previous Inverse Kinematics calls against that use the nullspace
     if(use_nullspace_bias_task) {
       cnt = 0;
+      elapsed = 0;
       start_time = boost::posix_time::microsec_clock::local_time();
       ns_result = JointSeed[i];
       do {
         q = ns_result; // when iterating start with last solution
         vik_nso_solver.setOptPos(NullSpaceBias[i]);
-        rc = kdl_nso_solver.CartToJnt(q, ns_end_effector_pose, ns_result);
+        ns_rc = kdl_nso_solver.CartToJnt(q, end_effector_pose, ns_result);
         diff = boost::posix_time::microsec_clock::local_time() - start_time;
         elapsed = diff.total_nanoseconds() / 1e9;
-      } while (rc < 0 && elapsed < timeout && cnt++ < 100);
-      total_ns_influence += nullspace_influence(result, ns_result, NullSpaceBias[i]);
+      } while (ns_rc < 0 && elapsed < timeout && cnt++ < 100);
+      ns_total_time += elapsed;
+      fk_solver.JntToCart(ns_result, end_effector_pose_check);
+      if (ns_rc>=0 && in_pos_bounds(ns_result, ll, ul)
+                && Equal(end_effector_pose, end_effector_pose_check, 1e-3)) {
+        ns_success++;
+        both_success &= true;
+      }
+      if(both_success) {
+        total_ns_l2_norm_ratio += nullspace_l2_norm_ratio(result, ns_result, NullSpaceBias[i]);
+        both_success_cnt++;
+      }
     }
 
     if (int((double)i/num_samples_pos*100)%10 == 0)
       ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
   }
-  double kdlPos_avgNsInfluence = total_ns_influence/num_samples_pos;
+  double kdlPos_ns_avgTime = ns_total_time/num_samples_pos;
+  double kdlPos_ns_avgL2Score = total_ns_l2_norm_ratio/both_success_cnt;
+  double kdlPos_ns_successRate = ns_success/num_samples_pos;
   double kdlPos_successRate = success/num_samples_pos;
   double kdlPos_avgTime = total_time/num_samples_pos;
   double kdlPos_stdDev = standardDeviation(kdlPos_indivTime, kdlPos_avgTime);
   ROS_INFO_STREAM("KDL found " << success << " solutions (" << 100.0 * kdlPos_successRate
-                  << "\%) with an average of " << kdlPos_avgTime << " secs per sample" << " with nullspace " <<kdlPos_avgNsInfluence);
-
+                  <<"\%) with an average of " << kdlPos_avgTime
+                  << " secs per sample");
+  ROS_INFO_STREAM("KDL nullspace success rate: "
+                   << 100.0 * kdlPos_ns_successRate << ", avg l2_norm ratio: "
+                   << kdlPos_ns_avgL2Score << ", avg time: " << kdlPos_ns_avgTime);
   total_time=0;
   success=0;
   std::vector<double> tracPos_indivTime;
@@ -369,20 +386,23 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     double             successRate;
     double     scaling_successRate;
     double                avg_time;
-    double        avg_ns_influence;
+    double    avg_ns_l2_norm_ratio;
+    double          avg_ns_success;
+    double             avg_ns_time;
     std::vector<double>  indiv_time;
+    std::vector<double>  indiv_ns_time;
   };
 
   std::vector<velocitySolverData> vel_solver_data;
-  velocitySolverData sns = {sns_ik::SNS,"SNS",0.0,0.0,0.0,0.0};
+  velocitySolverData sns = {sns_ik::SNS,"SNS",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns);
-  velocitySolverData sns_optimalsm = {sns_ik::SNS_OptimalScaleMargin,"SNS Optimal Scale Margin",0.0,0.0,0.0,0.0};
+  velocitySolverData sns_optimalsm = {sns_ik::SNS_OptimalScaleMargin,"SNS Optimal Scale Margin",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns_optimalsm);
-  velocitySolverData sns_optimal = {sns_ik::SNS_Optimal,"SNS Optimal",0.0,0.0,0.0,0.0};
+  velocitySolverData sns_optimal = {sns_ik::SNS_Optimal,"SNS Optimal",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns_optimal);
-  velocitySolverData sns_fast = {sns_ik::SNS_Fast,"SNS Fast",0.0,0.0,0.0,0.0};
+  velocitySolverData sns_fast = {sns_ik::SNS_Fast,"SNS Fast",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fast);
-  velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0,0.0};
+  velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fastoptimal);
 
   // These values are not used yet
@@ -395,39 +415,69 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     // Beginnings of parameter setting. Right now this sets the pos solver to its defaults
     std::shared_ptr<sns_ik::SNSPositionIK> pos_solver;
     snsik_solver.getPositionSolver(pos_solver);
-    // pos solver param setting end
+    // Initialize Solver Variables
     total_time=0;
+    ns_total_time=0;
     success=0;
+    ns_success=0;
+    both_success_cnt=0;
+    total_ns_l2_norm_ratio = 0.0;
     ROS_INFO_STREAM("*** Testing SNS-IK with "<<num_samples_pos<<" random samples");
-    total_ns_influence = 0.0;
     for (uint i=0; i < num_samples_pos; i++) {
+      // Initialize Iteration Variables
+      elapsed = 0;
+      both_success = false;
+      //Solve forward kinematics for both
       fk_solver.JntToCart(JointList[i],end_effector_pose);
-      double elapsed = 0;
-
       start_time = boost::posix_time::microsec_clock::local_time();
-
       rc = snsik_solver.CartToJnt(JointSeed[i], end_effector_pose, result);
       diff = boost::posix_time::microsec_clock::local_time() - start_time;
       elapsed = diff.total_nanoseconds() / 1e9;
       total_time+=elapsed;
       vst.indiv_time.push_back(elapsed);
-      if(use_nullspace_bias_task) {
-        rc = snsik_solver.CartToJnt(JointSeed[i], ns_end_effector_pose, NullSpaceBias[i], ns_result);
-        total_ns_influence += nullspace_influence(result, ns_result, NullSpaceBias[i]);
-      }
       fk_solver.JntToCart(result, end_effector_pose_check);
-      bool inPosBounds = in_pos_bounds(result, ll, ul);
-      if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
+      if (rc>=0 && in_pos_bounds(result, ll, ul)
+                && Equal(end_effector_pose, end_effector_pose_check, 1e-3)){
         success++;
+        both_success=true;
+       }
+
+      if(use_nullspace_bias_task) {
+        elapsed = 0;
+        start_time = boost::posix_time::microsec_clock::local_time();
+        ns_rc = snsik_solver.CartToJnt(JointSeed[i], end_effector_pose, NullSpaceBias[i], ns_result);
+        diff = boost::posix_time::microsec_clock::local_time() - start_time;
+        elapsed = diff.total_nanoseconds() / 1e9;
+        ns_total_time += elapsed;
+        vst.indiv_ns_time.push_back(elapsed);
+        fk_solver.JntToCart(ns_result, end_effector_pose_check);
+        if (ns_rc>=0 && in_pos_bounds(ns_result, ll, ul)
+                  && Equal(end_effector_pose, end_effector_pose_check, 1e-3)){
+          ns_success++;
+          both_success &= both_success;
+        }
+        if(both_success) {
+          total_ns_l2_norm_ratio += nullspace_l2_norm_ratio(result, ns_result, NullSpaceBias[i]);
+          both_success_cnt++;
+        }
+      }
+
       if (int((double)i/num_samples_pos*100)%10 == 0)
         ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
     }
     vst.successRate = success/num_samples_pos;
     vst.avg_time = total_time/num_samples_pos;
-    vst.avg_ns_influence = total_ns_influence/num_samples_pos;
     ROS_INFO_STREAM(vst.name << " found " << success << " solutions ("
                     << 100*vst.successRate << "\%) with an average of " << vst.avg_time
-                    << " secs per sample" << "with avg ns score of "<<vst.avg_ns_influence);
+                    << " secs per sample");
+    if(use_nullspace_bias_task) {
+        vst.avg_ns_l2_norm_ratio = total_ns_l2_norm_ratio/both_success_cnt;
+        vst.avg_ns_success = ns_success/num_samples_pos;
+        vst.avg_ns_time = ns_total_time/num_samples_pos;
+        ROS_INFO_STREAM(vst.name <<" nullspace success rate: "<<vst.avg_ns_success
+                    <<", avg l2_norm ratio: "<<vst.avg_ns_l2_norm_ratio
+                    <<", avg time: "<<vst.avg_ns_time);
+    }
   }
 
   ROS_INFO("\n************************************");
@@ -472,7 +522,6 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       vfk_solver.JntToCart(JointVelList[i],end_effector_vel);
       double elapsed = 0;
       start_time = boost::posix_time::microsec_clock::local_time();
-
       if(use_nullspace_bias_task)
         rc = snsik_solver.CartToJntVel(JointVelList[i].q, end_effector_vel.GetTwist(), NullSpaceBias[i], result_vel);
       else
@@ -517,8 +566,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     if (use_nullspace_bias_task) {
       vik_nso_solver.setOptPos(NullSpaceBias[i]);
       rc = vik_nso_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
-    }
-    else {
+    } else {
       rc = vik_solver.CartToJnt(JointVelList[i].q, end_effector_vel.GetTwist(), result_vel);
     }
     diff = boost::posix_time::microsec_clock::local_time() - start_time;
