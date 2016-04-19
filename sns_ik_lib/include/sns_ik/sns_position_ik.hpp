@@ -75,6 +75,21 @@ class SNSPositionIK {
       m_dt = dt;
     }
 
+    void setUseBarrierFunction(bool use) {
+      m_useBarrierFunction = use;
+    }
+    void setBarrierInitAlpha(double alpha) {
+      m_barrierInitAlpha = alpha;
+    }
+    bool setBarrierDecay(double decay) {
+      if (decay > 0 && decay <= 1.0) {
+        m_barrierDecay = decay;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
   private:
     KDL::Chain m_chain;
     std::shared_ptr<SNSVelocityIK> m_ikVelSolver;
@@ -84,6 +99,17 @@ class SNSPositionIK {
     double m_angularMaxStepSize;
     double m_maxIterations;
     double m_dt;
+    bool m_useBarrierFunction;
+    double m_barrierInitAlpha;
+    double m_barrierDecay;
+
+    bool calcPositionAndError(const KDL::JntArray& q,
+                              const KDL::Frame& goal,
+                              KDL::Frame* pose,
+                              double* errL,
+                              double* errR,
+                              KDL::Vector* trans,
+                              KDL::Vector* rotAxis);
 };
 
 }  // namespace sns_ikl
