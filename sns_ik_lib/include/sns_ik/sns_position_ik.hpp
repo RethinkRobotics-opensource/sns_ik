@@ -75,6 +75,21 @@ class SNSPositionIK {
       m_dt = dt;
     }
 
+    void setUseBarrierFunction(bool use) {
+      m_useBarrierFunction = use;
+    }
+    void setBarrierInitAlpha(double alpha) {
+      m_barrierInitAlpha = alpha;
+    }
+    bool setBarrierDecay(double decay) {
+      if (decay > 0 && decay <= 1.0) {
+        m_barrierDecay = decay;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
   private:
     KDL::Chain m_chain;
     std::shared_ptr<SNSVelocityIK> m_ikVelSolver;

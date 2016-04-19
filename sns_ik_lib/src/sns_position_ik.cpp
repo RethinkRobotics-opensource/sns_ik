@@ -174,9 +174,11 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     // Apply a decaying barrier function
     // u = upper limit;  l = lower limit
     // theta(x) = -log(u - x) - log(-l + x)
-    // -alpha * dTheta(x)/dx = alpha*(1/(x-l) + 1/(x-u))
+    // -alpha * dTheta(x)/dx === alpha * (1/(x-l) + 1/(x-u))
     if (m_useBarrierFunction && (lineErr > 0.5 || rotErr > 0.5) ) {
       for (int j = 0; j < jl_low.rows(); ++j) {
+        // First force the joint within limits.
+        // It can not be exactly at the limit since it will cause a division by zero NaN in the barrier function.
         q_i.data[j] = std::max(std::min(q_i.data[j], jl_high[j] - 1e-7), jl_low[j] + 1e-7);
         q_i.data[j] += barrierAlpha * (1/(q_i.data[j] - jl_low[j]) + 1/(q_i.data[j] - jl_high[j]));
       }
