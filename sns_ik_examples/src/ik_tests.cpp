@@ -60,10 +60,10 @@ double getDeltaWithLimits(double value, double desired_delta,
   }
 }
 
-bool in_vel_bounds(const KDL::JntArray& vals, const KDL::JntArray& vels)
+bool in_vel_bounds(const KDL::JntArray& vel_values, const KDL::JntArray& vel_limits)
 {
-  for(size_t i; i < vels.data.size(); i++){
-      if(vals(i)-1e-6 < -vels(i) || vals(i) > vels(i)+1e-6){
+  for(size_t i; i < vel_limits.data.size(); i++){
+      if(vel_values(i) < -vel_limits(i)-1e-6 || vel_values(i) > vel_limits(i)+1e-6){
           return false;
       }
   }
@@ -74,7 +74,7 @@ bool in_pos_bounds(const KDL::JntArray& jnt_values, const KDL::JntArray& jnt_low
                    const KDL::JntArray& jnt_upper)
 {
   for(size_t i; i < jnt_values.data.size(); i++){
-      if(jnt_values(i)-1e-6 < jnt_lower(i) || jnt_values(i) > jnt_upper(i)+1e-6){
+      if(jnt_values(i) < jnt_lower(i)-1e-6 || jnt_values(i) > jnt_upper(i)+1e-6){
           return false;
       }
   }
@@ -251,7 +251,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   KDL::Frame end_effector_pose_check;
   int rc, ns_rc;
   int both_success_cnt=0;
-  bool both_success=false;
+  uint both_success=0;
   double total_time=0;
   double ns_total_time=0;
   double elapsed = 0;
@@ -265,7 +265,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
 
   for (uint i=0; i < num_samples_pos; i++) {
     elapsed = 0;
-    both_success=false;
+    both_success=0;
 
     // Solve End effector pose for both natural and nullspace
     fk_solver.JntToCart(JointList[i], end_effector_pose);
@@ -285,7 +285,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     bool inPosBounds = in_pos_bounds(result, ll, ul);
     if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3)) {
       success++;
-      both_success=true;
+      both_success++;
     }
 
     // Compare previous Inverse Kinematics calls against that use the nullspace
@@ -306,9 +306,9 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       if (ns_rc>=0 && in_pos_bounds(ns_result, ll, ul)
                 && Equal(end_effector_pose, end_effector_pose_check, 1e-3)) {
         ns_success++;
-        both_success &= true;
+        both_success++;
       }
-      if(both_success) {
+      if(both_success==2) {
         total_ns_l2_norm_ratio += nullspace_l2_norm_ratio(result, ns_result, NullSpaceBias[i]);
         both_success_cnt++;
       }
@@ -426,7 +426,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
     for (uint i=0; i < num_samples_pos; i++) {
       // Initialize Iteration Variables
       elapsed = 0;
-      both_success = false;
+      both_success = 0;
       //Solve forward kinematics for both
       fk_solver.JntToCart(JointList[i],end_effector_pose);
       start_time = boost::posix_time::microsec_clock::local_time();
@@ -439,7 +439,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       if (rc>=0 && in_pos_bounds(result, ll, ul)
                 && Equal(end_effector_pose, end_effector_pose_check, 1e-3)){
         success++;
-        both_success=true;
+        both_success++;
        }
 
       if(use_nullspace_bias_task) {
@@ -454,9 +454,9 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
         if (ns_rc>=0 && in_pos_bounds(ns_result, ll, ul)
                   && Equal(end_effector_pose, end_effector_pose_check, 1e-3)){
           ns_success++;
-          both_success &= both_success;
+          both_success++;
         }
-        if(both_success) {
+        if(both_success==2) {
           total_ns_l2_norm_ratio += nullspace_l2_norm_ratio(result, ns_result, NullSpaceBias[i]);
           both_success_cnt++;
         }
