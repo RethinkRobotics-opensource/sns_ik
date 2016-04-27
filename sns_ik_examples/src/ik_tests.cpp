@@ -404,9 +404,6 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   double posIK_dt=0.2;
   for(auto& vst: vel_solver_data){
     snsik_solver.setVelocitySolveType(vst.type);
-    // Beginnings of parameter setting. Right now this sets the pos solver to its defaults
-    std::shared_ptr<sns_ik::SNSPositionIK> pos_solver;
-    snsik_solver.getPositionSolver(pos_solver);
     // Initialize Solver Variables
     total_time=0;
     ns_total_time=0;

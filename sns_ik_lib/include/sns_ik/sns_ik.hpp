@@ -86,25 +86,25 @@ namespace sns_ik {
     int CartToJnt(const KDL::JntArray &q_init,
                   const KDL::Frame &p_in,
                   KDL::JntArray &q_out,
-                  const KDL::Twist& tolerances=KDL::Twist::Zero())
+                  const KDL::Twist& bounds=KDL::Twist::Zero())
     { return CartToJnt(q_init, p_in, KDL::JntArray(0), std::vector<std::string>(),
-                       q_out, tolerances);
+                       q_out, bounds);
     }
 
     // Assumes the NS bias is for all the joints in the correct order
     int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
                   const KDL::JntArray& q_bias,
                   KDL::JntArray &q_out,
-                  const KDL::Twist& tolerances=KDL::Twist::Zero())
+                  const KDL::Twist& bounds=KDL::Twist::Zero())
     { return CartToJnt(q_init, p_in, q_bias, m_jointNames,
-                       q_out, tolerances);
+                       q_out, bounds);
     }
 
     int CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
                   const KDL::JntArray& q_bias,
                   const std::vector<std::string>& biasNames,
                   KDL::JntArray &q_out,
-                  const KDL::Twist& tolerances=KDL::Twist::Zero());
+                  const KDL::Twist& bounds=KDL::Twist::Zero());
 
     int CartToJntVel(const KDL::JntArray& q_in,
                     const KDL::Twist& v_in,
