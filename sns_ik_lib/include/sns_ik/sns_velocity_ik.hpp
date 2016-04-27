@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,11 +42,6 @@ struct Task {
     VectorD desired;   //!< desired velocity in task space
 };
 
-/*! \typedef StackOfTasks
- *  the stack of desired tasks
- */
-typedef std::vector<Task> StackOfTasks;
-
 #define _ONLY_WARNING_ON_ERROR
 /*! \def _ONLY_WARNING_ON_ERROR
  * with this is possible to avoid to stop the code if some non critical errors appears.
@@ -58,7 +53,7 @@ class SNSVelocityIK {
   public:
     SNSVelocityIK(int dof, Scalar loop_period);
     virtual ~SNSVelocityIK() {};
-    
+
     bool setJointsCapabilities(VectorD limit_low, VectorD limit_high,
                                VectorD maxVelocity, VectorD maxAcceleration);
     virtual void setNumberOfTasks(int ntasks, int dof = -1);
@@ -66,16 +61,16 @@ class SNSVelocityIK {
 
     // The control loop period in seconds
     void setLoopPeriod(double period) { loop_period = period; }
-    
+
     // SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
                             const VectorD &jointConfiguration);
 
     // Standard straight inverse jacobian
-    Scalar getJointVelocity_STD(VectorD *jointVelocity, const StackOfTasks &sot);
+    Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot);
 
     // The standard velocity IK solver doesn't need the joint configuration, but it's here for consistancy
-    Scalar getJointVelocity_STD(VectorD *jointVelocity, const StackOfTasks &sot,
+    Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot,
                             const VectorD &jointConfiguration)
         { return getJointVelocity_STD(jointVelocity, sot); }
 

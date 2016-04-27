@@ -23,7 +23,7 @@
 
 namespace sns_ik{
 
-SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik) :
+SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps) :
     m_chain(chain),
     m_ikVelSolver(velocity_ik),
     m_positionFK(chain),
@@ -31,6 +31,7 @@ SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> ve
     m_linearMaxStepSize(0.2),
     m_angularMaxStepSize(0.2),
     m_maxIterations(150),
+    m_eps(eps),
     m_dt(0.2),
     m_useBarrierFunction(true),
     m_barrierInitAlpha(0.1),
@@ -72,11 +73,8 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const std::vector<int>& ns_indicies,
                              const double ns_gain,
                              KDL::JntArray* return_joints,
-                             const KDL::Twist& tolerances)
+                             const KDL::Twist& bounds)
 {
-  // TODO: use tolerance twist
-  double linearTolerance = 1e-5;
-  double angularTolerance = 1e-5;
   VectorD jl_low = m_ikVelSolver->getJointLimitLow();
   VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
   VectorD maxJointVel = m_ikVelSolver->getJointVelocityMax();
@@ -86,7 +84,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   KDL::JntArray q_i = joint_seed;
   KDL::Frame pose_i;
   int n_dof = joint_seed.rows();
-  StackOfTasks sot(1);
+  std::vector<Task> sot(1);
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
 
@@ -106,6 +104,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   jacobian.resize(q_i.rows());
   KDL::Vector rotAxis, trans;
   KDL::Rotation rot;
+  KDL::Twist delta_twist;
 
   double barrierAlpha = m_barrierInitAlpha;
 
@@ -119,7 +118,23 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
-    if (lineErr <= linearTolerance && rotErr <= angularTolerance) {
+    // Check stopping tolerances
+    delta_twist = diffRelative(goal_pose, pose_i);
+
+    if (std::abs(delta_twist.vel.x()) <= std::abs(bounds.vel.x()))
+      delta_twist.vel.x(0);
+    if (std::abs(delta_twist.vel.y()) <= std::abs(bounds.vel.y()))
+      delta_twist.vel.y(0);
+    if (std::abs(delta_twist.vel.z()) <= std::abs(bounds.vel.z()))
+      delta_twist.vel.z(0);
+    if (std::abs(delta_twist.rot.x()) <= std::abs(bounds.rot.x()))
+      delta_twist.rot.x(0);
+    if (std::abs(delta_twist.rot.y()) <= std::abs(bounds.rot.y()))
+      delta_twist.rot.y(0);
+    if (std::abs(delta_twist.rot.z()) <= std::abs(bounds.rot.z()))
+      delta_twist.rot.z(0);
+
+    if(KDL::Equal(delta_twist, KDL::Twist::Zero(), m_eps)) {
       solutionFound = true;
       break;
     }

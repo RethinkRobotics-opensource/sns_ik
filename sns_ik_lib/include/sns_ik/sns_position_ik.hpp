@@ -34,15 +34,15 @@ namespace sns_ik {
 class SNSVelocityIK;
 class SNSPositionIK {
   public:
-    SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik);
+    SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps=1e-5);
     ~SNSPositionIK();
 
     int CartToJnt(const KDL::JntArray& joint_seed,
                   const KDL::Frame& goal_pose,
                   KDL::JntArray* return_joints,
-                  const KDL::Twist& tolerances)
+                  const KDL::Twist& bounds=KDL::Twist::Zero())
     { return CartToJnt(joint_seed, goal_pose, KDL::JntArray(0), MatrixD(0,0),
-                       std::vector<int>(0), 0.0, return_joints, tolerances); }
+                       std::vector<int>(0), 0.0, return_joints, bounds); }
 
     int CartToJnt(const KDL::JntArray& joint_seed,
                   const KDL::Frame& goal_pose,
@@ -51,7 +51,7 @@ class SNSPositionIK {
                   const std::vector<int>& ns_indicies,
                   const double ns_gain,
                   KDL::JntArray* return_joints,
-                  const KDL::Twist& tolerances);
+                  const KDL::Twist& bounds=KDL::Twist::Zero());
 
     // TODO: looks like this would require the KDL solvers to be wrapped in smart pointers
     //void setChain(const KDL::Chain chain);
@@ -98,6 +98,7 @@ class SNSPositionIK {
     double m_linearMaxStepSize;
     double m_angularMaxStepSize;
     double m_maxIterations;
+    double m_eps;
     double m_dt;
     bool m_useBarrierFunction;
     double m_barrierInitAlpha;
@@ -110,6 +111,24 @@ class SNSPositionIK {
                               double* errR,
                               KDL::Vector* trans,
                               KDL::Vector* rotAxis);
+
+    /**
+     * determines the rotation axis necessary to rotate from frame b1 to the
+     * orientation of frame b2 and the vector necessary to translate the origin
+     * of b1 to the origin of b2, and stores the result in a Twist
+     * datastructure.  The result is w.r.t. frame b1.
+     * \param F_a_b1 frame b1 expressed with respect to some frame a.
+     * \param F_a_b2 frame b2 expressed with respect to some frame a.
+     * \warning The result is not a real Twist!
+     * \warning In contrast to standard KDL diff methods, the result of
+     * diffRelative is w.r.t. frame b1 instead of frame a.
+     */
+    IMETHOD KDL::Twist diffRelative(const KDL::Frame & F_a_b1, const KDL::Frame & F_a_b2, double dt = 1)
+    {
+        return KDL::Twist(F_a_b1.M.Inverse() * diff(F_a_b1.p, F_a_b2.p, dt),
+                     F_a_b1.M.Inverse() * diff(F_a_b1.M, F_a_b2.M, dt));
+    }
+
 };
 
 }  // namespace sns_ikl

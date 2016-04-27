@@ -212,7 +212,7 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
     m_ik_vel_solver->usePositionLimits(false);
-    m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver));
+    m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver, m_eps));
     m_solvetype = type;
     m_initialized = true;
     return true;
@@ -223,7 +223,7 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
 int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
                       const KDL::JntArray& q_bias,
                       const std::vector<std::string>& biasNames,
-                      KDL::JntArray &q_out, const KDL::Twist& tolerances) {
+                      KDL::JntArray &q_out, const KDL::Twist& bounds) {
 
   if (!m_initialized) {
     ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
@@ -238,9 +238,9 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
       return -1;
     }
     return m_ik_pos_solver->CartToJnt(q_init, p_in, q_bias, ns_jacobian, indicies,
-                                      m_nullspaceGain, &q_out, tolerances);
+                                      m_nullspaceGain, &q_out, bounds);
   } else {
-    return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, tolerances);
+    return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, bounds);
   }
 }
 
@@ -262,7 +262,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
     return -1;
   }
 
-  StackOfTasks sot;
+  std::vector<Task> sot;
   Task task;
   task.jacobian = jacobian.data;
   task.desired = VectorD::Zero(6);

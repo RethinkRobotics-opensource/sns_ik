@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ void FOSNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
 }
 
 Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
-    const StackOfTasks &sot,
+    const std::vector<Task> &sot,
     const VectorD &jointConfiguration)
 {
   // This will only reset member variables if different from previous values

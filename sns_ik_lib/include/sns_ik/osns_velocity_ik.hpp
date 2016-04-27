@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,19 +36,19 @@ class OSNSVelocityIK : public SNSVelocityIK {
   public:
     OSNSVelocityIK(int dof, Scalar loop_period);
     virtual ~OSNSVelocityIK() {};
-    
+
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
                             const VectorD &jointConfiguration);
-    
+
   protected:
     // Perform the SNS for a single task
     virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
                      const MatrixD &higherPriorityNull, const MatrixD &jacobian,
                      const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
-    
-    bool isOptimal(int priority, const VectorD& dotQ, 
-                   const MatrixD& tildeP, MatrixD* W, 
+
+    bool isOptimal(int priority, const VectorD& dotQ,
+                   const MatrixD& tildeP, MatrixD* W,
                    VectorD* dotQn, double eps = 1e-8);
 };
 

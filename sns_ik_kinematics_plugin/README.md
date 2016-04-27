@@ -1,2 +1,2 @@
-SNS IK Kinematics Plugin 
+SNS IK Kinematics Plugin
 Package Placeholder

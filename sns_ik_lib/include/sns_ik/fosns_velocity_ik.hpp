@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,11 +38,11 @@ class FOSNSVelocityIK : public FSNSVelocityIK {
   public:
     FOSNSVelocityIK(int dof, Scalar loop_period);
     virtual ~FOSNSVelocityIK() {};
-    
+
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
                   const VectorD &jointConfiguration);
-    
+
     virtual void setNumberOfTasks(int ntasks, int dof);
 
     void setScaleMargin(double scale)

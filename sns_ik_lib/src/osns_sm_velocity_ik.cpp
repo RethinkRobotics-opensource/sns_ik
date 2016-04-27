@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,7 @@ OSNS_sm_VelocityIK::OSNS_sm_VelocityIK(int dof, Scalar loop_period) :
 
 
 Scalar OSNS_sm_VelocityIK::getJointVelocity(VectorD *jointVelocity,
-    const StackOfTasks &sot,
+    const std::vector<Task> &sot,
     const VectorD &jointConfiguration)
 {
   // This will only reset member variables if different from previous values
