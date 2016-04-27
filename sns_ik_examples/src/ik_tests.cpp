@@ -30,14 +30,19 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************************/
 
 #include <boost/date_time.hpp>
-#include <trac_ik/trac_ik.hpp>
 #include <sns_ik/sns_ik.hpp>
 #include <ros/ros.h>
 #include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
 #include <kdl/chainiksolvervel_pinv_nso.hpp>
+#include <kdl/chainiksolvervel_pinv.hpp>
 #include <kdl/framevel.hpp>
 #include <time.h>
+// Set USE_TRAC to 1 to test against trac_ik
+#define USE_TRAC 0
+#if USE_TRAC
+  #include <trac_ik/trac_ik.hpp>
+#endif
 
 double fRand(double min, double max)
 {
@@ -154,29 +159,24 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   // This constructor parses the URDF loaded in rosparm urdf_param into the
   // needed KDL structures.  We then pull these out to compare against the KDL
   // IK solver.
-  TRAC_IK::TRAC_IK tracik_solver(chain_start, chain_end, urdf_param, timeout, eps);
-
   KDL::Chain chain;
   KDL::JntArray ll, ul, vl, al; //lower joint limits, upper joint limits
-
-  bool valid = tracik_solver.getKDLChain(chain);
-
+  bool valid = false;
+  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS);
+  valid = snsik_solver.getKDLChain(chain);
   if (!valid) {
     ROS_ERROR("There was no valid KDL chain found");
     return;
   }
-
-  valid = tracik_solver.getKDLLimits(ll,ul);
-
+  valid = snsik_solver.getKDLLimits(ll,ul,vl,al);
   if (!valid) {
     ROS_ERROR("There were no valid KDL joint limits found");
     return;
   }
-
   assert(chain.getNrOfJoints() == ll.data.size());
   assert(chain.getNrOfJoints() == ul.data.size());
-
-  ROS_INFO ("Using %d joints",chain.getNrOfJoints());
+  assert(chain.getNrOfJoints() == vl.data.size());
+  assert(chain.getNrOfJoints() == al.data.size());
 
   // Create Nominal chain configuration midway between all joint limits
   KDL::JntArray nominal(chain.getNrOfJoints());
@@ -329,57 +329,57 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   ROS_INFO_STREAM("KDL nullspace success rate: "
                    << 100.0 * kdlPos_ns_successRate << ", avg l2_norm ratio: "
                    << kdlPos_ns_avgL2Score << ", avg time: " << kdlPos_ns_avgTime);
-  total_time=0;
-  success=0;
-  std::vector<double> tracPos_indivTime;
+  #if USE_TRAC
+    total_time=0;
+    success=0;
+    std::vector<double> tracPos_indivTime;
+    TRAC_IK::TRAC_IK tracik_solver(chain_start, chain_end, urdf_param, timeout, eps);
+    valid = tracik_solver.getKDLChain(chain);
+    if (!valid) {
+      ROS_ERROR("There was no valid KDL chain found");
+      return;
+    }
+    valid = tracik_solver.getKDLLimits(ll,ul);
+    if (!valid) {
+      ROS_ERROR("There were no valid KDL joint limits found");
+      return;
+    }
+    assert(chain.getNrOfJoints() == ll.data.size());
+    assert(chain.getNrOfJoints() == ul.data.size());
+    ROS_INFO ("TRAC-IK Using %d joints",chain.getNrOfJoints());
 
-  ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples_pos<<" random samples");
-  if (use_nullspace_bias_task)
-    ROS_WARN("TRAC-IK does not support secondary tasks.");
+    ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples_pos<<" random samples");
+    if (use_nullspace_bias_task)
+      ROS_WARN("TRAC-IK does not support secondary tasks.");
 
-  for (uint i=0; i < num_samples_pos; i++) {
-    fk_solver.JntToCart(JointList[i],end_effector_pose);
-    double elapsed = 0;
-    start_time = boost::posix_time::microsec_clock::local_time();
-    rc=tracik_solver.CartToJnt(JointSeed[i],end_effector_pose,result);
-    diff = boost::posix_time::microsec_clock::local_time() - start_time;
-    elapsed = diff.total_nanoseconds() / 1e9;
-    total_time+=elapsed;
-    tracPos_indivTime.push_back(elapsed);
-    fk_solver.JntToCart(result, end_effector_pose_check);
-    bool inPosBounds = in_pos_bounds(result, ll, ul);
-    if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
-      success++;
+    for (uint i=0; i < num_samples_pos; i++) {
+      fk_solver.JntToCart(JointList[i],end_effector_pose);
+      double elapsed = 0;
+      start_time = boost::posix_time::microsec_clock::local_time();
+      rc=tracik_solver.CartToJnt(JointSeed[i],end_effector_pose,result);
+      diff = boost::posix_time::microsec_clock::local_time() - start_time;
+      elapsed = diff.total_nanoseconds() / 1e9;
+      total_time+=elapsed;
+      tracPos_indivTime.push_back(elapsed);
+      fk_solver.JntToCart(result, end_effector_pose_check);
+      bool inPosBounds = in_pos_bounds(result, ll, ul);
+      if (rc>=0 && inPosBounds && Equal(end_effector_pose, end_effector_pose_check, 1e-3))
+        success++;
 
-    if (int((double)i/num_samples_pos*100)%10 == 0)
-      ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
-  }
+      if (int((double)i/num_samples_pos*100)%10 == 0)
+        ROS_INFO_STREAM_THROTTLE(1,int((i)/num_samples_pos*100)<<"\% done");
+    }
 
-  double tracPos_successRate = success/num_samples_pos;
-  double tracPos_avgTime = total_time/num_samples_pos;
-  double tracPos_stdDev = standardDeviation(tracPos_indivTime, tracPos_avgTime);
+    double tracPos_successRate = success/num_samples_pos;
+    double tracPos_avgTime = total_time/num_samples_pos;
+    double tracPos_stdDev = standardDeviation(tracPos_indivTime, tracPos_avgTime);
 
-  ROS_INFO_STREAM("TRAC-IK found " << success << " solutions (" << 100.0 * tracPos_successRate
-                  << "\%) with an average of " << tracPos_avgTime << " secs per sample");
-
-  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS);
-  valid = snsik_solver.getKDLChain(chain);
-  if (!valid) {
-    ROS_ERROR("SNS: There was no valid KDL chain found");
-    return;
-  }
-  valid = snsik_solver.getKDLLimits(ll,ul,vl,al);
-  if (!valid) {
-    ROS_ERROR("SNS: There were no valid KDL joint limits found");
-    return;
-  }
-  assert(chain.getNrOfJoints() == ll.data.size());
-  assert(chain.getNrOfJoints() == ul.data.size());
-  assert(chain.getNrOfJoints() == vl.data.size());
-  assert(chain.getNrOfJoints() == al.data.size());
-  snsik_solver.setNullspaceGain(nullspace_gain);
+    ROS_INFO_STREAM("TRAC-IK found " << success << " solutions (" << 100.0 * tracPos_successRate
+                    << "\%) with an average of " << tracPos_avgTime << " secs per sample");
+  #endif
 
   // SNS Position Tests
+  snsik_solver.setNullspaceGain(nullspace_gain);
   struct velocitySolverData {
     sns_ik::VelocitySolveType type;
     std::string               name;
@@ -489,8 +489,10 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   }
   ROS_INFO("KDL: %.2f%% success rate with (time: %.2f \u00b1 %.2f ms)",
            100.*kdlPos_successRate, 1000*kdlPos_avgTime, 1000*kdlPos_stdDev);
+  #if USE_TRAC
   ROS_INFO("TRAC: %.2f%% success rate with (time: %.2f \u00b1 %.2f ms)",
            100.*tracPos_successRate, 1000*tracPos_avgTime, 1000*tracPos_stdDev);
+  #endif
   ROS_INFO("\n************************************\n");
 
   // Create random velocities within the limits

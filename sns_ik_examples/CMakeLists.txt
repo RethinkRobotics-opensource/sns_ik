@@ -18,7 +18,7 @@ find_package(catkin REQUIRED
   roscpp
   cmake_modules
   sns_ik_lib
-  trac_ik_lib
+  #trac_ik_lib #Uncomment this to test against trac_ik
 )
 
 find_package(Eigen REQUIRED)
