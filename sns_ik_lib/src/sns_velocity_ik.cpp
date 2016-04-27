@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -102,7 +102,7 @@ Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
 
     *jointVelocity = ((*jointVelocity) + invJ * (sot[i_task].desired - sot[i_task].jacobian * (*jointVelocity)));
   }
-  
+
   return 1.0;
 }
 

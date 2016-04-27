@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@ class OSNS_sm_VelocityIK : public OSNSVelocityIK {
   public:
     OSNS_sm_VelocityIK(int dof, Scalar loop_period);
     virtual ~OSNS_sm_VelocityIK() {};
-    
+
     // Optimal SNS Velocity IK
     virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                             const VectorD &jointConfiguration);

@@ -31,13 +31,13 @@ using namespace Eigen;
 
 namespace sns_ik {
 
-#define _USE_DOUBLE_  
-/*! \def _USE_DOUBLE_  
+#define _USE_DOUBLE_
+/*! \def _USE_DOUBLE_
  * use values with double precision.
  * This is used to have the possibility to switch (at compile time) between float and double precision in order to be faster or more accurate.
  * Inside the \b IKL we will use the follow definition:
  * - \b MatrixD  a dynamic sized Matrix of real numbers
- * - \b VectorD a column vector of real numbers with dynamic length 
+ * - \b VectorD a column vector of real numbers with dynamic length
  * - \b Scalar a real number
  */
 

@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,7 +57,7 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     higherPriorityNull = P;
     scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
         sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
-    
+
     if (scaleFactors[i_task] > 1)
           scaleFactors[i_task] = 1;
 
@@ -278,7 +278,7 @@ void FSNSVelocityIK::getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
 
   smax = Smax.minCoeff(mostCriticalJoint, &col);
   smin = Smin.maxCoeff();
-  
+
   if ((smin > smax) || (smax < 0.0) || (smin > 1.0) || (smax == inf)) {
     (*scalingFactor) = -1.0;  // the task is not feasible
   } else {

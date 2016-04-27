@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,7 +58,7 @@ class SNSVelocityIK {
   public:
     SNSVelocityIK(int dof, Scalar loop_period);
     virtual ~SNSVelocityIK() {};
-    
+
     bool setJointsCapabilities(VectorD limit_low, VectorD limit_high,
                                VectorD maxVelocity, VectorD maxAcceleration);
     virtual void setNumberOfTasks(int ntasks, int dof = -1);
@@ -66,7 +66,7 @@ class SNSVelocityIK {
 
     // The control loop period in seconds
     void setLoopPeriod(double period) { loop_period = period; }
-    
+
     // SNS Velocity IK
     virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
                             const VectorD &jointConfiguration);

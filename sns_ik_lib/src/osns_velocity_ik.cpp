@@ -5,7 +5,7 @@
  */
 /*
  *    Copyright 2016 Rethink Robotics
- *    
+ *
  *    Copyright 2012-2016 Fabrizio Flacco
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,7 +55,7 @@ Scalar OSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
         sot[i_task].jacobian, sot[i_task].desired, jointVelocity, &P);
   }
-  
+
   // TODO: verify what is being set here
   //return 1.0 * nSat[0] + nSat[1] + nSat[2] + nSat[3] + nSat[4];
   return 1.0;
@@ -338,8 +338,8 @@ Scalar OSNSVelocityIK::SNSsingle(int priority,
   return scalingFactor;
 }
 
-bool OSNSVelocityIK::isOptimal(int priority, const VectorD& dotQ, 
-                               const MatrixD& tildeP, MatrixD* W, 
+bool OSNSVelocityIK::isOptimal(int priority, const VectorD& dotQ,
+                               const MatrixD& tildeP, MatrixD* W,
                                VectorD* dotQn, double eps) {
 
   VectorD barMu;
