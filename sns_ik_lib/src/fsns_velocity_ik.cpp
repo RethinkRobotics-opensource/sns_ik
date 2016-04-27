@@ -34,7 +34,7 @@ FSNSVelocityIK::FSNSVelocityIK(int dof, Scalar loop_period) :
 
 
 Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
-    const StackOfTasks &sot,
+    const std::vector<Task> &sot,
     const VectorD &jointConfiguration)
 {
   // This will only reset member variables if different from previous values

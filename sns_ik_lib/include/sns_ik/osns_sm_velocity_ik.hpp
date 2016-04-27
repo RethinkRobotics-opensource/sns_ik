@@ -38,7 +38,7 @@ class OSNS_sm_VelocityIK : public OSNSVelocityIK {
     virtual ~OSNS_sm_VelocityIK() {};
 
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
                             const VectorD &jointConfiguration);
 
     void setScaleMargin(double scale)

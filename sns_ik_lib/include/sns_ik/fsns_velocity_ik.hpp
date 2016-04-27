@@ -40,7 +40,7 @@ class FSNSVelocityIK : public SNSVelocityIK {
     virtual ~FSNSVelocityIK() {};
 
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
                   const VectorD &jointConfiguration);
 
   protected:

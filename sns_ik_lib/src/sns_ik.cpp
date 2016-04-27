@@ -262,7 +262,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
     return -1;
   }
 
-  StackOfTasks sot;
+  std::vector<Task> sot;
   Task task;
   task.jacobian = jacobian.data;
   task.desired = VectorD::Zero(6);

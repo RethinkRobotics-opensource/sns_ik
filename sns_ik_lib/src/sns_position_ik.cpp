@@ -84,7 +84,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   KDL::JntArray q_i = joint_seed;
   KDL::Frame pose_i;
   int n_dof = joint_seed.rows();
-  StackOfTasks sot(1);
+  std::vector<Task> sot(1);
   sot[0].desired = VectorD::Zero(6);
   double stepScale = 1.0;
 

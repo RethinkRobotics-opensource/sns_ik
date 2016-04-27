@@ -42,11 +42,6 @@ struct Task {
     VectorD desired;   //!< desired velocity in task space
 };
 
-/*! \typedef StackOfTasks
- *  the stack of desired tasks
- */
-typedef std::vector<Task> StackOfTasks;
-
 #define _ONLY_WARNING_ON_ERROR
 /*! \def _ONLY_WARNING_ON_ERROR
  * with this is possible to avoid to stop the code if some non critical errors appears.
@@ -68,14 +63,14 @@ class SNSVelocityIK {
     void setLoopPeriod(double period) { loop_period = period; }
 
     // SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const StackOfTasks &sot,
+    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
                             const VectorD &jointConfiguration);
 
     // Standard straight inverse jacobian
-    Scalar getJointVelocity_STD(VectorD *jointVelocity, const StackOfTasks &sot);
+    Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot);
 
     // The standard velocity IK solver doesn't need the joint configuration, but it's here for consistancy
-    Scalar getJointVelocity_STD(VectorD *jointVelocity, const StackOfTasks &sot,
+    Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot,
                             const VectorD &jointConfiguration)
         { return getJointVelocity_STD(jointVelocity, sot); }
 
