@@ -339,14 +339,6 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
       ROS_ERROR("There was no valid KDL chain found");
       return;
     }
-    valid = tracik_solver.getKDLLimits(ll,ul);
-    if (!valid) {
-      ROS_ERROR("There were no valid KDL joint limits found");
-      return;
-    }
-    assert(chain.getNrOfJoints() == ll.data.size());
-    assert(chain.getNrOfJoints() == ul.data.size());
-    ROS_INFO ("TRAC-IK Using %d joints",chain.getNrOfJoints());
 
     ROS_INFO_STREAM("*** Testing TRAC-IK with "<<num_samples_pos<<" random samples");
     if (use_nullspace_bias_task)
