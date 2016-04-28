@@ -43,7 +43,7 @@ SNSPositionIK::~SNSPositionIK()
 {
 }
 
-bool SNSPositionIK::calcPositionAndError(const KDL::JntArray& q,
+bool SNSPositionIK::calcPoseError(const KDL::JntArray& q,
                                          const KDL::Frame& goal,
                                          KDL::Frame* pose,
                                          double* errL,
@@ -86,7 +86,6 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   int n_dof = joint_seed.rows();
   std::vector<Task> sot(1);
   sot[0].desired = VectorD::Zero(6);
-  double stepScale = 1.0;
 
   // If there's a nullspace bias, create a secondary task
   if (joint_ns_bias.rows()) {
@@ -111,7 +110,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   int ii;
   for (ii = 0; ii < m_maxIterations; ++ii) {
 
-    if (!calcPositionAndError(q_i, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis)) {
+    if (!calcPoseError(q_i, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis)) {
       // ERROR
       return -1;
     }
@@ -139,13 +138,14 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       break;
     }
 
-    if (lineErr > stepScale * m_linearMaxStepSize) {
-      trans = (stepScale * m_linearMaxStepSize / lineErr) * trans;
+    // Enforce max linear and rotational step sizes
+    if (lineErr > m_linearMaxStepSize) {
+      trans = (m_linearMaxStepSize / lineErr) * trans;
     }
 
     theta = rotErr;
-    if (theta > stepScale * m_angularMaxStepSize) {
-      theta = stepScale * m_angularMaxStepSize;
+    if (theta > m_angularMaxStepSize) {
+      theta = m_angularMaxStepSize;
     }
 
     // Calculate the desired Cartesian twist
@@ -184,12 +184,13 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
       return -2;
     }
 
+    // Update the joint positions
     q_i.data += m_dt * qDot;
 
     // Apply a decaying barrier function
     // u = upper limit;  l = lower limit
-    // theta(x) = -log(u - x) - log(-l + x)
-    // -alpha * dTheta(x)/dx === alpha * (1/(x-l) + 1/(x-u))
+    // B(x) = -log(u - x) - log(-l + x)
+    // -alpha * dB(x)/dx === alpha * (1/(x-l) + 1/(x-u))
     if (m_useBarrierFunction && (lineErr > 0.5 || rotErr > 0.5) ) {
       for (int j = 0; j < jl_low.rows(); ++j) {
         // First force the joint within limits.

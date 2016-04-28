@@ -104,13 +104,23 @@ class SNSPositionIK {
     double m_barrierInitAlpha;
     double m_barrierDecay;
 
-    bool calcPositionAndError(const KDL::JntArray& q,
-                              const KDL::Frame& goal,
-                              KDL::Frame* pose,
-                              double* errL,
-                              double* errR,
-                              KDL::Vector* trans,
-                              KDL::Vector* rotAxis);
+    /**
+     * @brief Calculate the position and rotation errors in base frame
+     * @param q - joints input
+     * @param goal - desired goal frame
+     * @param pose - pose based of FK of q
+     * @param errL - translation error magnitude (== trans.Norm())
+     * @param errR - rotational error magnitude (angle-axis representation)
+     * @param trans - translation vector
+     * @param rotAxis - unit rotation vector
+     */
+    bool calcPoseError(const KDL::JntArray& q,
+                       const KDL::Frame& goal,
+                       KDL::Frame* pose,
+                       double* errL,
+                       double* errR,
+                       KDL::Vector* trans,
+                       KDL::Vector* rotAxis);
 
     /**
      * determines the rotation axis necessary to rotate from frame b1 to the
