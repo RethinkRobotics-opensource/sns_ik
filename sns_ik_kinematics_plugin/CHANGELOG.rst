@@ -2,6 +2,10 @@
 Changelog for package sns_ik_kinematics_plugin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2016-04-28)
+---------------------------------
+* No updates
+
 0.1.0 (2016-04-22)
 ---------------------------------
 * Converts sns lib into package framework
