@@ -2,6 +2,11 @@
 Changelog for package sns_ik_lib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2016-04-28)
+---------------------------------
+* Fixed install location for sns_ik headers
+* Minor code cleanup / old code removal
+
 0.1.0 (2016-04-22)
 ---------------------------------
 * Added setters for barrier function and added some comments
