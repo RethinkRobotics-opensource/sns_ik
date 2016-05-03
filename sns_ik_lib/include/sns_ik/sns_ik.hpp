@@ -146,7 +146,7 @@ namespace sns_ik {
     std::shared_ptr<SNSPositionIK> m_ik_pos_solver;
     std::shared_ptr<KDL::ChainJntToJacSolver> m_jacobianSolver;
 
-    void initialize();
+    bool initialize();
 
     bool nullspaceBiasTask(const KDL::JntArray& q_bias,
                            const std::vector<std::string>& biasNames,

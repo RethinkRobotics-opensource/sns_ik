@@ -123,7 +123,9 @@ namespace sns_ik {
         joint_num++;
       }
     }
-    initialize();
+    if (!initialize()) {
+      ROS_ERROR("SNS_IK: Failed to initialize solver based on inputs arguments.");
+    }
   }
 
 
@@ -143,21 +145,37 @@ namespace sns_ik {
     m_acceleration(a_max),
     m_jointNames(jointNames)
   {
-    initialize();
+    if (!initialize()) {
+      ROS_ERROR("SNS_IK: Failed to initialize solver based on inputs arguments.");
+    }
   }
 
-  void SNS_IK::initialize() {
+  bool SNS_IK::initialize() {
 
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_lower_bounds.rows(),
-                "SNS_IK: Number of joint lower bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_upper_bounds.rows(),
-                "SNS_IK: Number of joint upper bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_velocity.rows(),
-                "SNS_IK: Number of max joint velocity bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_acceleration.rows(),
-                "SNS_IK: Number of max joint acceleration bounds does not equal number of joints");
-    ROS_ASSERT_MSG(m_chain.getNrOfJoints() == m_jointNames.size(),
-                    "SNS_IK: Number of joint names does not equal number of joints");
+    if (m_chain.getNrOfJoints() != m_lower_bounds.rows()) {
+      ROS_ERROR("SNS_IK: Number of joint lower bounds does not equal number of joints.");
+      return false;
+    }
+    if (m_chain.getNrOfJoints() != m_upper_bounds.rows()) {
+      ROS_ERROR("SNS_IK: Number of joint upper bounds does not equal number of joints.");
+      return false;
+    }
+    if(m_chain.getNrOfJoints() != m_velocity.rows()) {
+      ROS_ERROR("SNS_IK: Number of max joint velocity bounds does not equal number of joints.");
+      return false;
+    }
+    if(m_chain.getNrOfJoints() != m_acceleration.rows()) {
+      ROS_ERROR("SNS_IK: Number of max joint acceleration bounds does not equal number of joints.");
+      return false;
+    }
+    if(m_chain.getNrOfJoints() != m_jointNames.size()) {
+      ROS_ERROR("SNS_IK: Number of joint names does not equal number of joints.");
+      return false;
+    }
+    if(m_jointNames.size() == 0) {
+      ROS_ERROR("SNS_IK: Requested chain contains zero non-fixed joints. There is no IK to solve.");
+      return false;
+    }
 
     // Populate a vector cooresponding to the type for every joint
     for (std::size_t i = 0; i < m_chain.segments.size(); i++) {
@@ -173,12 +191,17 @@ namespace sns_ik {
         m_types.push_back(SNS_IK::JointType::Prismatic);
       }
     }
-    ROS_ASSERT_MSG(m_types.size()==(unsigned int)m_lower_bounds.data.size(),
-                   "SNS_IK: Could not determine joint limits for all non-continuous joints");
+    if(m_types.size()!=(unsigned int)m_lower_bounds.data.size()) {
+      ROS_ERROR("SNS_IK: Could not determine joint limits for all non-continuous joints");
+      return false;
+    }
 
     m_jacobianSolver = std::shared_ptr<KDL::ChainJntToJacSolver>(new KDL::ChainJntToJacSolver(m_chain));
-    ROS_ASSERT_MSG(setVelocitySolveType(m_solvetype),
-                   "SNS_IK: Failed to create a new SNS velocity and position solver."); //TODO make loop rate configurable
+    if(!setVelocitySolveType(m_solvetype)) {//TODO make loop rate configurable
+      ROS_ERROR("SNS_IK: Failed to create a new SNS velocity and position solver.");
+      return false;
+    }
+    return true;
   }
 
 bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
@@ -258,7 +281,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
   jacobian.resize(q_in.rows());
   if (m_jacobianSolver->JntToJac(q_in, jacobian) < 0)
   {
-    std::cout << "JntToJac failed" << std::endl;
+    ROS_ERROR("SNS_IK::CartToJntVel -> JntToJac solver failed");
     return -1;
   }
 
@@ -298,7 +321,10 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
                                MatrixD* jacobian,
                                std::vector<int>* indicies)
 {
-  ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differe");
+  if(q_bias.rows() != biasNames.size()) {
+    ROS_ERROR("SNS_IK: Number of joint bias and names differ in nullspace bias request.");
+    return false;
+  }
   Task task2;
   *jacobian = MatrixD::Zero(m_jointNames.size(), q_bias.rows());
   indicies->resize(q_bias.rows(), 0);
@@ -307,7 +333,7 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
     it = std::find(m_jointNames.begin(), m_jointNames.end(), biasNames[ii]);
     if (it == m_jointNames.end())
     {
-      std::cout << "Could not find bias joint name: " << biasNames[ii] << std::endl;
+      ROS_INFO("Could not find bias joint name: %s", biasNames[ii].c_str());
       return false;
     }
     int indx = std::distance(m_jointNames.begin(), it);

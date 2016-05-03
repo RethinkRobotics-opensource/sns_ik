@@ -162,6 +162,11 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   KDL::Chain chain;
   KDL::JntArray ll, ul, vl, al; //lower joint limits, upper joint limits
   bool valid = false;
+  // Test invalid IK solver
+  ROS_INFO("SNS_IK Test: Trying an invalid chain:");
+  sns_ik::SNS_IK brokenik_solver(chain_start, chain_start, urdf_param, timeout, eps, sns_ik::SNS);
+  // Test valid IK solver
+  ROS_INFO("SNS_IK Test: Trying a valid chain:");
   sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS);
   valid = snsik_solver.getKDLChain(chain);
   if (!valid) {
