@@ -37,8 +37,8 @@ SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) :
   setLoopPeriod(loop_period);
 }
 
-bool SNSVelocityIK::setJointsCapabilities(VectorD limit_low, VectorD limit_high,
-                                          VectorD maxVelocity, VectorD maxAcceleration)
+bool SNSVelocityIK::setJointsCapabilities(const VectorD limit_low, const VectorD limit_high,
+                                          const VectorD maxVelocity, const VectorD maxAcceleration)
 {
   if (limit_low.rows() != n_dof || limit_high.rows() != n_dof
       || maxVelocity.rows() != n_dof || maxAcceleration.rows() != n_dof) {
@@ -52,6 +52,28 @@ bool SNSVelocityIK::setJointsCapabilities(VectorD limit_low, VectorD limit_high,
 
   dotQmin = -maxJointVelocity.array();
   dotQmax = maxJointVelocity.array();
+
+  return true;
+}
+
+bool SNSVelocityIK::setMaxJointVelocity(const VectorD maxVelocity)
+{
+  if (maxVelocity.rows() != n_dof) {
+    return false;
+  }
+
+  maxJointVelocity = maxVelocity;
+  dotQmin = -maxJointVelocity.array();
+  dotQmax = maxJointVelocity.array();
+
+  return true;
+}
+
+bool SNSVelocityIK::setMaxJointAcceleration(const VectorD maxAcceleration)
+{
+  if (maxAcceleration.rows() != n_dof) {
+    return false;
+  }
 
   return true;
 }

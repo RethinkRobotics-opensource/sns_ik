@@ -33,8 +33,6 @@ namespace sns_ik {
 
 /*! \struct Task
  *  A desired robot task
- *  \todo for now we are not able to work in acceleration becouse we need the derivative of the Jacobian, but we should consider also the
- *  pre-Jacobian, post-Jacobian and augmented_Jacobian in the derivate... how can we do that?
  */
 
 struct Task {
@@ -54,8 +52,10 @@ class SNSVelocityIK {
     SNSVelocityIK(int dof, Scalar loop_period);
     virtual ~SNSVelocityIK() {};
 
-    bool setJointsCapabilities(VectorD limit_low, VectorD limit_high,
-                               VectorD maxVelocity, VectorD maxAcceleration);
+    bool setJointsCapabilities(const VectorD limit_low, const VectorD limit_high,
+                               const VectorD maxVelocity, const VectorD maxAcceleration);
+    bool setMaxJointVelocity(const VectorD maxVelocity);
+    bool setMaxJointAcceleration(const VectorD maxAcceleration);
     virtual void setNumberOfTasks(int ntasks, int dof = -1);
     virtual void setNumberOfDOF(int dof);
 

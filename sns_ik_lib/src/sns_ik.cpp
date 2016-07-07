@@ -319,4 +319,14 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
 
 SNS_IK::~SNS_IK(){}
 
+bool SNS_IK::setMaxJointVelocity(const KDL::JntArray& vel) {
+  m_velocity = vel;
+  return m_ik_vel_solver->setMaxJointVelocity(vel.data);
+}
+
+bool SNS_IK::setMaxJointAcceleration(const KDL::JntArray& accel) {
+  m_acceleration = accel;
+  return m_ik_vel_solver->setMaxJointAcceleration(accel.data);
+}
+
 } // sns_ik namespace

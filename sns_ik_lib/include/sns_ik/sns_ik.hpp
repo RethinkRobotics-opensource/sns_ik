@@ -83,6 +83,10 @@ namespace sns_ik {
       return m_initialized;
     }
 
+    bool setMaxJointVelocity(const KDL::JntArray& vel);
+
+    bool setMaxJointAcceleration(const KDL::JntArray& accel);
+
     int CartToJnt(const KDL::JntArray &q_init,
                   const KDL::Frame &p_in,
                   KDL::JntArray &q_out,
