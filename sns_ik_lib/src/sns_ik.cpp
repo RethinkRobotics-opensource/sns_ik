@@ -206,12 +206,11 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
         ROS_INFO("SNS_IK: Set Velocity solver to Standard SNS solver.");
         break;
       default:
-        ROS_ERROR("SNS_IK: Unknow Velocity solver type requested.");
+        ROS_ERROR("SNS_IK: Unknown Velocity solver type requested.");
         return false;
     }
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
-    m_ik_vel_solver->usePositionLimits(false);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver, m_eps));
     m_solvetype = type;
     m_initialized = true;
@@ -230,18 +229,26 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
     return -1;
   }
 
+  // The position solver uses a barrier function instead of the hard position limits
+  m_ik_vel_solver->usePositionLimits(false);
+
+  int result;
   if (q_bias.rows()) {
     MatrixD ns_jacobian;
     std::vector<int> indicies;
     if (!nullspaceBiasTask(q_bias, biasNames, &ns_jacobian, &indicies)) {
       ROS_ERROR("Could not create nullspace bias task");
-      return -1;
+      result = -1;
+    } else {
+      result = m_ik_pos_solver->CartToJnt(q_init, p_in, q_bias, ns_jacobian, indicies,
+                                          m_nullspaceGain, &q_out, bounds);
     }
-    return m_ik_pos_solver->CartToJnt(q_init, p_in, q_bias, ns_jacobian, indicies,
-                                      m_nullspaceGain, &q_out, bounds);
   } else {
-    return m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, bounds);
+    result = m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, bounds);
   }
+
+  m_ik_vel_solver->usePositionLimits(true);
+  return result;
 }
 
 int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
