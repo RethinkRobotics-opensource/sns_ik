@@ -64,14 +64,14 @@ class SNSVelocityIK {
 
     // SNS Velocity IK
     virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                            const VectorD &jointConfiguration);
+                                    const VectorD &jointConfiguration);
 
     // Standard straight inverse jacobian
     Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot);
 
     // The standard velocity IK solver doesn't need the joint configuration, but it's here for consistancy
     Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot,
-                            const VectorD &jointConfiguration)
+                                const VectorD &jointConfiguration)
         { return getJointVelocity_STD(jointVelocity, sot); }
 
     std::vector<Scalar> getTasksScaleFactor()

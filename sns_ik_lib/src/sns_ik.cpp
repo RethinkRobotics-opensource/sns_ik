@@ -27,11 +27,11 @@
 namespace sns_ik {
 
   SNS_IK::SNS_IK(const std::string& base_link, const std::string& tip_link,
-                 const std::string& URDF_param, double looprate, double eps,
+                 const std::string& URDF_param, double loopPeriod, double eps,
                  sns_ik::VelocitySolveType type) :
     m_initialized(false),
     m_eps(eps),
-    m_looprate(looprate),
+    m_loopPeriod(loopPeriod),
     m_nullspaceGain(1.0),
     m_solvetype(type)
   {
@@ -130,10 +130,10 @@ namespace sns_ik {
   SNS_IK::SNS_IK(const KDL::Chain& chain, const KDL::JntArray& q_min,
                  const KDL::JntArray& q_max, const KDL::JntArray& v_max,
                  const KDL::JntArray& a_max, const std::vector<std::string>& jointNames,
-                 double looprate, double eps, sns_ik::VelocitySolveType type):
+                 double loopPeriod, double eps, sns_ik::VelocitySolveType type):
     m_initialized(false),
     m_eps(eps),
-    m_looprate(looprate),
+    m_loopPeriod(loopPeriod),
     m_nullspaceGain(1.0),
     m_solvetype(type),
     m_chain(chain),
@@ -186,23 +186,23 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
   if(m_solvetype != type || !m_ik_vel_solver){
     switch (type) {
       case sns_ik::SNS_OptimalScaleMargin:
-        m_ik_vel_solver = std::shared_ptr<OSNS_sm_VelocityIK>(new OSNS_sm_VelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        m_ik_vel_solver = std::shared_ptr<OSNS_sm_VelocityIK>(new OSNS_sm_VelocityIK(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to SNS Optimal Scale Margin solver.");
         break;
       case sns_ik::SNS_Optimal:
-        m_ik_vel_solver = std::shared_ptr<OSNSVelocityIK>(new OSNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        m_ik_vel_solver = std::shared_ptr<OSNSVelocityIK>(new OSNSVelocityIK(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to SNS Optimal solver.");
         break;
       case sns_ik::SNS_Fast:
-        m_ik_vel_solver = std::shared_ptr<FSNSVelocityIK>(new FSNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        m_ik_vel_solver = std::shared_ptr<FSNSVelocityIK>(new FSNSVelocityIK(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to Fast SNS solver.");
         break;
       case sns_ik::SNS_FastOptimal:
-        m_ik_vel_solver = std::shared_ptr<FOSNSVelocityIK>(new FOSNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        m_ik_vel_solver = std::shared_ptr<FOSNSVelocityIK>(new FOSNSVelocityIK(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to Fast Optimal SNS solver.");
         break;
       case sns_ik::SNS:
-        m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), m_looprate));
+        m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to Standard SNS solver.");
         break;
       default:
@@ -252,9 +252,9 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
 }
 
 int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
-                        const KDL::JntArray& q_bias,
-                        const std::vector<std::string>& biasNames,
-                        KDL::JntArray& qdot_out)
+                         const KDL::JntArray& q_bias,
+                         const std::vector<std::string>& biasNames,
+                         KDL::JntArray& qdot_out)
 {
   if (!m_initialized) {
     ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
@@ -292,7 +292,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
     for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
       // This calculates a "nullspace velocity".
       // There is an arbitrary scale factor which will be set by the max scale factor.
-      task2.desired(ii) = m_nullspaceGain * (q_bias(ii) - q_in(indicies[ii])) / m_looprate;
+      task2.desired(ii) = m_nullspaceGain * (q_bias(ii) - q_in(indicies[ii])) / m_loopPeriod;
       // TODO: may want to limit the NS velocity to 70-90% of max joint velocity
     }
     sot.push_back(task2);
@@ -305,7 +305,7 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
                                MatrixD* jacobian,
                                std::vector<int>* indicies)
 {
-  ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differe");
+  ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differ");
   Task task2;
   *jacobian = MatrixD::Zero(m_jointNames.size(), q_bias.rows());
   indicies->resize(q_bias.rows(), 0);
@@ -329,6 +329,11 @@ SNS_IK::~SNS_IK(){}
 bool SNS_IK::setMaxJointVelocity(const KDL::JntArray& vel) {
   m_velocity = vel;
   return m_ik_vel_solver->setMaxJointVelocity(vel.data);
+}
+
+void SNS_IK::setLoopPeriod(double loopPeriod) {
+  m_loopPeriod = loopPeriod;
+  m_ik_vel_solver->setLoopPeriod(loopPeriod);
 }
 
 bool SNS_IK::setMaxJointAcceleration(const KDL::JntArray& accel) {

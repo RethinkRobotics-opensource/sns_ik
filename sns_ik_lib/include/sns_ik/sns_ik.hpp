@@ -41,14 +41,14 @@ namespace sns_ik {
   public:
     SNS_IK(const std::string& base_link, const std::string& tip_link,
            const std::string& URDF_param="/robot_description",
-           double looprate=0.005, double eps=1e-5,
+           double loopPeriod=0.01, double eps=1e-5,
            sns_ik::VelocitySolveType type=sns_ik::SNS);
 
     SNS_IK(const KDL::Chain& chain,
            const KDL::JntArray& q_min, const KDL::JntArray& q_max,
            const KDL::JntArray& v_max, const KDL::JntArray& a_max,
            const std::vector<std::string>& jointNames,
-           double looprate=0.005, double eps=1e-5,
+           double loopPeriod=0.01, double eps=1e-5,
            sns_ik::VelocitySolveType type=sns_ik::SNS);
 
     ~SNS_IK();
@@ -111,32 +111,36 @@ namespace sns_ik {
                   const KDL::Twist& bounds=KDL::Twist::Zero());
 
     int CartToJntVel(const KDL::JntArray& q_in,
-                    const KDL::Twist& v_in,
-                    KDL::JntArray& qdot_out)
+                     const KDL::Twist& v_in,
+                     KDL::JntArray& qdot_out)
     { return CartToJntVel(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(), qdot_out); }
 
     // Assumes the NS bias is for all the joints in the correct order
     int CartToJntVel(const KDL::JntArray& q_in,
-                    const KDL::Twist& v_in,
-                    const KDL::JntArray& q_bias,
-                    KDL::JntArray& qdot_out)
+                     const KDL::Twist& v_in,
+                     const KDL::JntArray& q_bias,
+                     KDL::JntArray& qdot_out)
     { return CartToJntVel(q_in, v_in, q_bias, m_jointNames, qdot_out); }
 
     int CartToJntVel(const KDL::JntArray& q_in,
-                    const KDL::Twist& v_in,
-                    const KDL::JntArray& q_bias,
-                    const std::vector<std::string>& biasNames,
-                    KDL::JntArray& qdot_out);
+                     const KDL::Twist& v_in,
+                     const KDL::JntArray& q_bias,
+                     const std::vector<std::string>& biasNames,
+                     KDL::JntArray& qdot_out);
 
     // Nullspace gain should be specified between 0 and 1.0
     double getNullspaceGain() { return m_nullspaceGain; }
     void setNullspaceGain(double gain)
     { m_nullspaceGain = std::max(std::min(gain, 1.0), 0.0); }
 
+    // Set time step in seconds
+    void setLoopPeriod(double loopPeriod);
+    double getLoopPeriod() { return m_loopPeriod; }
+
   private:
     bool m_initialized;
     double m_eps;
-    double m_looprate;
+    double m_loopPeriod;
     double m_nullspaceGain;
     VelocitySolveType m_solvetype;
     KDL::Chain m_chain;
