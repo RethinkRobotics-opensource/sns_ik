@@ -93,11 +93,14 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     }
   }
 
-  double nSatTot = 0.0;
-  for (int i = 0; i < n_tasks; i++)
-    nSatTot += nSat[i];
-  return nSatTot;
+//  double nSatTot = 0.0;
+//  for (int i = 0; i < n_tasks; i++)
+//    nSatTot += nSat[i];
+//  return nSatTot;
+  return 1.0;
 }
+
+//#define LOG_ACTIVE
 
 Scalar FOSNSVelocityIK::SNSsingle(int priority,
                                   const VectorD &higherPriorityJointVelocity,
@@ -342,10 +345,10 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           int id=*it;
           if (dqn(id)>=0) scaledMU(id)=-scaledMU(id);
         }
-        log<<"/nstart scale "<< scalingFactor<<std::endl;
-        //log<<"/nstart scaled Mu "<< scaledMU.transpose()<<std::endl;
-        log<<"/nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<std::endl;
-        log<<"/nstart S "<<S[priority].transpose();
+        log<<"\nstart scale "<< scalingFactor<<std::endl;
+        //log<<"\nstart scaled Mu "<< scaledMU.transpose()<<std::endl;
+        log<<"\nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<std::endl;
+        log<<"\nstart S "<<S[priority].transpose();
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 #endif
         //find the minimum negative mu
@@ -361,7 +364,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           }
         }
 #ifdef LOG_ACTIVE
-        log<<"/nstart Mu "<< lagrangeMu.transpose()<<std::endl;
+        log<<"\nstart Mu "<< lagrangeMu.transpose()<<std::endl;
 #endif
       }
     }

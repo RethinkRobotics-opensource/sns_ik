@@ -119,13 +119,13 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
     (*jointVelocity) = dotQ;
     nSat[priority] = 0;
     dotQopt[priority] = dotQ;
-    return scalingFactor;
+    return 1.0;
   }
 
   if (singularTask) {
     // the task is singular so return a scaled damped solution (no SNS possible)
-    //ROS_ERROR("singular");
-    if (scalingFactor >= 0.0) {
+    //ROS_ERROR("Singular. Scaling Factor = %.6f", scalingFactor);
+    if (scalingFactor > 0.0) {
       nSat[priority] = 0;
       (*jointVelocity) = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
       dotQopt[priority] = (*jointVelocity);
@@ -180,7 +180,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
     //saturate the most critical joint
     zin = tildeZ.row(mostCriticalJoint);
 
-    if ((zin.norm() < 1e-8) || (scalingFactor < 1e-12)) {
+    if ((zin.norm() < 1e-8) || (scalingFactor < 1e-6)) {
       if (best_Scale >= 0) {
         //take the best solution
         *jointVelocity = higherPriorityJointVelocity + best_Scale * best_dq1 + best_dq2 + best_dqw;
@@ -227,7 +227,7 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
       *jointVelocity = dotQ;
       dotQopt[priority] = (*jointVelocity);
       *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
-      return scalingFactor;
+      return 1.0;
     } else {
       if ((scalingFactor > best_Scale)) {
         //save best solution so far

@@ -254,6 +254,7 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
 int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
                          const KDL::JntArray& q_bias,
                          const std::vector<std::string>& biasNames,
+                         const KDL::JntArray& q_vel_bias,
                          KDL::JntArray& qdot_out)
 {
   if (!m_initialized) {
@@ -297,6 +298,21 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
     }
     sot.push_back(task2);
   }
+
+  // Bias the joint velocities
+  // If the bias is the previous joint velocities, this is velocity damping
+  if(q_vel_bias.rows() == q_in.rows()) {
+    Task task2;
+    task2.jacobian = MatrixD::Identity(q_vel_bias.rows(), q_vel_bias.rows());
+    task2.desired = VectorD::Zero(q_vel_bias.rows());
+    for (size_t ii = 0; ii < q_vel_bias.rows(); ++ii) {
+      task2.desired(ii) = q_vel_bias(ii);
+    }
+    sot.push_back(task2);
+    //ROS_ERROR_THROTTLE(0.05, "Velocity bias: (%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f)",
+    //    task2.desired(0),task2.desired(1),task2.desired(2),task2.desired(3),task2.desired(4),task2.desired(5),task2.desired(6));
+  }
+
   return m_ik_vel_solver->getJointVelocity(&qdot_out.data, sot, q_in.data);
 }
 
@@ -339,6 +355,11 @@ void SNS_IK::setLoopPeriod(double loopPeriod) {
 bool SNS_IK::setMaxJointAcceleration(const KDL::JntArray& accel) {
   m_acceleration = accel;
   return m_ik_vel_solver->setMaxJointAcceleration(accel.data);
+}
+
+bool SNS_IK::getTaskScaleFactors(std::vector<Scalar>& scaleFactors) {
+  scaleFactors = m_ik_vel_solver->getTasksScaleFactor();
+  return m_initialized && !scaleFactors.empty();
 }
 
 } // sns_ik namespace

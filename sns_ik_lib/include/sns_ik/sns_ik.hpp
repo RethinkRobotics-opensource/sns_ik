@@ -113,19 +113,28 @@ namespace sns_ik {
     int CartToJntVel(const KDL::JntArray& q_in,
                      const KDL::Twist& v_in,
                      KDL::JntArray& qdot_out)
-    { return CartToJntVel(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(), qdot_out); }
+    { return CartToJntVel(q_in, v_in, KDL::JntArray(0), std::vector<std::string>(),
+                          KDL::JntArray(0), qdot_out); }
 
     // Assumes the NS bias is for all the joints in the correct order
     int CartToJntVel(const KDL::JntArray& q_in,
                      const KDL::Twist& v_in,
                      const KDL::JntArray& q_bias,
                      KDL::JntArray& qdot_out)
-    { return CartToJntVel(q_in, v_in, q_bias, m_jointNames, qdot_out); }
+    { return CartToJntVel(q_in, v_in, q_bias, m_jointNames, KDL::JntArray(0), qdot_out); }
+
+    int CartToJntVel(const KDL::JntArray& q_in,
+                         const KDL::Twist& v_in,
+                         const KDL::JntArray& q_bias,
+                         const KDL::JntArray& q_vel_bias,
+                         KDL::JntArray& qdot_out)
+    { return CartToJntVel(q_in, v_in, q_bias, m_jointNames, q_vel_bias, qdot_out); }
 
     int CartToJntVel(const KDL::JntArray& q_in,
                      const KDL::Twist& v_in,
                      const KDL::JntArray& q_bias,
                      const std::vector<std::string>& biasNames,
+                     const KDL::JntArray& q_vel_bias,
                      KDL::JntArray& qdot_out);
 
     // Nullspace gain should be specified between 0 and 1.0
@@ -136,6 +145,8 @@ namespace sns_ik {
     // Set time step in seconds
     void setLoopPeriod(double loopPeriod);
     double getLoopPeriod() { return m_loopPeriod; }
+
+    bool getTaskScaleFactors(std::vector<Scalar>& scaleFactors);
 
   private:
     bool m_initialized;
