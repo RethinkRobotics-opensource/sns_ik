@@ -309,8 +309,6 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
       task2.desired(ii) = q_vel_bias(ii);
     }
     sot.push_back(task2);
-    //ROS_ERROR_THROTTLE(0.05, "Velocity bias: (%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f)",
-    //    task2.desired(0),task2.desired(1),task2.desired(2),task2.desired(3),task2.desired(4),task2.desired(5),task2.desired(6));
   }
 
   return m_ik_vel_solver->getJointVelocity(&qdot_out.data, sot, q_in.data);

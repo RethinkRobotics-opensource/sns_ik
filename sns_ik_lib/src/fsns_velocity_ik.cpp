@@ -68,12 +68,12 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
 }
 
 Scalar FSNSVelocityIK::SNSsingle(int priority,
-                                const VectorD &higherPriorityJointVelocity,
-                                const MatrixD &higherPriorityNull,
-                                const MatrixD &jacobian,
-                                const VectorD &task,
-                                VectorD *jointVelocity,
-                                MatrixD *nullSpaceProjector)
+                                 const VectorD &higherPriorityJointVelocity,
+                                 const MatrixD &higherPriorityNull,
+                                 const MatrixD &jacobian,
+                                 const VectorD &task,
+                                 VectorD *jointVelocity,
+                                 MatrixD *nullSpaceProjector)
 {
   //FIXME: THERE IS A PROBLEM if we use 3 tasks... to be checked
 

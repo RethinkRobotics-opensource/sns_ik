@@ -146,7 +146,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   int id_min_mu = n_dof + 1;  //just to be not possible
   VectorD scaledMU;
 
-  bool computedScalingFactor;
+  bool computedScalingFactor = false;
 
 #ifdef LOG_ACTIVE
   int n_in=0,n_out=0;
@@ -176,7 +176,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 
   if (scalingFactor >= 1.0) {
     // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
-    (*jointVelocity) = dotQ;
+    *jointVelocity = dotQ;
     //dotQopt[priority]=dotQ;
     nSat[priority] = 0;
     satList[priority].clear();
@@ -210,7 +210,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
     // the task is singular so return a scaled damped solution (no SNS possible)
 
     if (scalingFactor > 0.0) {
-      (*jointVelocity) = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
+      *jointVelocity = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = tildeZ * tildeZ.transpose();
     } else {
