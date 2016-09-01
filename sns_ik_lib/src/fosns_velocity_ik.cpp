@@ -30,7 +30,7 @@ using namespace sns_ik;
 
 FOSNSVelocityIK::FOSNSVelocityIK(int dof, Scalar loop_period) :
     FSNSVelocityIK(dof, loop_period),
-    scaleMargin(0.9)
+    scaleMargin(0.98)
 {
 }
 
