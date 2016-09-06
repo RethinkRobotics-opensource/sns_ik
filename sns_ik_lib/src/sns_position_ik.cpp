@@ -44,12 +44,12 @@ SNSPositionIK::~SNSPositionIK()
 }
 
 bool SNSPositionIK::calcPoseError(const KDL::JntArray& q,
-                                         const KDL::Frame& goal,
-                                         KDL::Frame* pose,
-                                         double* errL,
-                                         double* errR,
-                                         KDL::Vector* trans,
-                                         KDL::Vector* rotAxis)
+                                  const KDL::Frame& goal,
+                                  KDL::Frame* pose,
+                                  double* errL,
+                                  double* errR,
+                                  KDL::Vector* trans,
+                                  KDL::Vector* rotAxis)
 {
   if (m_positionFK.JntToCart(q, *pose) < 0)
   {

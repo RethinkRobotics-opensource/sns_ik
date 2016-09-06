@@ -30,7 +30,7 @@ using namespace sns_ik;
 
 FOSNSVelocityIK::FOSNSVelocityIK(int dof, Scalar loop_period) :
     FSNSVelocityIK(dof, loop_period),
-    scaleMargin(0.9)
+    scaleMargin(0.98)
 {
 }
 
@@ -93,11 +93,14 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     }
   }
 
-  double nSatTot = 0.0;
-  for (int i = 0; i < n_tasks; i++)
-    nSatTot += nSat[i];
-  return nSatTot;
+//  double nSatTot = 0.0;
+//  for (int i = 0; i < n_tasks; i++)
+//    nSatTot += nSat[i];
+//  return nSatTot;
+  return 1.0;
 }
+
+//#define LOG_ACTIVE
 
 Scalar FOSNSVelocityIK::SNSsingle(int priority,
                                   const VectorD &higherPriorityJointVelocity,
@@ -143,7 +146,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   int id_min_mu = n_dof + 1;  //just to be not possible
   VectorD scaledMU;
 
-  bool computedScalingFactor;
+  bool computedScalingFactor = false;
 
 #ifdef LOG_ACTIVE
   int n_in=0,n_out=0;
@@ -173,7 +176,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 
   if (scalingFactor >= 1.0) {
     // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
-    (*jointVelocity) = dotQ;
+    *jointVelocity = dotQ;
     //dotQopt[priority]=dotQ;
     nSat[priority] = 0;
     satList[priority].clear();
@@ -207,7 +210,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
     // the task is singular so return a scaled damped solution (no SNS possible)
 
     if (scalingFactor > 0.0) {
-      (*jointVelocity) = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
+      *jointVelocity = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = tildeZ * tildeZ.transpose();
     } else {
@@ -342,10 +345,10 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           int id=*it;
           if (dqn(id)>=0) scaledMU(id)=-scaledMU(id);
         }
-        log<<"/nstart scale "<< scalingFactor<<std::endl;
-        //log<<"/nstart scaled Mu "<< scaledMU.transpose()<<std::endl;
-        log<<"/nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<std::endl;
-        log<<"/nstart S "<<S[priority].transpose();
+        log<<"\nstart scale "<< scalingFactor<<std::endl;
+        //log<<"\nstart scaled Mu "<< scaledMU.transpose()<<std::endl;
+        log<<"\nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<std::endl;
+        log<<"\nstart S "<<S[priority].transpose();
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 #endif
         //find the minimum negative mu
@@ -361,7 +364,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           }
         }
 #ifdef LOG_ACTIVE
-        log<<"/nstart Mu "<< lagrangeMu.transpose()<<std::endl;
+        log<<"\nstart Mu "<< lagrangeMu.transpose()<<std::endl;
 #endif
       }
     }

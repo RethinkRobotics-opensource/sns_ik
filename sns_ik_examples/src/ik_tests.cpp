@@ -58,7 +58,7 @@ double getDeltaWithLimits(double value, double desired_delta,
   double lower_delta = value-input_delta;
   double upper_delta = value+input_delta;
   // Randomize between upper delta and lower delta
-  if( rand() % 2 ) {
+  if (rand() % 2) {
     return upper_delta > limit_max ? lower_delta : upper_delta;
   } else {
     return lower_delta < limit_min ? upper_delta : lower_delta;
@@ -67,10 +67,10 @@ double getDeltaWithLimits(double value, double desired_delta,
 
 bool in_vel_bounds(const KDL::JntArray& vel_values, const KDL::JntArray& vel_limits)
 {
-  for(size_t i; i < vel_limits.data.size(); i++){
-      if(vel_values(i) < -vel_limits(i)-1e-6 || vel_values(i) > vel_limits(i)+1e-6){
-          return false;
-      }
+  for (int i = 0; i < vel_limits.data.size(); i++) {
+    if (vel_values(i) < -vel_limits(i)-1e-6 || vel_values(i) > vel_limits(i)+1e-6) {
+      return false;
+    }
   }
   return true;
 }
@@ -78,10 +78,10 @@ bool in_vel_bounds(const KDL::JntArray& vel_values, const KDL::JntArray& vel_lim
 bool in_pos_bounds(const KDL::JntArray& jnt_values, const KDL::JntArray& jnt_lower,
                    const KDL::JntArray& jnt_upper)
 {
-  for(size_t i; i < jnt_values.data.size(); i++){
-      if(jnt_values(i) < jnt_lower(i)-1e-6 || jnt_values(i) > jnt_upper(i)+1e-6){
-          return false;
-      }
+  for (int i = 0; i < jnt_values.data.size(); i++){
+    if (jnt_values(i) < jnt_lower(i)-1e-6 || jnt_values(i) > jnt_upper(i)+1e-6) {
+      return false;
+    }
   }
   return true;
 }
@@ -91,9 +91,9 @@ double nullspace_l2_norm_ratio(const KDL::JntArray& jnt_result, const KDL::JntAr
 {
   double error = 0;
   double ns_error = 0;
-  for(size_t i; i < jnt_ns_bias.data.size(); i++){
-      error += std::pow(jnt_result(i) - jnt_ns_bias(i), 2);
-      ns_error += std::pow(jnt_ns_result(i) - jnt_ns_bias(i), 2);
+  for (int i = 0; i < jnt_ns_bias.data.size(); i++) {
+    error += std::pow(jnt_result(i) - jnt_ns_bias(i), 2);
+    ns_error += std::pow(jnt_ns_result(i) - jnt_ns_bias(i), 2);
   }
   return std::pow(ns_error, 0.5) / std::pow(error, 0.5);
 }
@@ -397,11 +397,6 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fastoptimal);
 
-  // These values are not used yet
-  double posIK_linearMaxStepSize = 0.05;
-  double posIK_angularMaxStepSize = 0.05;
-  double posIK_maxIterations = 150;
-  double posIK_dt=0.2;
   for(auto& vst: vel_solver_data){
     snsik_solver.setVelocitySolveType(vst.type);
     // Initialize Solver Variables
