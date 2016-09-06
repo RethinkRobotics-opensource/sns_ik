@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>sns_ik_examples</name>
-  <version>0.1.1</version>
+  <version>0.2.0</version>
   <description>
    Example programs for the Saturation in the Null Space (SNS)
    Inverse Kinematic Library.
