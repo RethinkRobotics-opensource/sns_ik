@@ -1,5 +1,5 @@
 *SNS IKL*
-Version 0.1.0 beta
+Version 0.2.0 beta
 
 The Inverse Kinematic Library (*SNS IKL*) contains tools to invert the differential kinematic of a robot (this version is tested only on fixed base manipulator).
 The methods implemented on the IKL are:

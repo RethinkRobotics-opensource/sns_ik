@@ -2,6 +2,11 @@
 Changelog for package sns_ik_examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.0 (2016-09-06)
+------------------
+* Fixes for stricter build rules
+* Contributors: Forrest Rogers-Marcovitz
+
 0.1.1 (2016-04-28)
 ---------------------------------
 * No updates

@@ -2,6 +2,17 @@
 Changelog for package sns_ik_lib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.0 (2016-09-06)
+------------------
+* Increase scale margin for FOSNS. Caused less unnecessary scaling with smoother motions.
+* Small code cleanup
+* Added NS velocity bias as task option
+* Setter for dynamic loop period
+* Turn on positions limits for velocity IK, but not for position IK which uses the barrier function instead.
+* Setters for joint Velocity and Acceleration limits
+* Correct nullspace projection for FSNS and FOSNS
+* Contributors: Forrest Rogers-Marcovitz
+
 0.1.1 (2016-04-28)
 ---------------------------------
 * Fixed install location for sns_ik headers
