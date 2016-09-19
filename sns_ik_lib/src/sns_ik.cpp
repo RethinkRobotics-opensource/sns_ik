@@ -321,7 +321,7 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
 {
   ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differ");
   Task task2;
-  *jacobian = MatrixD::Zero(m_jointNames.size(), q_bias.rows());
+  *jacobian = MatrixD::Zero(q_bias.rows(), m_jointNames.size());
   indicies->resize(q_bias.rows(), 0);
   std::vector<std::string>::iterator it;
   for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
