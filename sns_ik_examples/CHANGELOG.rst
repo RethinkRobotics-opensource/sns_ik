@@ -2,6 +2,10 @@
 Changelog for package sns_ik_examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.1 (2016-10-25)
+------------------
+* No Updates
+
 0.2.0 (2016-09-06)
 ------------------
 * Fixes for stricter build rules

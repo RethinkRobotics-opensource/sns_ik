@@ -2,6 +2,11 @@
 Changelog for package sns_ik_lib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.1 (2016-10-25)
+------------------
+* The nullspace jacobian size was transposed when using a subset of joints
+* Contributors: Forrest Rogers-Marcovitz
+
 0.2.0 (2016-09-06)
 ------------------
 * Increase scale margin for FOSNS. Caused less unnecessary scaling with smoother motions.
