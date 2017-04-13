@@ -2,6 +2,12 @@
 Changelog for package sns_ik_lib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.2 (2017-04-13)
+-----------------
+* Kinetic Release
+* CMakeLists cleanup for Kinetic
+* Contributors: Ian McMahon
+
 0.2.1 (2016-10-25)
 ------------------
 * The nullspace jacobian size was transposed when using a subset of joints

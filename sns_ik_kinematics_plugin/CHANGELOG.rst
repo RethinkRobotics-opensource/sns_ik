@@ -2,6 +2,10 @@
 Changelog for package sns_ik_kinematics_plugin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.2 (2017-04-13)
+-----------------
+* Kinetic Release
+
 0.2.1 (2016-10-25)
 ------------------
 * No Updates
