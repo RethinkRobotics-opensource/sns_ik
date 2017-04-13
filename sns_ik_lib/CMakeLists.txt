@@ -15,6 +15,7 @@ endif()
 
 find_package(orocos_kdl REQUIRED)
 find_package(Eigen3 REQUIRED)
+set(Eigen3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIRS})
 find_package(catkin REQUIRED
   COMPONENTS
   roscpp
@@ -29,10 +30,7 @@ catkin_package(
   LIBRARIES sns_ik
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
-link_directories(${orocos_kdl_LIBRARY_DIRS})
-install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
-
+include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
 add_library(sns_ik src/sns_ik.cpp
             src/sns_ik_math_utils.cpp
             src/sns_velocity_ik.cpp
@@ -41,5 +39,7 @@ add_library(sns_ik src/sns_ik.cpp
             src/osns_sm_velocity_ik.cpp
             src/fsns_velocity_ik.cpp
             src/fosns_velocity_ik.cpp)
-target_link_libraries(sns_ik ${catkin_LIBRARIES} ${Eigen3_INCLUDE_DIRS} ${orocos_kdl_LIBRARIES})
+target_link_libraries(sns_ik ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
