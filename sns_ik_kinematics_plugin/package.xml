@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>sns_ik_kinematics_plugin</name>
-  <version>0.2.1</version>
+  <version>0.2.2</version>
   <description>
    SNS IK Kinematics Plugin for use with the MoveIT! framework.
   </description>
