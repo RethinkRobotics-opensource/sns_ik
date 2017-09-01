@@ -78,7 +78,7 @@ namespace sns_ik {
       return m_initialized;
     }
 
-    inline bool getJointNames(std::vector<std::string> jointNames) {
+    inline bool getJointNames(std::vector<std::string>& jointNames) {
       jointNames = m_jointNames;
       return m_initialized;
     }

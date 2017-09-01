@@ -220,16 +220,16 @@ bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z, S
 
 bool pinv_forBarP(const MatrixD &W, const MatrixD &P, MatrixD *inv) {
 
-  MatrixD barW;
-  int rowsBarW = 0;
-
   MatrixD tmp;
   bool invertible;
 
+  int sizeBarW = (W.diagonal().array() > 0.99).sum();
+  MatrixD barW(sizeBarW, W.cols());
+  int rowsBarW = 0;
+
   for (int i = 0; i < W.rows(); i++) {
     if (W(i, i) > 0.99) {  //equal to 1 (safer)
-      rowsBarW++;
-      barW = (MatrixD(rowsBarW, W.cols()) << barW, W.row(i)).finished();
+      barW.row(rowsBarW++) = W.row(i);
     }
   }
 
