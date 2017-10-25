@@ -223,7 +223,7 @@ bool pinv_forBarP(const MatrixD &W, const MatrixD &P, MatrixD *inv) {
   MatrixD tmp;
   bool invertible;
 
-  int sizeBarW = (W.diagonal().array() > 0.99).sum();
+  int sizeBarW = (W.diagonal().array() > 0.99).cast<int>().sum();
   MatrixD barW(sizeBarW, W.cols());
   int rowsBarW = 0;
 
