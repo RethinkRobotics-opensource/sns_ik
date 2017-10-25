@@ -16,18 +16,21 @@ endif()
 find_package(catkin REQUIRED
   COMPONENTS
   roscpp
-  cmake_modules
   sns_ik_lib
   #trac_ik_lib #Uncomment this to test against trac_ik
 )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
+set(Eigen3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIRS})
 
-catkin_package()
+catkin_package(
+  DEPENDS Eigen3
+  CATKIN_DEPENDS roscpp
+)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${Eigen_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
 )
 
 add_executable(all_ik_tests src/ik_tests.cpp)
