@@ -26,6 +26,5 @@
 
   <run_depend>sns_ik_lib</run_depend>
   <run_depend>sns_ik_examples</run_depend>
-  <run_depend>sns_ik_kinematics_plugin</run_depend>
 
 </package>
