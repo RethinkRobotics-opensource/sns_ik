@@ -2,6 +2,14 @@
 Changelog for package sns_ik_examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.3 (2017-10-29)
+------------------
+* CMakeLists Eigen cleanup
+  In ROS Kinetic, cmake_modules is deprecated,
+  so we will use some alternative CMakeLists
+  strategies to find_package the Eigen 3.x library.
+* Contributors: Ian McMahon
+
 0.2.1 (2016-10-25)
 ------------------
 * No Updates

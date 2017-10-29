@@ -2,6 +2,23 @@
 Changelog for package sns_ik_lib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.3 (2017-10-29)
+------------------
+* CMakeLists Eigen cleanup
+  In ROS Kinetic, cmake_modules is deprecated,
+  so we will use some alternative CMakeLists
+  strategies to find_package the Eigen 3.x library.
+* Fixes Eigen scalar sum warning
+  Eigen doesn't like the fact that we're creating an Array
+  of Bools, and then attempting to sum those booleans up.
+  Instead, we need to cast the Array into an int, and then
+  sum over it to store into the sum integer.
+  Resolves https://github.com/RethinkRobotics-opensource/sns_ik/issues/56
+* Two small bug fixes
+  1) Pass vector by reference in getJointNames
+  2) Properly fill in matrix in pinv_forBarP
+* Contributors: Forrest Rogers-Marcovitz, Ian McMahon
+
 0.2.1 (2016-10-25)
 ------------------
 * The nullspace jacobian size was transposed when using a subset of joints
