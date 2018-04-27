@@ -11,7 +11,7 @@
   <arg name="use_delta_position_seed" default="false"/>
   <arg name="delta_position_seed_value" default="0.2"/>
 
-  <arg name="use_nullspace_bias_task" default="true"/>
+  <arg name="use_nullspace_bias_task" default="false"/>
   <arg name="nullspace_gain" default="0.3"/>
   <arg name="nominal_nullspace" default="false"/>
   <arg name="delta_nullspace" default="true"/>
@@ -34,7 +34,6 @@
     <param name="nominal_nullspace" value="$(arg nominal_nullspace)"/>
     <param name="delta_nullspace" value="$(arg delta_nullspace)"/>
     <param name="delta_nullspace_value" value="$(arg delta_nullspace_value)"/>
-
   </node>
 
 </launch>
