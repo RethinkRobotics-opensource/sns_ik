@@ -584,10 +584,10 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   ROS_INFO("\n************************************");
   ROS_INFO("Velocity IK Summary:");
   for(auto& vst: vel_solver_data){
-      ROS_INFO("%s: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.3f ms",
+      ROS_INFO("%s: %.2f%% w/o and %.2f%% w/ scaling success rates (%.3f ms)",
                vst.name.c_str(), 100*vst.successRate, 100*vst.scaling_successRate, 1000*vst.avg_time);
   }
-  ROS_INFO("KDL Velocity: %.2f%% w/o and %.2f%% w/ scaling success rates with an average time of %.3f ms",
+  ROS_INFO("KDL Velocity: %.2f%% w/o and %.2f%% w/ scaling success rates (%.3f ms)",
            100*kdlVel_successRate, 100*kdlVel_scalingSuccessRate, 1000*kdlVel_avgTime);
   ROS_INFO("\n************************************");
 
