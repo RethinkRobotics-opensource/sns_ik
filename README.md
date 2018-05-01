@@ -1,16 +1,70 @@
-*SNS IKL*
-Version 0.2.1 beta
+# SNS-IK Library
+`Version 0.2.3 beta`
 
-The Inverse Kinematic Library (*SNS IKL*) contains tools to invert the differential kinematic of a robot (this version is tested only on fixed base manipulator).
-The methods implemented on the IKL are:
-- STD          the standard pseudoinversion of the jacobian
-- SCALE        pseudoinversion with task scaling to satisfy joint constraints
-- SNS          the SNS algorithm which permits to consider hard constraints at joint level
+The Saturation in the Null-Space (SNS) Inverse-Kinematics (IK) Library
+implements a collection of algorithms written by Fabrizio Flacco for
+inverting the differential kinematics of a robot.
 
-All this methods permits to solve the inversion of the kinematic of a prioritized stack of task. (note that only the SNS algorithm guarantees to satisfy all joint constraints).
+## What problems are solved by this library?
 
+The SNS-IK library is a library that is designed to compute fast solutions to
+inverse-kinematics problems on redundant kinematic chains.
+It is particularly good at handling multiple prioritized task objectives
+while satisfying joint position and velocity limits.
 
-Author: Fabrizio Flacco
+The core solvers in this library operate at the velocity-level, although we
+also include a position-level solver.
+
+## Algorithm Overview:
+
+**SNS Velocity IK:** This is the core algorithm developed by Fabrizio.
+All of the other algorithms in this library are improvements upon this one.
+
+**Optimal SNS:** Add an objective function to the standard SNS velocity IK solver,
+allowing it to compute a solution that is both feasible and optimal.
+
+**Optimal SNS with Margin:** Improvement upon the Optimal SNS solver to make it
+better at avoiding discontinuous velocities over a sequence of IK calls.
+
+**Fast SNS IK:** Several numerical improvements to reduce the total CPU time
+required for the SNS Velocity IK solver.
+
+**Fast Optimal SNS:** Similar to the Optimal SNS, but with several numerical improvements.
+
+## References:
+
+The algorithms in this library are drawn from three papers,
+all written by the same team of three authors:
+- Fabrizio Flacco
+- Alessandro De Luca
+- Oussama Khatib
+
+The primary reference is:
+- *Control of Redundant Robots Under Hard Joint Constraint: Saturation in the Null Space*
+([.pdf](https://pdfs.semanticscholar.org/97ad/e6bad155d443e40f7b99d9773881b73a6ebc.pdf))
+([IEEE](https://ieeexplore.ieee.org/document/7097068/)).
+([video](https://youtu.be/Zm60jBdP-xs))
+
+These two earlier papers are also relevant:
+- *Prioritized multi-task motion control of redundant robots under hard joint constraints*
+([.pdf](https://cs.stanford.edu/groups/manips/publications/pdfs/Flacco_2012.pdf))
+([IEEE](https://ieeexplore.ieee.org/document/6385619/)).
+- *Motion control of redundant robots under joint constraints: Saturation in the Null Space*
+([.pdf](http://www.diag.uniroma1.it/~labrob/pub/papers/ICRA12_RedundancySNS.pdf))
+([IEEE](https://ieeexplore.ieee.org/document/6225376/)).
+
+## Contributors
+
+**Original Library:**
+```
+Fabrizio Flacco
 Dipartimento di Ingegneria Informatica, Automatica e Gestionale (DIAG)
 Università di Roma "La Sapienza"
 Rome, Italy
+```
+**Maintainence and Updates:**
+````
+Forrest Rogers-Marcovitz, Ian McMahon, and Matthew Kelly
+Rethink Robotics
+Boston, MA, USA
+````
