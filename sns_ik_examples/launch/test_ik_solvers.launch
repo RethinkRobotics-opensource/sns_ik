@@ -1,16 +1,26 @@
 <?xml version="1.0"?>
 <launch>
+  <!-- number of samples for the position and velocity IK tests -->
   <arg name="num_samples_pos" default="1000" />
   <arg name="num_samples_vel" default="1000" />
+  <!-- start and end link names for the kinematic chain -->
   <arg name="chain_start" default="base" />
   <arg name="chain_end" default="right_hand" />
+  <!-- maximum time allowed for any single IK solve -->
   <arg name="timeout" default="0.005" />
+  <!-- loop period used by the IK for handling joint limits -->
+  <arg name="loop_period" default="0.005" />
+  <!-- where does the robot URDF live? -->
   <arg name="urdf_param" default="/robot_description" />
 
+  <!-- If enabled, use a random seed to start the IK solver -->
   <arg name="use_random_position_seed" default="false"/>
+  <!-- If enabled, use a random seed that is near a known feasible solution -->
   <arg name="use_delta_position_seed" default="false"/>
+  <!-- the maximum distance (in joint space) from known feasible solution-->
   <arg name="delta_position_seed_value" default="0.2"/>
 
+  <!-- paramters for the optimal SNS solver relating to null-space tasks-->
   <arg name="use_nullspace_bias_task" default="false"/>
   <arg name="nullspace_gain" default="0.3"/>
   <arg name="nominal_nullspace" default="false"/>
