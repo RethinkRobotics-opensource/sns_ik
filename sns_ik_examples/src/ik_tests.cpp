@@ -147,7 +147,7 @@ double standardDeviation(std::vector<double> values, double mean){
 
 
 void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
-          std::string chain_start, std::string chain_end, double timeout,
+          std::string chain_start, std::string chain_end, double timeout, double loop_period,
           std::string urdf_param, bool use_random_position_seed,
           bool use_delta_position_seed, double delta_position_seed_value,
           bool use_nullspace_bias_task, double nullspace_gain,
@@ -162,7 +162,7 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   KDL::Chain chain;
   KDL::JntArray ll, ul, vl, al; //lower joint limits, upper joint limits
   bool valid = false;
-  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, timeout, eps, sns_ik::SNS);
+  sns_ik::SNS_IK snsik_solver(chain_start, chain_end, urdf_param, loop_period, eps, sns_ik::SNS);
   valid = snsik_solver.getKDLChain(chain);
   if (!valid) {
     ROS_ERROR("There was no valid KDL chain found");
@@ -603,7 +603,7 @@ int main(int argc, char** argv)
 
   int num_samples_pos, num_samples_vel;
   std::string chain_start, chain_end, urdf_param;
-  double timeout;
+  double timeout, loop_period;
   bool use_random_position_seed;
   bool use_delta_position_seed;
   double delta_position_seed_value;
@@ -630,13 +630,14 @@ int main(int argc, char** argv)
   }
 
   nh.param("timeout", timeout, 0.005);
+  nh.param("loop_period", loop_period, 0.005);
   nh.param("urdf_param", urdf_param, std::string("/robot_description"));
 
   if (num_samples_pos < 1)
     num_samples_pos = 1;
 
   test(nh, num_samples_pos, num_samples_vel,
-       chain_start, chain_end, timeout,
+       chain_start, chain_end, timeout,loop_period,
        urdf_param, use_random_position_seed,
        use_delta_position_seed, delta_position_seed_value,
        use_nullspace_bias_task, nullspace_gain,
