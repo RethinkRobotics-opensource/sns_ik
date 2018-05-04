@@ -25,15 +25,15 @@
 using namespace Eigen;
 using namespace sns_ik;
 
-OSNSVelocityIK::OSNSVelocityIK(int dof, Scalar loop_period) :
+OSNSVelocityIK::OSNSVelocityIK(int dof, double loop_period) :
   SNSVelocityIK(dof, loop_period)
 {
 }
 
 
-Scalar OSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
+double OSNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
     const std::vector<Task> &sot,
-    const VectorD &jointConfiguration)
+    const Eigen::VectorXd &jointConfiguration)
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
@@ -42,10 +42,10 @@ Scalar OSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
 
   //P_0=I
   //dq_0=0
-  MatrixD P = MatrixD::Identity(n_dof, n_dof);
-  *jointVelocity = VectorD::Zero(n_dof, 1);
-  VectorD higherPriorityJointVelocity;
-  MatrixD higherPriorityNull;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(n_dof, n_dof);
+  *jointVelocity = Eigen::VectorXd::Zero(n_dof, 1);
+  Eigen::VectorXd higherPriorityJointVelocity;
+  Eigen::MatrixXd higherPriorityNull;
 
   shapeJointVelocityBound(jointConfiguration);
 
@@ -62,38 +62,38 @@ Scalar OSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
 }
 
 
-Scalar OSNSVelocityIK::SNSsingle(int priority,
-                                const VectorD &higherPriorityJointVelocity,
-                                const MatrixD &higherPriorityNull,
-                                const MatrixD &jacobian,
-                                const VectorD &task,
-                                VectorD *jointVelocity,
-                                MatrixD *nullSpaceProjector)
+double OSNSVelocityIK::SNSsingle(int priority,
+                                const Eigen::VectorXd &higherPriorityJointVelocity,
+                                const Eigen::MatrixXd &higherPriorityNull,
+                                const Eigen::MatrixXd &jacobian,
+                                const Eigen::VectorXd &task,
+                                Eigen::VectorXd *jointVelocity,
+                                Eigen::MatrixXd *nullSpaceProjector)
 {
   //INITIALIZATION
-  //VectorD tildeDotQ;
-  MatrixD projectorSaturated;  //(((I-W_k)*P_{k-1})^#
-  MatrixD JPinverse;  //(J_k P_{k-1})^#
-  MatrixD temp;
+  //Eigen::VectorXd tildeDotQ;
+  Eigen::MatrixXd projectorSaturated;  //(((I-W_k)*P_{k-1})^#
+  Eigen::MatrixXd JPinverse;  //(J_k P_{k-1})^#
+  Eigen::MatrixXd temp;
   bool isW_identity;
-  MatrixD barP = higherPriorityNull;  // remove the pointer arguments advantage... but I need to modify it
-  Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::MatrixXd barP = higherPriorityNull;  // remove the pointer arguments advantage... but I need to modify it
+  Array<double, Dynamic, 1> a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
   bool singularTask = false;
   bool reachedSingularity = false;
-  Scalar scalingFactor = 1.0;
+  double scalingFactor = 1.0;
   int mostCriticalJoint;
 
   //best solution
-  Scalar bestScale = -0.1;
-  MatrixD bestW;  //(only in OSNS)
-  MatrixD bestInvJP;
-  VectorD bestDotQn;
-  MatrixD bestTildeP;
+  double bestScale = -0.1;
+  Eigen::MatrixXd bestW;  //(only in OSNS)
+  Eigen::MatrixXd bestInvJP;
+  Eigen::VectorXd bestDotQn;
+  Eigen::MatrixXd bestTildeP;
 
-  VectorD dotQn;  //saturate velocity in the null space
-  VectorD dotQs;
-  MatrixD tildeP;  // used in the  OSNS
+  Eigen::VectorXd dotQn;  //saturate velocity in the null space
+  Eigen::VectorXd dotQs;
+  Eigen::MatrixXd tildeP;  // used in the  OSNS
 
   //these two are needed to consider also W=I in case of a non feasible task
   bool invJPcomputed = false;
@@ -105,7 +105,7 @@ Scalar OSNSVelocityIK::SNSsingle(int priority,
   temp = jacobian * higherPriorityNull;
   singularTask = !pinv_damped_P(temp, &JPinverse, nullSpaceProjector);
 
-  tildeP = MatrixD::Zero(n_dof, n_dof);
+  tildeP = Eigen::MatrixXd::Zero(n_dof, n_dof);
   dotQs = higherPriorityJointVelocity + JPinverse * (task - jacobian * higherPriorityJointVelocity);
   a = (JPinverse * task).array();
   b = dotQs.array() - a;
@@ -145,14 +145,14 @@ Scalar OSNSVelocityIK::SNSsingle(int priority,
     bestW = I;
     bestTildeP = tildeP;
     //bestPS=projectorSaturated;
-    bestDotQn = VectorD::Zero(n_dof);
+    bestDotQn = Eigen::VectorXd::Zero(n_dof);
   }
 
   //W[priority] = I;  //test: do not use the warm start
 //----------------------------------------------------------------------- END W=I
 
   //INIT
-  dotQn = VectorD::Zero(n_dof);
+  dotQn = Eigen::VectorXd::Zero(n_dof);
   if (isIdentity (W[priority])) {
     isW_identity = true;
     dotQopt[priority] = dotQs;  // use the one computed above
@@ -338,11 +338,11 @@ Scalar OSNSVelocityIK::SNSsingle(int priority,
   return scalingFactor;
 }
 
-bool OSNSVelocityIK::isOptimal(int priority, const VectorD& dotQ,
-                               const MatrixD& tildeP, MatrixD* W,
-                               VectorD* dotQn, double eps) {
+bool OSNSVelocityIK::isOptimal(int priority, const Eigen::VectorXd& dotQ,
+                               const Eigen::MatrixXd& tildeP, Eigen::MatrixXd* W,
+                               Eigen::VectorXd* dotQn, double eps) {
 
-  VectorD barMu;
+  Eigen::VectorXd barMu;
   bool isOptimal = true;
 
   barMu = tildeP.transpose() * dotQ;

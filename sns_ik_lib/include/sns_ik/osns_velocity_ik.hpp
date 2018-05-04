@@ -34,22 +34,22 @@ namespace sns_ik {
 
 class OSNSVelocityIK : public SNSVelocityIK {
   public:
-    OSNSVelocityIK(int dof, Scalar loop_period);
+    OSNSVelocityIK(int dof, double loop_period);
     virtual ~OSNSVelocityIK() {};
 
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                            const VectorD &jointConfiguration);
+    virtual double getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                            const Eigen::VectorXd &jointConfiguration);
 
   protected:
     // Perform the SNS for a single task
-    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
-                     const MatrixD &higherPriorityNull, const MatrixD &jacobian,
-                     const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
+    virtual double SNSsingle(int priority, const Eigen::VectorXd &higherPriorityJointVelocity,
+                     const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
+                     const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 
-    bool isOptimal(int priority, const VectorD& dotQ,
-                   const MatrixD& tildeP, MatrixD* W,
-                   VectorD* dotQn, double eps = 1e-8);
+    bool isOptimal(int priority, const Eigen::VectorXd& dotQ,
+                   const Eigen::MatrixXd& tildeP, Eigen::MatrixXd* W,
+                   Eigen::VectorXd* dotQn, double eps = 1e-8);
 };
 
 }  // namespace sns_ikl

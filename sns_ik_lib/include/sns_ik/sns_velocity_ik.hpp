@@ -36,8 +36,8 @@ namespace sns_ik {
  */
 
 struct Task {
-    MatrixD jacobian;  //!< the task Jacobian
-    VectorD desired;   //!< desired velocity in task space
+    Eigen::MatrixXd jacobian;  //!< the task Jacobian
+    Eigen::VectorXd desired;   //!< desired velocity in task space
 };
 
 #define _ONLY_WARNING_ON_ERROR
@@ -49,13 +49,13 @@ struct Task {
 
 class SNSVelocityIK {
   public:
-    SNSVelocityIK(int dof, Scalar loop_period);
+    SNSVelocityIK(int dof, double loop_period);
     virtual ~SNSVelocityIK() {};
 
-    bool setJointsCapabilities(const VectorD limit_low, const VectorD limit_high,
-                               const VectorD maxVelocity, const VectorD maxAcceleration);
-    bool setMaxJointVelocity(const VectorD maxVelocity);
-    bool setMaxJointAcceleration(const VectorD maxAcceleration);
+    bool setJointsCapabilities(const Eigen::VectorXd limit_low, const Eigen::VectorXd limit_high,
+                               const Eigen::VectorXd maxVelocity, const Eigen::VectorXd maxAcceleration);
+    bool setMaxJointVelocity(const Eigen::VectorXd maxVelocity);
+    bool setMaxJointAcceleration(const Eigen::VectorXd maxAcceleration);
     virtual void setNumberOfTasks(int ntasks, int dof = -1);
     virtual void setNumberOfDOF(int dof);
 
@@ -63,60 +63,60 @@ class SNSVelocityIK {
     void setLoopPeriod(double period) { loop_period = period; }
 
     // SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                                    const VectorD &jointConfiguration);
+    virtual double getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                                    const Eigen::VectorXd &jointConfiguration);
 
     // Standard straight inverse jacobian
-    Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot);
+    double getJointVelocity_STD(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot);
 
     // The standard velocity IK solver doesn't need the joint configuration, but it's here for consistancy
-    Scalar getJointVelocity_STD(VectorD *jointVelocity, const std::vector<Task> &sot,
-                                const VectorD &jointConfiguration)
+    double getJointVelocity_STD(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                                const Eigen::VectorXd &jointConfiguration)
         { return getJointVelocity_STD(jointVelocity, sot); }
 
-    std::vector<Scalar> getTasksScaleFactor()
+    std::vector<double> getTasksScaleFactor()
         { return scaleFactors; }
 
-    VectorD getJointLimitLow() { return jointLimit_low; }
-    VectorD getJointLimitHigh() { return jointLimit_high; }
-    VectorD getJointVelocityMax() { return maxJointVelocity; }
+    Eigen::VectorXd getJointLimitLow() { return jointLimit_low; }
+    Eigen::VectorXd getJointLimitHigh() { return jointLimit_high; }
+    Eigen::VectorXd getJointVelocityMax() { return maxJointVelocity; }
 
     void usePositionLimits(bool use) { m_usePositionLimits = use; }
 
   protected:
 
     // Shape the joint velocity bound dotQmin and dotQmax
-    void shapeJointVelocityBound(const VectorD &actualJointConfiguration, double margin = SHAPE_MARGIN);
+    void shapeJointVelocityBound(const Eigen::VectorXd &actualJointConfiguration, double margin = SHAPE_MARGIN);
 
     // Perform the SNS for a single task
-    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
-                     const MatrixD &higherPriorityNull, const MatrixD &jacobian,
-                     const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
+    virtual double SNSsingle(int priority, const Eigen::VectorXd &higherPriorityJointVelocity,
+                     const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
+                     const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 
-    void getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
-                              const Array<Scalar, Dynamic, 1> &b,
-                              const MatrixD &W, Scalar *scalingFactor,
+    void getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
+                              const Array<double, Dynamic, 1> &b,
+                              const Eigen::MatrixXd &W, double *scalingFactor,
                               int *mostCriticalJoint);
 
     int n_dof;  //manipulator degree of freedom
     int n_tasks;  //number of tasks
-    Scalar loop_period;  //needed to compute the bounds
+    double loop_period;  //needed to compute the bounds
 
-    VectorD jointLimit_low;  // low joint limits
-    VectorD jointLimit_high;  // high joint limit
-    VectorD maxJointVelocity;  // maximum joint velocity
-    VectorD maxJointAcceleration;  // maximum joint acceleration
+    Eigen::VectorXd jointLimit_low;  // low joint limits
+    Eigen::VectorXd jointLimit_high;  // high joint limit
+    Eigen::VectorXd maxJointVelocity;  // maximum joint velocity
+    Eigen::VectorXd maxJointAcceleration;  // maximum joint acceleration
     bool m_usePositionLimits;
 
-    Array<Scalar, Dynamic, 1> dotQmin;  // lower joint velocity bound
-    Array<Scalar, Dynamic, 1> dotQmax;  // higher joint velocity bound
+    Array<double, Dynamic, 1> dotQmin;  // lower joint velocity bound
+    Array<double, Dynamic, 1> dotQmax;  // higher joint velocity bound
 
     // TODO: are these needed here???
-    VectorD dotQ;  // next solution (bar{\dotqv} in the paper)
-    std::vector<MatrixD> W;  //selection matrices  [here to permit a warm start]
-    std::vector<VectorD> dotQopt;  // next solution (bar{\dotqv} in the paper)
-    MatrixD I;  // identity matrix
-    std::vector<Scalar> scaleFactors;
+    Eigen::VectorXd dotQ;  // next solution (bar{\dotqv} in the paper)
+    std::vector<Eigen::MatrixXd> W;  //selection matrices  [here to permit a warm start]
+    std::vector<Eigen::VectorXd> dotQopt;  // next solution (bar{\dotqv} in the paper)
+    Eigen::MatrixXd I;  // identity matrix
+    std::vector<double> scaleFactors;
 
     std::vector<int> nSat;  //number of saturated joint
 };

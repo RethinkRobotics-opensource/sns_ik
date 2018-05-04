@@ -36,22 +36,22 @@ namespace sns_ik {
 
 class FSNSVelocityIK : public SNSVelocityIK {
   public:
-    FSNSVelocityIK(int dof, Scalar loop_period);
+    FSNSVelocityIK(int dof, double loop_period);
     virtual ~FSNSVelocityIK() {};
 
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                  const VectorD &jointConfiguration);
+    virtual double getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                  const Eigen::VectorXd &jointConfiguration);
 
   protected:
     // Perform the SNS for a single task
-    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
-                  const MatrixD &higherPriorityNull, const MatrixD &jacobian,
-                  const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
+    virtual double SNSsingle(int priority, const Eigen::VectorXd &higherPriorityJointVelocity,
+                  const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
+                  const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 
-    void getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
-                  const Array<Scalar, Dynamic, 1> &b,
-                  const VectorXi &S, Scalar *scalingFactor,
+    void getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
+                  const Array<double, Dynamic, 1> &b,
+                  const VectorXi &S, double *scalingFactor,
                   int *mostCriticalJoint);
 
     // TODO: Does this need to be a member variable?

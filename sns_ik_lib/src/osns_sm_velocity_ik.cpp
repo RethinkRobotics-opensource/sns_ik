@@ -25,16 +25,16 @@
 using namespace Eigen;
 using namespace sns_ik;
 
-OSNS_sm_VelocityIK::OSNS_sm_VelocityIK(int dof, Scalar loop_period) :
+OSNS_sm_VelocityIK::OSNS_sm_VelocityIK(int dof, double loop_period) :
   OSNSVelocityIK(dof, loop_period),
   m_scaleMargin(0.9)
 {
 }
 
 
-Scalar OSNS_sm_VelocityIK::getJointVelocity(VectorD *jointVelocity,
+double OSNS_sm_VelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
     const std::vector<Task> &sot,
-    const VectorD &jointConfiguration)
+    const Eigen::VectorXd &jointConfiguration)
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
@@ -43,14 +43,14 @@ Scalar OSNS_sm_VelocityIK::getJointVelocity(VectorD *jointVelocity,
 
   //P_0=I
   //dq_0=0
-  MatrixD P = MatrixD::Identity(n_dof, n_dof);
-  *jointVelocity = VectorD::Zero(n_dof, 1);
-  VectorD higherPriorityJointVelocity;
-  MatrixD higherPriorityNull;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(n_dof, n_dof);
+  *jointVelocity = Eigen::VectorXd::Zero(n_dof, 1);
+  Eigen::VectorXd higherPriorityJointVelocity;
+  Eigen::MatrixXd higherPriorityNull;
 
   shapeJointVelocityBound(jointConfiguration, m_scaleMargin);
 
-  MatrixD PS = MatrixD::Identity(n_dof, n_dof);
+  Eigen::MatrixXd PS = Eigen::MatrixXd::Identity(n_dof, n_dof);
 
   for (int i_task = 0; i_task < n_tasks; i_task++) {  //consider all tasks
     higherPriorityJointVelocity = *jointVelocity;
@@ -71,7 +71,7 @@ Scalar OSNS_sm_VelocityIK::getJointVelocity(VectorD *jointVelocity,
     if (scaleFactors[i_task] > 0.0) {
       if (scaleFactors[i_task] * m_scaleMargin < (1.0)) {
         double taskScale = scaleFactors[i_task] * m_scaleMargin;
-        VectorD scaledTask = sot[i_task].desired * taskScale;
+        Eigen::VectorXd scaledTask = sot[i_task].desired * taskScale;
         scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
             sot[i_task].jacobian, scaledTask, jointVelocity, &P);
         scaleFactors[i_task] = taskScale;

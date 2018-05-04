@@ -146,7 +146,7 @@ namespace sns_ik {
     void setLoopPeriod(double loopPeriod);
     double getLoopPeriod() { return m_loopPeriod; }
 
-    bool getTaskScaleFactors(std::vector<Scalar>& scaleFactors);
+    bool getTaskScaleFactors(std::vector<double>& scaleFactors);
 
   private:
     bool m_initialized;
@@ -169,7 +169,7 @@ namespace sns_ik {
 
     bool nullspaceBiasTask(const KDL::JntArray& q_bias,
                            const std::vector<std::string>& biasNames,
-                           MatrixD* jacobian, std::vector<int>* indicies);
+                           Eigen::MatrixXd* jacobian, std::vector<int>* indicies);
 
   };
 }  //namespace

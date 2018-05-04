@@ -234,7 +234,7 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
 
   int result;
   if (q_bias.rows()) {
-    MatrixD ns_jacobian;
+    Eigen::MatrixXd ns_jacobian;
     std::vector<int> indicies;
     if (!nullspaceBiasTask(q_bias, biasNames, &ns_jacobian, &indicies)) {
       ROS_ERROR("Could not create nullspace bias task");
@@ -273,7 +273,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
   std::vector<Task> sot;
   Task task;
   task.jacobian = jacobian.data;
-  task.desired = VectorD::Zero(6);
+  task.desired = Eigen::VectorXd::Zero(6);
   // twistEigenToKDL
   for(size_t i = 0; i < 6; i++)
       task.desired(i) = v_in[i];
@@ -289,7 +289,7 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
       ROS_ERROR("Could not create nullspace bias task");
       return -1;
     }
-    task2.desired = VectorD::Zero(q_bias.rows());
+    task2.desired = Eigen::VectorXd::Zero(q_bias.rows());
     for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
       // This calculates a "nullspace velocity".
       // There is an arbitrary scale factor which will be set by the max scale factor.
@@ -303,8 +303,8 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
   // If the bias is the previous joint velocities, this is velocity damping
   if(q_vel_bias.rows() == q_in.rows()) {
     Task task2;
-    task2.jacobian = MatrixD::Identity(q_vel_bias.rows(), q_vel_bias.rows());
-    task2.desired = VectorD::Zero(q_vel_bias.rows());
+    task2.jacobian = Eigen::MatrixXd::Identity(q_vel_bias.rows(), q_vel_bias.rows());
+    task2.desired = Eigen::VectorXd::Zero(q_vel_bias.rows());
     for (size_t ii = 0; ii < q_vel_bias.rows(); ++ii) {
       task2.desired(ii) = q_vel_bias(ii);
     }
@@ -316,12 +316,12 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
 
 bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
                                const std::vector<std::string>& biasNames,
-                               MatrixD* jacobian,
+                               Eigen::MatrixXd* jacobian,
                                std::vector<int>* indicies)
 {
   ROS_ASSERT_MSG(q_bias.rows() == biasNames.size(), "SNS_IK: Number of joint bias and names differ");
   Task task2;
-  *jacobian = MatrixD::Zero(q_bias.rows(), m_jointNames.size());
+  *jacobian = Eigen::MatrixXd::Zero(q_bias.rows(), m_jointNames.size());
   indicies->resize(q_bias.rows(), 0);
   std::vector<std::string>::iterator it;
   for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
@@ -355,7 +355,7 @@ bool SNS_IK::setMaxJointAcceleration(const KDL::JntArray& accel) {
   return m_ik_vel_solver->setMaxJointAcceleration(accel.data);
 }
 
-bool SNS_IK::getTaskScaleFactors(std::vector<Scalar>& scaleFactors) {
+bool SNS_IK::getTaskScaleFactors(std::vector<double>& scaleFactors) {
   scaleFactors = m_ik_vel_solver->getTasksScaleFactor();
   return m_initialized && !scaleFactors.empty();
 }
