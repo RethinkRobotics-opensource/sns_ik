@@ -30,18 +30,16 @@
 #include "sns_ik/sns_velocity_ik.hpp"
 #include "sns_ik/fsns_velocity_ik.hpp"
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 class FOSNSVelocityIK : public FSNSVelocityIK {
   public:
-    FOSNSVelocityIK(int dof, Scalar loop_period);
+    FOSNSVelocityIK(int dof, double loop_period);
     virtual ~FOSNSVelocityIK() {};
 
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                  const VectorD &jointConfiguration);
+    virtual double getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                  const Eigen::VectorXd &jointConfiguration);
 
     virtual void setNumberOfTasks(int ntasks, int dof);
 
@@ -55,19 +53,19 @@ class FOSNSVelocityIK : public FSNSVelocityIK {
 
     // For the FastOpt version of the SNS
     // TODO: should these be member variables?
-    MatrixD B;  //update matrix
+    Eigen::MatrixXd B;  //update matrix
     std::vector<std::forward_list<int>> satList;
-    VectorD lagrangeMu;
-    VectorD lagrangeMu1;
-    VectorD lagrangeMup2w;
+    Eigen::VectorXd lagrangeMu;
+    Eigen::VectorXd lagrangeMu1;
+    Eigen::VectorXd lagrangeMup2w;
     std::forward_list<int>::iterator it, prev_it;
 
     // Perform the SNS for a single task
-    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
-                   const MatrixD &higherPriorityNull, const MatrixD &jacobian,
-                   const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
+    virtual double SNSsingle(int priority, const Eigen::VectorXd &higherPriorityJointVelocity,
+                   const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
+                   const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

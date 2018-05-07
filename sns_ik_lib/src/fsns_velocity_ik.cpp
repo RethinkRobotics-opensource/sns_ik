@@ -24,31 +24,30 @@
 
 #include <ros/ros.h>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
-FSNSVelocityIK::FSNSVelocityIK(int dof, Scalar loop_period) :
+FSNSVelocityIK::FSNSVelocityIK(int dof, double loop_period) :
   SNSVelocityIK(dof, loop_period)
 {
 }
 
 
-Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
+double FSNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
     const std::vector<Task> &sot,
-    const VectorD &jointConfiguration)
+    const Eigen::VectorXd &jointConfiguration)
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
-  S.resize(n_tasks, VectorXi::Zero(n_dof));
+  S.resize(n_tasks, Eigen::VectorXi::Zero(n_dof));
 
   // TODO: check that setJointsCapabilities has been already called
 
   //P_0=I
   //dq_0=0
-  MatrixD P = MatrixD::Identity(n_dof, n_dof);
-  *jointVelocity = VectorD::Zero(n_dof, 1);
-  VectorD higherPriorityJointVelocity;
-  MatrixD higherPriorityNull;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(n_dof, n_dof);
+  *jointVelocity = Eigen::VectorXd::Zero(n_dof, 1);
+  Eigen::VectorXd higherPriorityJointVelocity;
+  Eigen::MatrixXd higherPriorityNull;
 
   shapeJointVelocityBound(jointConfiguration);
 
@@ -67,52 +66,52 @@ Scalar FSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
   return 1.0;
 }
 
-Scalar FSNSVelocityIK::SNSsingle(int priority,
-                                 const VectorD &higherPriorityJointVelocity,
-                                 const MatrixD &higherPriorityNull,
-                                 const MatrixD &jacobian,
-                                 const VectorD &task,
-                                 VectorD *jointVelocity,
-                                 MatrixD *nullSpaceProjector)
+double FSNSVelocityIK::SNSsingle(int priority,
+                                 const Eigen::VectorXd &higherPriorityJointVelocity,
+                                 const Eigen::MatrixXd &higherPriorityNull,
+                                 const Eigen::MatrixXd &jacobian,
+                                 const Eigen::VectorXd &task,
+                                 Eigen::VectorXd *jointVelocity,
+                                 Eigen::MatrixXd *nullSpaceProjector)
 {
   //FIXME: THERE IS A PROBLEM if we use 3 tasks... to be checked
 
   //INITIALIZATION
-  MatrixD JPinverse;  //(J_k P_{k-1})^#
-  Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::MatrixXd JPinverse;  //(J_k P_{k-1})^#
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
-  Scalar scalingFactor = 1.0;
+  double scalingFactor = 1.0;
   int mostCriticalJoint;
   bool singularTask = false;
 
-  Scalar best_Scale = -1.0;
-  VectorD best_dq1;
-  VectorD best_dq2;
-  VectorD best_dqw;
+  double best_Scale = -1.0;
+  Eigen::VectorXd best_dq1;
+  Eigen::VectorXd best_dq2;
+  Eigen::VectorXd best_dqw;
   //int best_nSat;
 
-  MatrixD tildeZ;
-  VectorD dq1, dq2, dqw;
+  Eigen::MatrixXd tildeZ;
+  Eigen::VectorXd dq1, dq2, dqw;
 
-  MatrixD bin, zin;
-  Scalar dqw_in;
+  Eigen::MatrixXd bin, zin;
+  double dqw_in;
 
   //initialization
   nSat[priority] = 0;
-  S[priority] = VectorXi::Zero(n_dof);
+  S[priority] = Eigen::VectorXi::Zero(n_dof);
 
   //compute the base solution
   singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, &tildeZ);
   *nullSpaceProjector = tildeZ * tildeZ.transpose();
   dq1 = JPinverse * task;
   dq2 = -JPinverse * jacobian * higherPriorityJointVelocity;
-  dqw = VectorD::Zero(n_dof);
+  dqw = Eigen::VectorXd::Zero(n_dof);
 
   dotQ = higherPriorityJointVelocity + dq1 + dq2;
   a = dq1.array();
   b = dotQ.array() - a;
   getTaskScalingFactor(a, b, S[priority], &scalingFactor, &mostCriticalJoint);
-  //getTaskScalingFactor(a, b, MatrixD::Identity(n_dof, n_dof), &scalingFactor, &mostCriticalJoint);
+  //getTaskScalingFactor(a, b, Eigen::MatrixXd::Identity(n_dof, n_dof), &scalingFactor, &mostCriticalJoint);
 
   if (scalingFactor >= 1.0) {
     // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
@@ -246,14 +245,14 @@ Scalar FSNSVelocityIK::SNSsingle(int priority,
   return 1.0;
 }
 
-void FSNSVelocityIK::getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
-                  const Array<Scalar, Dynamic, 1> &b,
-                  const VectorXi &S, Scalar *scalingFactor,
+void FSNSVelocityIK::getTaskScalingFactor(const Eigen::ArrayXd &a,
+                  const Eigen::ArrayXd &b,
+                  const Eigen::VectorXi &S, double *scalingFactor,
                   int *mostCriticalJoint)
 {
-  Array<Scalar, Dynamic, 1> Smin, Smax;
-  Scalar temp, smax, smin;
-  Scalar inf = INF;
+  Eigen::ArrayXd Smin, Smax;
+  double temp, smax, smin;
+  double inf = INF;
   int col;
 
   Smin = (dotQmin - b) / a;
@@ -283,3 +282,5 @@ void FSNSVelocityIK::getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
     (*scalingFactor) = smax;
   }
 }
+
+}  // namespace sns_ik

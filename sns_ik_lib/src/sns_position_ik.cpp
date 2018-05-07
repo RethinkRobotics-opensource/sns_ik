@@ -21,7 +21,7 @@
 #include <sns_ik/sns_velocity_ik.hpp>
 #include <iostream>
 
-namespace sns_ik{
+namespace sns_ik {
 
 SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps) :
     m_chain(chain),
@@ -69,15 +69,15 @@ bool SNSPositionIK::calcPoseError(const KDL::JntArray& q,
 int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
                              const KDL::Frame& goal_pose,
                              const KDL::JntArray& joint_ns_bias,
-                             const MatrixD& ns_jacobian,
+                             const Eigen::MatrixXd& ns_jacobian,
                              const std::vector<int>& ns_indicies,
                              const double ns_gain,
                              KDL::JntArray* return_joints,
                              const KDL::Twist& bounds)
 {
-  VectorD jl_low = m_ikVelSolver->getJointLimitLow();
-  VectorD jl_high = m_ikVelSolver->getJointLimitHigh();
-  VectorD maxJointVel = m_ikVelSolver->getJointVelocityMax();
+  Eigen::VectorXd jl_low = m_ikVelSolver->getJointLimitLow();
+  Eigen::VectorXd jl_high = m_ikVelSolver->getJointLimitHigh();
+  Eigen::VectorXd maxJointVel = m_ikVelSolver->getJointVelocityMax();
 
   // initialize variables
   bool solutionFound = false;
@@ -85,20 +85,20 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   KDL::Frame pose_i;
   int n_dof = joint_seed.rows();
   std::vector<Task> sot(1);
-  sot[0].desired = VectorD::Zero(6);
+  sot[0].desired = Eigen::VectorXd::Zero(6);
 
   // If there's a nullspace bias, create a secondary task
   if (joint_ns_bias.rows()) {
     Task nsTask;
     nsTask.jacobian = ns_jacobian;
-    nsTask.desired = VectorD::Zero(joint_ns_bias.rows());
+    nsTask.desired = Eigen::VectorXd::Zero(joint_ns_bias.rows());
     // the desired task to apply the NS bias will change with each iteration
     sot.push_back(nsTask);
   }
 
   double theta;
   double lineErr, rotErr;
-  VectorD qDot(n_dof);
+  Eigen::VectorXd qDot(n_dof);
   KDL::Jacobian jacobian;
   jacobian.resize(q_i.rows());
   KDL::Vector rotAxis, trans;
@@ -207,12 +207,13 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   }
 
   if (solutionFound) {
-      *return_joints = q_i;
-      //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
-      return 1;  // TODO: return success/fail code
-    } else {
-      //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
-      return -1;
-    }
+    *return_joints = q_i;
+    //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
+    return 1;  // TODO: return success/fail code
+  } else {
+    //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
+    return -1;
   }
 }
+
+}  // namespace sns_ik

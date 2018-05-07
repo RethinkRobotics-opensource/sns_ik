@@ -30,34 +30,32 @@
 
 //#define LOG_ACTIVE
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 class FSNSVelocityIK : public SNSVelocityIK {
   public:
-    FSNSVelocityIK(int dof, Scalar loop_period);
+    FSNSVelocityIK(int dof, double loop_period);
     virtual ~FSNSVelocityIK() {};
 
     // Optimal SNS Velocity IK
-    virtual Scalar getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                  const VectorD &jointConfiguration);
+    virtual double getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                  const Eigen::VectorXd &jointConfiguration);
 
   protected:
     // Perform the SNS for a single task
-    virtual Scalar SNSsingle(int priority, const VectorD &higherPriorityJointVelocity,
-                  const MatrixD &higherPriorityNull, const MatrixD &jacobian,
-                  const VectorD &task, VectorD *jointVelocity, MatrixD *nullSpaceProjector);
+    virtual double SNSsingle(int priority, const Eigen::VectorXd &higherPriorityJointVelocity,
+                  const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
+                  const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 
-    void getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
-                  const Array<Scalar, Dynamic, 1> &b,
-                  const VectorXi &S, Scalar *scalingFactor,
+    void getTaskScalingFactor(const Eigen::ArrayXd &a,
+                  const Eigen::ArrayXd &b,
+                  const Eigen::VectorXi &S, double *scalingFactor,
                   int *mostCriticalJoint);
 
     // TODO: Does this need to be a member variable?
-    std::vector<VectorXi> S;  //the i-th element is zero if the i-th joint is not saturate, otherwise contains the position in B
+    std::vector<Eigen::VectorXi> S;  //the i-th element is zero if the i-th joint is not saturate, otherwise contains the position in B
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

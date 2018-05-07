@@ -25,10 +25,9 @@
 #include <ros/ros.h>
 #include <iostream>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
-FOSNSVelocityIK::FOSNSVelocityIK(int dof, Scalar loop_period) :
+FOSNSVelocityIK::FOSNSVelocityIK(int dof, double loop_period) :
     FSNSVelocityIK(dof, loop_period),
     scaleMargin(0.98)
 {
@@ -39,9 +38,9 @@ void FOSNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
   SNSVelocityIK::setNumberOfTasks(ntasks, dof);
 
   //for the Fast version
-  MatrixD Z = MatrixD::Zero(n_dof, n_dof);
-  VectorD zv = VectorD::Zero(n_dof);
-  VectorXi zvi = VectorXi::Zero(n_dof);
+  Eigen::MatrixXd Z = Eigen::MatrixXd::Zero(n_dof, n_dof);
+  Eigen::VectorXd zv = Eigen::VectorXd::Zero(n_dof);
+  Eigen::VectorXi zvi = Eigen::VectorXi::Zero(n_dof);
   B = Z;
 
   S.resize(n_tasks, zvi);
@@ -53,21 +52,21 @@ void FOSNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
   lagrangeMup2w = zv;
 }
 
-Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
+double FOSNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
     const std::vector<Task> &sot,
-    const VectorD &jointConfiguration)
+    const Eigen::VectorXd &jointConfiguration)
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
-  S.resize(n_tasks, VectorXi::Zero(n_dof));
+  S.resize(n_tasks, Eigen::VectorXi::Zero(n_dof));
 
   // TODO: check that setJointsCapabilities has been already called
 
-  MatrixD P = MatrixD::Identity(n_dof, n_dof);
-  MatrixD PS = MatrixD::Identity(n_dof, n_dof);
-  *jointVelocity = VectorD::Zero(n_dof, 1);
-  VectorD higherPriorityJointVelocity;
-  MatrixD higherPriorityNull;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(n_dof, n_dof);
+  Eigen::MatrixXd PS = Eigen::MatrixXd::Identity(n_dof, n_dof);
+  *jointVelocity = Eigen::VectorXd::Zero(n_dof, 1);
+  Eigen::VectorXd higherPriorityJointVelocity;
+  Eigen::MatrixXd higherPriorityNull;
 
   shapeJointVelocityBound(jointConfiguration);
 
@@ -82,7 +81,7 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
     if (scaleFactors[i_task] > 0.0) {
       if (scaleFactors[i_task] * scaleMargin < 1.0) {
         double taskScale = scaleFactors[i_task] * scaleMargin;
-        VectorD scaledTask = sot[i_task].desired * taskScale;
+        Eigen::VectorXd scaledTask = sot[i_task].desired * taskScale;
         scaleFactors[i_task] = SNSsingle(i_task, higherPriorityJointVelocity, higherPriorityNull,
             sot[i_task].jacobian, scaledTask, jointVelocity, &P);
         scaleFactors[i_task] = taskScale;
@@ -102,49 +101,49 @@ Scalar FOSNSVelocityIK::getJointVelocity(VectorD *jointVelocity,
 
 //#define LOG_ACTIVE
 
-Scalar FOSNSVelocityIK::SNSsingle(int priority,
-                                  const VectorD &higherPriorityJointVelocity,
-                                  const MatrixD &higherPriorityNull,
-                                  const MatrixD &jacobian,
-                                  const VectorD &task,
-                                  VectorD *jointVelocity,
-                                  MatrixD *nullSpaceProjector)
+double FOSNSVelocityIK::SNSsingle(int priority,
+                                  const Eigen::VectorXd &higherPriorityJointVelocity,
+                                  const Eigen::MatrixXd &higherPriorityNull,
+                                  const Eigen::MatrixXd &jacobian,
+                                  const Eigen::VectorXd &task,
+                                  Eigen::VectorXd *jointVelocity,
+                                  Eigen::MatrixXd *nullSpaceProjector)
 {
   //INITIALIZATION
-  MatrixD JPinverse;  //(J_k P_{k-1})^#
-  Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::MatrixXd JPinverse;  //(J_k P_{k-1})^#
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
-  Scalar scalingFactor = 1.0;
+  double scalingFactor = 1.0;
   int mostCriticalJoint;
   bool singularTask = false;
 
-  Scalar base_Scale;
-  Scalar best_Scale = -1.0;
-  VectorD best_dq1;
-  VectorD best_dq2;
-  VectorD best_dqw;
+  double base_Scale;
+  double best_Scale = -1.0;
+  Eigen::VectorXd best_dq1;
+  Eigen::VectorXd best_dq2;
+  Eigen::VectorXd best_dqw;
   //int best_nSat;
 
-  MatrixD tildeZ;
-  VectorD dq1, dq2;
-  VectorD dqw;
-  VectorD dq1_base, dq2_base;
-  VectorD dqn = VectorD::Zero(n_dof);
-  //VectorD dotQs;
+  Eigen::MatrixXd tildeZ;
+  Eigen::VectorXd dq1, dq2;
+  Eigen::VectorXd dqw;
+  Eigen::VectorXd dq1_base, dq2_base;
+  Eigen::VectorXd dqn = Eigen::VectorXd::Zero(n_dof);
+  //Eigen::VectorXd dotQs;
 
-  MatrixD zin;
-  VectorD bin, bout;
-  Scalar dqw_in;
+  Eigen::MatrixXd zin;
+  Eigen::VectorXd bin, bout;
+  double dqw_in;
 
-  //Scalar mu_in;
-  Scalar mu_in1;
-  Scalar mu_inp2w;
-  //Scalar mu_out;
-  Scalar mu_out1;
-  Scalar mu_outp2w;
-  Scalar min_mu;
+  //double mu_in;
+  double mu_in1;
+  double mu_inp2w;
+  //double mu_out;
+  double mu_out1;
+  double mu_outp2w;
+  double min_mu;
   int id_min_mu = n_dof + 1;  //just to be not possible
-  VectorD scaledMU;
+  Eigen::VectorXd scaledMU;
 
   bool computedScalingFactor = false;
 
@@ -158,13 +157,13 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   *nullSpaceProjector = tildeZ * tildeZ.transpose();
   dq1 = JPinverse * task;
   dq2 = -JPinverse * jacobian * higherPriorityJointVelocity;
-  dqw = VectorD::Zero(n_dof);
+  dqw = Eigen::VectorXd::Zero(n_dof);
   dq1_base = dq1;
   dq2_base = dq2;
   dotQ = higherPriorityJointVelocity + dq1 + dq2;
   a = dq1.array();
   b = dotQ.array() - a;
-  getTaskScalingFactor(a, b, VectorXi::Zero(n_dof), &scalingFactor, &mostCriticalJoint);
+  getTaskScalingFactor(a, b, Eigen::VectorXi::Zero(n_dof), &scalingFactor, &mostCriticalJoint);
 
 #ifdef LOG_ACTIVE
   log<<"task "<<priority<<std::endl;
@@ -180,7 +179,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
     //dotQopt[priority]=dotQ;
     nSat[priority] = 0;
     satList[priority].clear();
-    S[priority] = VectorXi::Zero(n_dof);
+    S[priority] = Eigen::VectorXi::Zero(n_dof);
 #ifdef LOG_ACTIVE
     log<<"task accomplished without saturations"<<std::endl;
     log<<"scale "<<scalingFactor<<std::endl;
@@ -230,7 +229,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 #endif
     nSat[priority] = 0;
     satList[priority].clear();
-    S[priority] = VectorXi::Zero(n_dof);
+    S[priority] = Eigen::VectorXi::Zero(n_dof);
     return scalingFactor;
   }
 
@@ -239,16 +238,16 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 #define WARM_START
 #ifdef  WARM_START
 //############### WARM START
-//B=MatrixD::Zero(n_dof,n_dof);
+//B=Eigen::MatrixXd::Zero(n_dof,n_dof);
   if (nSat[priority]) {
 //    log<<"started with "<<nSat[priority]<< " saturated\n";
-    MatrixD Zws = MatrixD::Zero(nSat[priority], tildeZ.cols());
-    MatrixD invZws = MatrixD::Zero(tildeZ.cols(), nSat[priority]);
-    MatrixD forMu = MatrixD::Zero(nSat[priority], nSat[priority]);
-    MatrixD Bws = MatrixD::Zero(n_dof, nSat[priority]);
-    VectorD dq1_ws = VectorD::Zero(nSat[priority]);
-    VectorD dq2_ws = VectorD::Zero(nSat[priority]);
-    VectorD dqw_ws = VectorD::Zero(nSat[priority]);
+    Eigen::MatrixXd Zws = Eigen::MatrixXd::Zero(nSat[priority], tildeZ.cols());
+    Eigen::MatrixXd invZws = Eigen::MatrixXd::Zero(tildeZ.cols(), nSat[priority]);
+    Eigen::MatrixXd forMu = Eigen::MatrixXd::Zero(nSat[priority], nSat[priority]);
+    Eigen::MatrixXd Bws = Eigen::MatrixXd::Zero(n_dof, nSat[priority]);
+    Eigen::VectorXd dq1_ws = Eigen::VectorXd::Zero(nSat[priority]);
+    Eigen::VectorXd dq2_ws = Eigen::VectorXd::Zero(nSat[priority]);
+    Eigen::VectorXd dqw_ws = Eigen::VectorXd::Zero(nSat[priority]);
     int idws = 0;
     bool invertibelZws;
 
@@ -310,7 +309,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 #endif
         satList[priority].clear();
         nSat[priority] = 0;
-        S[priority] = VectorXi::Zero(n_dof);
+        S[priority] = Eigen::VectorXi::Zero(n_dof);
 
       } else {
 
@@ -374,10 +373,10 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
 //######################### else
   satList[priority].clear();
   nSat[priority]=0;
-  S[priority]=VectorXi::Zero(n_dof);
+  S[priority]=Eigen::VectorXi::Zero(n_dof);
 
-//  lagrangeMu1=VectorD::Zero(n_dof);
-//  lagrangeMup2w=VectorD::Zero(n_dof);
+//  lagrangeMu1=Eigen::VectorXd::Zero(n_dof);
+//  lagrangeMup2w=Eigen::VectorXd::Zero(n_dof);
 //#########################
 #endif
 
@@ -406,7 +405,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
       //nSat[priority]=0;
       satList[priority].clear();
       nSat[priority] = 0;
-      S[priority] = VectorXi::Zero(n_dof);
+      S[priority] = Eigen::VectorXi::Zero(n_dof);
       *jointVelocity = higherPriorityJointVelocity;
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = higherPriorityNull;
@@ -477,17 +476,17 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
             }
           } else {
             //update B
-            Scalar baux = (Scalar) bout.dot(B.col(id)) / bout.squaredNorm();
+            double baux = (double) bout.dot(B.col(id)) / bout.squaredNorm();
             B.col(id) -= bout * baux;
             prev_it = it;
             it++;
           }
         }
         //update the solution
-        Scalar dq1X = dq1_base(id_min_mu);
-        Scalar dq2X = dq2_base(id_min_mu);
-        Scalar dqwX = dqn(id_min_mu);
-        MatrixD ZX = tildeZ.row(id_min_mu);
+        double dq1X = dq1_base(id_min_mu);
+        double dq2X = dq2_base(id_min_mu);
+        double dqwX = dqn(id_min_mu);
+        Eigen::MatrixXd ZX = tildeZ.row(id_min_mu);
         for (it = satList[priority].begin(); it != satList[priority].end(); ++it) {
           int id = *it;
           lagrangeMu1(id) += bout(id) * mu_out1;
@@ -576,17 +575,17 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
             }
           } else {
             //update B
-            Scalar baux = (Scalar) bout.dot(B.col(id)) / bout.squaredNorm();
+            double baux = (double) bout.dot(B.col(id)) / bout.squaredNorm();
             B.col(id) -= bout * baux;
             prev_it = it;
             it++;
           }
         }
         //update the solution
-        Scalar dq1X = dq1_base(id_min_mu);
-        Scalar dq2X = dq2_base(id_min_mu);
-        Scalar dqwX = dqn(id_min_mu);
-        MatrixD ZX = tildeZ.row(id_min_mu);
+        double dq1X = dq1_base(id_min_mu);
+        double dq2X = dq2_base(id_min_mu);
+        double dqwX = dqn(id_min_mu);
+        Eigen::MatrixXd ZX = tildeZ.row(id_min_mu);
         for (it = satList[priority].begin(); it != satList[priority].end(); ++it) {
           int id = *it;
           lagrangeMu1(id) += bout(id) * mu_out1;
@@ -672,7 +671,7 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
           //no saturation was needed to obtain the best scale
           satList[priority].clear();
           nSat[priority] = 0;
-          S[priority] = VectorXi::Zero(n_dof);
+          S[priority] = Eigen::VectorXi::Zero(n_dof);
 
         }
         //if (priority==1) *jointVelocity=(*higherPriorityJointVelocity);
@@ -728,3 +727,5 @@ Scalar FOSNSVelocityIK::SNSsingle(int priority,
   //dotQopt[priority]=(*jointVelocity);
   return scalingFactor;
 }
+
+}  // namespace sns_ik

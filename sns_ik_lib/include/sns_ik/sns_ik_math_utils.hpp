@@ -25,67 +25,27 @@
 
 #include <Eigen/Dense>
 
-using namespace Eigen;
-
 namespace sns_ik {
 
-#define _USE_DOUBLE_
-/*! \def _USE_DOUBLE_
- * use values with double precision.
- * This is used to have the possibility to switch (at compile time) between float and double precision in order to be faster or more accurate.
- * Inside the \b IKL we will use the follow definition:
- * - \b MatrixD  a dynamic sized Matrix of real numbers
- * - \b VectorD a column vector of real numbers with dynamic length
- * - \b Scalar a real number
- */
-
-#ifdef _USE_DOUBLE_
-  /*! \typedef MatrixD
-   *  dynamic sized matrix of \em float values
-   *  (\em double if \b _USE_DOUBLE_ is defined)
-   */
-  typedef Eigen::Matrix<double, Dynamic, Dynamic> MatrixD;
-  /*! \typedef VectorD
-   *  dynamic sized column vector of \em float values
-   *  (\em double if \b _USE_DOUBLE_ is defined)
-   */
-  typedef Eigen::Matrix<double, Dynamic, 1> VectorD;
-  /*! \typedef Scalar
-   *  a \em float value
-   *  (\em double if \b _USE_DOUBLE_ is defined)
-   */
-  typedef double Scalar;
-  const double EPS = 1e-6;
-  const double LAMBDA_MAX = 1e-6; //0.3
-  const double EPSQ = 1e-10;
-#else
-  typedef Eigen::Matrix<float,Dynamic,Dynamic> MatrixD;
-  typedef Eigen::Matrix<float,Dynamic,1> VectorD;
-  typedef float Scalar;
-  const float EPS = 1e-6;
-  const float LAMBDA_MAX = 0.3;
-  const float EPSQ = 1e-15;
-#endif
-
-#define INF 1e20;  // Should this be the std INF?
+static const double INF = std::numeric_limits<double>::max();
 
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
-bool pinv(const MatrixD &A, MatrixD *invA, Scalar eps = EPS);
+bool pinv(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double eps = 1e-6);
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
 // return also the null space projector P=(P-pinv(A)A)
-bool pinv_P(const MatrixD &A, MatrixD *invA, MatrixD *P, Scalar eps = EPS);
+bool pinv_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P, double eps = 1e-6);
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
-bool pinv_damped(const MatrixD &A, MatrixD *invA, Scalar lambda_max = LAMBDA_MAX,
-                 Scalar eps = EPS);
-bool pinv_damped_P(const MatrixD &A, MatrixD *invA, MatrixD *P,
-                   Scalar lambda_max = LAMBDA_MAX, Scalar eps = EPS);
-bool pinv_forBarP(const MatrixD &W, const MatrixD &P, MatrixD *inv);
-bool pinv_QR_Z(const MatrixD &A, const MatrixD &Z0, MatrixD *invA, MatrixD *Z,
-               Scalar lambda_max = LAMBDA_MAX, Scalar eps = EPS);
-bool pinv_QR(const MatrixD &A, MatrixD *invA, Scalar eps = EPS);
+bool pinv_damped(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double lambda_max = 1e-6,
+                 double eps = 1e-6);
+bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P,
+                   double lambda_max = 1e-6, double eps = 1e-6);
+bool pinv_forBarP(const Eigen::MatrixXd &W, const Eigen::MatrixXd &P, Eigen::MatrixXd *inv);
+bool pinv_QR_Z(const Eigen::MatrixXd &A, const Eigen::MatrixXd &Z0, Eigen::MatrixXd *invA,
+               Eigen::MatrixXd *Z, double lambda_max = 1e-6, double eps = 1e-6);
+bool pinv_QR(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double eps = 1e-6);
 
-bool isIdentity(const MatrixD &A);
+bool isIdentity(const Eigen::MatrixXd &A);
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

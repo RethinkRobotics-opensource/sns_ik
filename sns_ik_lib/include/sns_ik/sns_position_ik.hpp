@@ -41,13 +41,13 @@ class SNSPositionIK {
                   const KDL::Frame& goal_pose,
                   KDL::JntArray* return_joints,
                   const KDL::Twist& bounds=KDL::Twist::Zero())
-    { return CartToJnt(joint_seed, goal_pose, KDL::JntArray(0), MatrixD(0,0),
+    { return CartToJnt(joint_seed, goal_pose, KDL::JntArray(0), Eigen::MatrixXd(0,0),
                        std::vector<int>(0), 0.0, return_joints, bounds); }
 
     int CartToJnt(const KDL::JntArray& joint_seed,
                   const KDL::Frame& goal_pose,
                   const KDL::JntArray& joint_ns_bias,
-                  const MatrixD& ns_jacobian,
+                  const Eigen::MatrixXd& ns_jacobian,
                   const std::vector<int>& ns_indicies,
                   const double ns_gain,
                   KDL::JntArray* return_joints,
@@ -141,6 +141,6 @@ class SNSPositionIK {
 
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

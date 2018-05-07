@@ -25,10 +25,9 @@
 #include <ros/ros.h>
 #include <iostream>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
-SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) :
+SNSVelocityIK::SNSVelocityIK(int dof, double loop_period) :
   n_dof(0),
   n_tasks(0),
   m_usePositionLimits(true)
@@ -37,8 +36,8 @@ SNSVelocityIK::SNSVelocityIK(int dof, Scalar loop_period) :
   setLoopPeriod(loop_period);
 }
 
-bool SNSVelocityIK::setJointsCapabilities(const VectorD limit_low, const VectorD limit_high,
-                                          const VectorD maxVelocity, const VectorD maxAcceleration)
+bool SNSVelocityIK::setJointsCapabilities(const Eigen::VectorXd limit_low, const Eigen::VectorXd limit_high,
+                                          const Eigen::VectorXd maxVelocity, const Eigen::VectorXd maxAcceleration)
 {
   if (limit_low.rows() != n_dof || limit_high.rows() != n_dof
       || maxVelocity.rows() != n_dof || maxAcceleration.rows() != n_dof) {
@@ -56,7 +55,7 @@ bool SNSVelocityIK::setJointsCapabilities(const VectorD limit_low, const VectorD
   return true;
 }
 
-bool SNSVelocityIK::setMaxJointVelocity(const VectorD maxVelocity)
+bool SNSVelocityIK::setMaxJointVelocity(const Eigen::VectorXd maxVelocity)
 {
   if (maxVelocity.rows() != n_dof) {
     return false;
@@ -69,7 +68,7 @@ bool SNSVelocityIK::setMaxJointVelocity(const VectorD maxVelocity)
   return true;
 }
 
-bool SNSVelocityIK::setMaxJointAcceleration(const VectorD maxAcceleration)
+bool SNSVelocityIK::setMaxJointAcceleration(const Eigen::VectorXd maxAcceleration)
 {
   if (maxAcceleration.rows() != n_dof) {
     return false;
@@ -82,8 +81,8 @@ void SNSVelocityIK::setNumberOfDOF(int dof)
 {
   if (dof > 0 && dof != n_dof) {
     n_dof = dof;
-    I = MatrixD::Identity(n_dof, n_dof);
-    dotQ = VectorD::Zero(n_dof);
+    I = Eigen::MatrixXd::Identity(n_dof, n_dof);
+    dotQ = Eigen::VectorXd::Zero(n_dof);
   }
 }
 
@@ -93,8 +92,8 @@ void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
 
   if (n_tasks != ntasks) {
     n_tasks = ntasks;
-    Scalar scale = 1.0;
-    VectorD dq = VectorD::Zero(n_dof);
+    double scale = 1.0;
+    Eigen::VectorXd dq = Eigen::VectorXd::Zero(n_dof);
 
     W.resize(n_tasks, I);
     scaleFactors.resize(n_tasks, scale);
@@ -103,7 +102,7 @@ void SNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
   }
 }
 
-Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
+double SNSVelocityIK::getJointVelocity_STD(Eigen::VectorXd *jointVelocity,
                                            const std::vector<Task> &sot)
 {
   int n_task = sot.size();
@@ -111,9 +110,9 @@ Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
 
   //P_0=I
   //dq_0=0
-  MatrixD P = MatrixD::Identity(robotDOF, robotDOF);
-  *jointVelocity = VectorD::Zero(robotDOF, 1);
-  MatrixD tmp, invJ;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(robotDOF, robotDOF);
+  *jointVelocity = Eigen::VectorXd::Zero(robotDOF, 1);
+  Eigen::MatrixXd tmp, invJ;
 
   for (int i_task = 0; i_task < n_task; i_task++) {  //consider all tasks
     // dq_k = dq_{k-1} - (J_k P_{k-1})^# (dx_k - J_k dq_{k-1})
@@ -128,8 +127,8 @@ Scalar SNSVelocityIK::getJointVelocity_STD(VectorD *jointVelocity,
   return 1.0;
 }
 
-Scalar SNSVelocityIK::getJointVelocity(VectorD *jointVelocity, const std::vector<Task> &sot,
-                                       const VectorD &jointConfiguration)
+double SNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,
+                                       const Eigen::VectorXd &jointConfiguration)
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
@@ -138,10 +137,10 @@ Scalar SNSVelocityIK::getJointVelocity(VectorD *jointVelocity, const std::vector
 
   //P_0=I
   //dq_0=0
-  MatrixD P = MatrixD::Identity(n_dof, n_dof);
-  *jointVelocity = VectorD::Zero(n_dof, 1);
-  VectorD higherPriorityJointVelocity;
-  MatrixD higherPriorityNull;
+  Eigen::MatrixXd P = Eigen::MatrixXd::Identity(n_dof, n_dof);
+  *jointVelocity = Eigen::VectorXd::Zero(n_dof, 1);
+  Eigen::VectorXd higherPriorityJointVelocity;
+  Eigen::MatrixXd higherPriorityNull;
 
   shapeJointVelocityBound(jointConfiguration);
 
@@ -156,7 +155,7 @@ Scalar SNSVelocityIK::getJointVelocity(VectorD *jointVelocity, const std::vector
   return scaleFactors[0];
 }
 
-void SNSVelocityIK::shapeJointVelocityBound(const VectorD &actualJointConfiguration, double margin) {
+void SNSVelocityIK::shapeJointVelocityBound(const Eigen::VectorXd &actualJointConfiguration, double margin) {
 
   // it could be written using the Eigen::Array potentiality
   double step, max, stop;
@@ -189,38 +188,38 @@ void SNSVelocityIK::shapeJointVelocityBound(const VectorD &actualJointConfigurat
   dotQmax *= margin;
 }
 
-Scalar SNSVelocityIK::SNSsingle(int priority,
-                                const VectorD &higherPriorityJointVelocity,
-                                const MatrixD &higherPriorityNull,
-                                const MatrixD &jacobian,
-                                const VectorD &task,
-                                VectorD *jointVelocity,
-                                MatrixD *nullSpaceProjector)
+double SNSVelocityIK::SNSsingle(int priority,
+                                const Eigen::VectorXd &higherPriorityJointVelocity,
+                                const Eigen::MatrixXd &higherPriorityNull,
+                                const Eigen::MatrixXd &jacobian,
+                                const Eigen::VectorXd &task,
+                                Eigen::VectorXd *jointVelocity,
+                                Eigen::MatrixXd *nullSpaceProjector)
 {
   //INITIALIZATION
-  VectorD tildeDotQ;
-  MatrixD projectorSaturated;  //(((I-W_k)*P_{k-1})^#
-  MatrixD JPinverse;  //(J_k P_{k-1})^#
-  MatrixD temp;
+  Eigen::VectorXd tildeDotQ;
+  Eigen::MatrixXd projectorSaturated;  //(((I-W_k)*P_{k-1})^#
+  Eigen::MatrixXd JPinverse;  //(J_k P_{k-1})^#
+  Eigen::MatrixXd temp;
   bool isW_identity;
-  MatrixD barP = higherPriorityNull;
-  Array<Scalar, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::MatrixXd barP = higherPriorityNull;
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
   bool singularTask = false;
   bool reachedSingularity = false;
-  Scalar scalingFactor = 1.0;
+  double scalingFactor = 1.0;
   int mostCriticalJoint;
   //best solution
-  Scalar bestScale = -1.0;
-  VectorD bestTildeDotQ;
-  MatrixD bestInvJP;
-  VectorD bestDotQn;
-  VectorD dotQn;  //saturate velocity in the null space
+  double bestScale = -1.0;
+  Eigen::VectorXd bestTildeDotQ;
+  Eigen::MatrixXd bestInvJP;
+  Eigen::VectorXd bestDotQn;
+  Eigen::VectorXd dotQn;  //saturate velocity in the null space
 
   //INIT
   W[priority] = I;
   isW_identity = true;
-  dotQn = VectorD::Zero(n_dof);
+  dotQn = Eigen::VectorXd::Zero(n_dof);
 
   //SNS
   int count = 0;
@@ -285,7 +284,7 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
           // the task is not executed
           //ROS_INFO("task not executed: J sing");
           //W[priority]=I;
-          //dotQn=VectorD::Zero(n_dof);
+          //dotQn=Eigen::VectorXd::Zero(n_dof);
           *jointVelocity = higherPriorityJointVelocity;
           *nullSpaceProjector = higherPriorityNull;
         }
@@ -349,14 +348,14 @@ Scalar SNSVelocityIK::SNSsingle(int priority,
   return 1.0;
 }
 
-void SNSVelocityIK::getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
-                                         const Array<Scalar, Dynamic, 1> &b,
-                                         const MatrixD &W, Scalar *scalingFactor,
+void SNSVelocityIK::getTaskScalingFactor(const Eigen::ArrayXd &a,
+                                         const Eigen::ArrayXd &b,
+                                         const Eigen::MatrixXd &W, double *scalingFactor,
                                          int *mostCriticalJoint)
 {
-  Array<Scalar, Dynamic, 1> Smin, Smax;
-  Scalar temp, smax, smin;
-  Scalar inf = INF;
+  Eigen::ArrayXd Smin, Smax;
+  double temp, smax, smin;
+  double inf = INF;
   int col;
 
   Smin = (dotQmin - b) / a;
@@ -386,3 +385,5 @@ void SNSVelocityIK::getTaskScalingFactor(const Array<Scalar, Dynamic, 1> &a,
   }
 
 }
+
+}  // namespace sns_ik
