@@ -22,8 +22,7 @@
 
 #include <sns_ik/osns_velocity_ik.hpp>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
 OSNSVelocityIK::OSNSVelocityIK(int dof, double loop_period) :
   SNSVelocityIK(dof, loop_period)
@@ -77,7 +76,7 @@ double OSNSVelocityIK::SNSsingle(int priority,
   Eigen::MatrixXd temp;
   bool isW_identity;
   Eigen::MatrixXd barP = higherPriorityNull;  // remove the pointer arguments advantage... but I need to modify it
-  Array<double, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
   bool singularTask = false;
   bool reachedSingularity = false;
@@ -363,3 +362,5 @@ bool OSNSVelocityIK::isOptimal(int priority, const Eigen::VectorXd& dotQ,
   }
   return isOptimal;
 }
+
+}  // namespace sns_ik

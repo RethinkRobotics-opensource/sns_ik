@@ -21,7 +21,7 @@
 #include <sns_ik/sns_velocity_ik.hpp>
 #include <iostream>
 
-namespace sns_ik{
+namespace sns_ik {
 
 SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps) :
     m_chain(chain),
@@ -207,12 +207,13 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   }
 
   if (solutionFound) {
-      *return_joints = q_i;
-      //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
-      return 1;  // TODO: return success/fail code
-    } else {
-      //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
-      return -1;
-    }
+    *return_joints = q_i;
+    //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
+    return 1;  // TODO: return success/fail code
+  } else {
+    //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
+    return -1;
   }
 }
+
+}  // namespace sns_ik

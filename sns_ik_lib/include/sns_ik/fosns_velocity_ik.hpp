@@ -30,8 +30,6 @@
 #include "sns_ik/sns_velocity_ik.hpp"
 #include "sns_ik/fsns_velocity_ik.hpp"
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 class FOSNSVelocityIK : public FSNSVelocityIK {
@@ -68,6 +66,6 @@ class FOSNSVelocityIK : public FSNSVelocityIK {
                    const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

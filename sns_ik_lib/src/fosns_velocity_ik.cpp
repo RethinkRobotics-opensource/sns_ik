@@ -25,8 +25,7 @@
 #include <ros/ros.h>
 #include <iostream>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
 FOSNSVelocityIK::FOSNSVelocityIK(int dof, double loop_period) :
     FSNSVelocityIK(dof, loop_period),
@@ -41,7 +40,7 @@ void FOSNSVelocityIK::setNumberOfTasks(int ntasks, int dof)
   //for the Fast version
   Eigen::MatrixXd Z = Eigen::MatrixXd::Zero(n_dof, n_dof);
   Eigen::VectorXd zv = Eigen::VectorXd::Zero(n_dof);
-  VectorXi zvi = VectorXi::Zero(n_dof);
+  Eigen::VectorXi zvi = Eigen::VectorXi::Zero(n_dof);
   B = Z;
 
   S.resize(n_tasks, zvi);
@@ -59,7 +58,7 @@ double FOSNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
-  S.resize(n_tasks, VectorXi::Zero(n_dof));
+  S.resize(n_tasks, Eigen::VectorXi::Zero(n_dof));
 
   // TODO: check that setJointsCapabilities has been already called
 
@@ -112,7 +111,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 {
   //INITIALIZATION
   Eigen::MatrixXd JPinverse;  //(J_k P_{k-1})^#
-  Array<double, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
   double scalingFactor = 1.0;
   int mostCriticalJoint;
@@ -164,7 +163,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
   dotQ = higherPriorityJointVelocity + dq1 + dq2;
   a = dq1.array();
   b = dotQ.array() - a;
-  getTaskScalingFactor(a, b, VectorXi::Zero(n_dof), &scalingFactor, &mostCriticalJoint);
+  getTaskScalingFactor(a, b, Eigen::VectorXi::Zero(n_dof), &scalingFactor, &mostCriticalJoint);
 
 #ifdef LOG_ACTIVE
   log<<"task "<<priority<<std::endl;
@@ -180,7 +179,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
     //dotQopt[priority]=dotQ;
     nSat[priority] = 0;
     satList[priority].clear();
-    S[priority] = VectorXi::Zero(n_dof);
+    S[priority] = Eigen::VectorXi::Zero(n_dof);
 #ifdef LOG_ACTIVE
     log<<"task accomplished without saturations"<<std::endl;
     log<<"scale "<<scalingFactor<<std::endl;
@@ -230,7 +229,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 #endif
     nSat[priority] = 0;
     satList[priority].clear();
-    S[priority] = VectorXi::Zero(n_dof);
+    S[priority] = Eigen::VectorXi::Zero(n_dof);
     return scalingFactor;
   }
 
@@ -310,7 +309,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 #endif
         satList[priority].clear();
         nSat[priority] = 0;
-        S[priority] = VectorXi::Zero(n_dof);
+        S[priority] = Eigen::VectorXi::Zero(n_dof);
 
       } else {
 
@@ -374,7 +373,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 //######################### else
   satList[priority].clear();
   nSat[priority]=0;
-  S[priority]=VectorXi::Zero(n_dof);
+  S[priority]=Eigen::VectorXi::Zero(n_dof);
 
 //  lagrangeMu1=Eigen::VectorXd::Zero(n_dof);
 //  lagrangeMup2w=Eigen::VectorXd::Zero(n_dof);
@@ -406,7 +405,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
       //nSat[priority]=0;
       satList[priority].clear();
       nSat[priority] = 0;
-      S[priority] = VectorXi::Zero(n_dof);
+      S[priority] = Eigen::VectorXi::Zero(n_dof);
       *jointVelocity = higherPriorityJointVelocity;
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = higherPriorityNull;
@@ -672,7 +671,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
           //no saturation was needed to obtain the best scale
           satList[priority].clear();
           nSat[priority] = 0;
-          S[priority] = VectorXi::Zero(n_dof);
+          S[priority] = Eigen::VectorXi::Zero(n_dof);
 
         }
         //if (priority==1) *jointVelocity=(*higherPriorityJointVelocity);
@@ -728,3 +727,5 @@ double FOSNSVelocityIK::SNSsingle(int priority,
   //dotQopt[priority]=(*jointVelocity);
   return scalingFactor;
 }
+
+}  // namespace sns_ik

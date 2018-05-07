@@ -27,8 +27,6 @@
 
 #include "sns_ik/sns_ik_math_utils.hpp"
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 /*! \struct Task
@@ -93,8 +91,8 @@ class SNSVelocityIK {
                      const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
                      const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 
-    void getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
-                              const Array<double, Dynamic, 1> &b,
+    void getTaskScalingFactor(const Eigen::ArrayXd &a,
+                              const Eigen::ArrayXd &b,
                               const Eigen::MatrixXd &W, double *scalingFactor,
                               int *mostCriticalJoint);
 
@@ -108,8 +106,8 @@ class SNSVelocityIK {
     Eigen::VectorXd maxJointAcceleration;  // maximum joint acceleration
     bool m_usePositionLimits;
 
-    Array<double, Dynamic, 1> dotQmin;  // lower joint velocity bound
-    Array<double, Dynamic, 1> dotQmax;  // higher joint velocity bound
+    Eigen::ArrayXd dotQmin;  // lower joint velocity bound
+    Eigen::ArrayXd dotQmax;  // higher joint velocity bound
 
     // TODO: are these needed here???
     Eigen::VectorXd dotQ;  // next solution (bar{\dotqv} in the paper)
@@ -121,6 +119,6 @@ class SNSVelocityIK {
     std::vector<int> nSat;  //number of saturated joint
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

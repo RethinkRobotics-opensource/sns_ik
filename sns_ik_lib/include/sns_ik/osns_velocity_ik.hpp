@@ -28,8 +28,6 @@
 #include "sns_ik/sns_ik_math_utils.hpp"
 #include "sns_ik/sns_velocity_ik.hpp"
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 class OSNSVelocityIK : public SNSVelocityIK {
@@ -52,6 +50,6 @@ class OSNSVelocityIK : public SNSVelocityIK {
                    Eigen::VectorXd* dotQn, double eps = 1e-8);
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

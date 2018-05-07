@@ -27,30 +27,25 @@
 
 namespace sns_ik {
 
-namespace {
-  const double EPS = 1e-6;
-  const double LAMBDA_MAX = 1e-6; //0.3
-}
-
 static const double INF = std::numeric_limits<double>::max();
 
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
-bool pinv(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double eps = EPS);
+bool pinv(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double eps = 1e-6);
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
 // return also the null space projector P=(P-pinv(A)A)
-bool pinv_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P, double eps = EPS);
+bool pinv_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P, double eps = 1e-6);
 // compute the pseudoinverse of A: it return 0 if A is (row) rank deficient
-bool pinv_damped(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double lambda_max = LAMBDA_MAX,
-                 double eps = EPS);
+bool pinv_damped(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double lambda_max = 1e-6,
+                 double eps = 1e-6);
 bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P,
-                   double lambda_max = LAMBDA_MAX, double eps = EPS);
+                   double lambda_max = 1e-6, double eps = 1e-6);
 bool pinv_forBarP(const Eigen::MatrixXd &W, const Eigen::MatrixXd &P, Eigen::MatrixXd *inv);
 bool pinv_QR_Z(const Eigen::MatrixXd &A, const Eigen::MatrixXd &Z0, Eigen::MatrixXd *invA,
-               Eigen::MatrixXd *Z, double lambda_max = LAMBDA_MAX, double eps = EPS);
-bool pinv_QR(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double eps = EPS);
+               Eigen::MatrixXd *Z, double lambda_max = 1e-6, double eps = 1e-6);
+bool pinv_QR(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double eps = 1e-6);
 
 bool isIdentity(const Eigen::MatrixXd &A);
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

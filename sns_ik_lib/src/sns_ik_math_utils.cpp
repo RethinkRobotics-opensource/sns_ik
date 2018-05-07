@@ -261,4 +261,4 @@ bool isIdentity(const Eigen::MatrixXd &A) {
   return isIdentity;
 }
 
-} // namespace sns_ikl
+} // namespace sns_ik

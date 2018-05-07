@@ -25,8 +25,7 @@
 #include <ros/ros.h>
 #include <iostream>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
 SNSVelocityIK::SNSVelocityIK(int dof, double loop_period) :
   n_dof(0),
@@ -204,7 +203,7 @@ double SNSVelocityIK::SNSsingle(int priority,
   Eigen::MatrixXd temp;
   bool isW_identity;
   Eigen::MatrixXd barP = higherPriorityNull;
-  Array<double, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
   bool singularTask = false;
   bool reachedSingularity = false;
@@ -349,12 +348,12 @@ double SNSVelocityIK::SNSsingle(int priority,
   return 1.0;
 }
 
-void SNSVelocityIK::getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
-                                         const Array<double, Dynamic, 1> &b,
+void SNSVelocityIK::getTaskScalingFactor(const Eigen::ArrayXd &a,
+                                         const Eigen::ArrayXd &b,
                                          const Eigen::MatrixXd &W, double *scalingFactor,
                                          int *mostCriticalJoint)
 {
-  Array<double, Dynamic, 1> Smin, Smax;
+  Eigen::ArrayXd Smin, Smax;
   double temp, smax, smin;
   double inf = INF;
   int col;
@@ -386,3 +385,5 @@ void SNSVelocityIK::getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
   }
 
 }
+
+}  // namespace sns_ik

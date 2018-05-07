@@ -8,7 +8,7 @@ Changelog for package sns_ik_lib
   In ROS Kinetic, cmake_modules is deprecated,
   so we will use some alternative CMakeLists
   strategies to find_package the Eigen 3.x library.
-* Fixes Eigen double sum warning
+* Fixes Eigen scalar sum warning
   Eigen doesn't like the fact that we're creating an Array
   of Bools, and then attempting to sum those booleans up.
   Instead, we need to cast the Array into an int, and then

@@ -28,8 +28,6 @@
 #include "sns_ik/sns_ik_math_utils.hpp"
 #include "sns_ik/osns_velocity_ik.hpp"
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 class OSNS_sm_VelocityIK : public OSNSVelocityIK {
@@ -50,6 +48,6 @@ class OSNS_sm_VelocityIK : public OSNSVelocityIK {
     double m_scaleMargin;
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

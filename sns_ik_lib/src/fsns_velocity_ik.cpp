@@ -24,8 +24,7 @@
 
 #include <ros/ros.h>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
 FSNSVelocityIK::FSNSVelocityIK(int dof, double loop_period) :
   SNSVelocityIK(dof, loop_period)
@@ -39,7 +38,7 @@ double FSNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
 {
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
-  S.resize(n_tasks, VectorXi::Zero(n_dof));
+  S.resize(n_tasks, Eigen::VectorXi::Zero(n_dof));
 
   // TODO: check that setJointsCapabilities has been already called
 
@@ -79,7 +78,7 @@ double FSNSVelocityIK::SNSsingle(int priority,
 
   //INITIALIZATION
   Eigen::MatrixXd JPinverse;  //(J_k P_{k-1})^#
-  Array<double, Dynamic, 1> a, b;  // used to compute the task scaling factor
+  Eigen::ArrayXd a, b;  // used to compute the task scaling factor
   bool limit_excedeed;
   double scalingFactor = 1.0;
   int mostCriticalJoint;
@@ -99,7 +98,7 @@ double FSNSVelocityIK::SNSsingle(int priority,
 
   //initialization
   nSat[priority] = 0;
-  S[priority] = VectorXi::Zero(n_dof);
+  S[priority] = Eigen::VectorXi::Zero(n_dof);
 
   //compute the base solution
   singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, &tildeZ);
@@ -246,12 +245,12 @@ double FSNSVelocityIK::SNSsingle(int priority,
   return 1.0;
 }
 
-void FSNSVelocityIK::getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
-                  const Array<double, Dynamic, 1> &b,
-                  const VectorXi &S, double *scalingFactor,
+void FSNSVelocityIK::getTaskScalingFactor(const Eigen::ArrayXd &a,
+                  const Eigen::ArrayXd &b,
+                  const Eigen::VectorXi &S, double *scalingFactor,
                   int *mostCriticalJoint)
 {
-  Array<double, Dynamic, 1> Smin, Smax;
+  Eigen::ArrayXd Smin, Smax;
   double temp, smax, smin;
   double inf = INF;
   int col;
@@ -283,3 +282,5 @@ void FSNSVelocityIK::getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
     (*scalingFactor) = smax;
   }
 }
+
+}  // namespace sns_ik

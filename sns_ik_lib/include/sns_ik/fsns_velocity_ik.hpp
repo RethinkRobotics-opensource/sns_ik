@@ -30,8 +30,6 @@
 
 //#define LOG_ACTIVE
 
-using namespace Eigen;
-
 namespace sns_ik {
 
 class FSNSVelocityIK : public SNSVelocityIK {
@@ -49,15 +47,15 @@ class FSNSVelocityIK : public SNSVelocityIK {
                   const Eigen::MatrixXd &higherPriorityNull, const Eigen::MatrixXd &jacobian,
                   const Eigen::VectorXd &task, Eigen::VectorXd *jointVelocity, Eigen::MatrixXd *nullSpaceProjector);
 
-    void getTaskScalingFactor(const Array<double, Dynamic, 1> &a,
-                  const Array<double, Dynamic, 1> &b,
-                  const VectorXi &S, double *scalingFactor,
+    void getTaskScalingFactor(const Eigen::ArrayXd &a,
+                  const Eigen::ArrayXd &b,
+                  const Eigen::VectorXi &S, double *scalingFactor,
                   int *mostCriticalJoint);
 
     // TODO: Does this need to be a member variable?
-    std::vector<VectorXi> S;  //the i-th element is zero if the i-th joint is not saturate, otherwise contains the position in B
+    std::vector<Eigen::VectorXi> S;  //the i-th element is zero if the i-th joint is not saturate, otherwise contains the position in B
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

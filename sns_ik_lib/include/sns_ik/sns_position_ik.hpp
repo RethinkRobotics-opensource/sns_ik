@@ -141,6 +141,6 @@ class SNSPositionIK {
 
 };
 
-}  // namespace sns_ikl
+}  // namespace sns_ik
 
 #endif

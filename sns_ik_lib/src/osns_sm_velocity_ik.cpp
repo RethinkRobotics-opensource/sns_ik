@@ -22,8 +22,7 @@
 
 #include <sns_ik/osns_sm_velocity_ik.hpp>
 
-using namespace Eigen;
-using namespace sns_ik;
+namespace sns_ik {
 
 OSNS_sm_VelocityIK::OSNS_sm_VelocityIK(int dof, double loop_period) :
   OSNSVelocityIK(dof, loop_period),
@@ -85,3 +84,5 @@ double OSNS_sm_VelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
 
   return 1.0;
 }
+
+}  // namespace sns_ik
