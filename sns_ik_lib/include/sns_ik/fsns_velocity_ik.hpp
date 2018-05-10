@@ -28,8 +28,6 @@
 #include "sns_ik/sns_ik_math_utils.hpp"
 #include "sns_ik/sns_velocity_ik.hpp"
 
-//#define LOG_ACTIVE
-
 namespace sns_ik {
 
 class FSNSVelocityIK : public SNSVelocityIK {

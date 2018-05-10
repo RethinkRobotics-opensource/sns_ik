@@ -22,8 +22,6 @@
 
 #include <sns_ik/fsns_velocity_ik.hpp>
 
-#include <ros/ros.h>
-
 namespace sns_ik {
 
 FSNSVelocityIK::FSNSVelocityIK(int dof, double loop_period) :
@@ -123,7 +121,6 @@ double FSNSVelocityIK::SNSsingle(int priority,
 
   if (singularTask) {
     // the task is singular so return a scaled damped solution (no SNS possible)
-    //ROS_ERROR("Singular. Scaling Factor = %.6f", scalingFactor);
     if (scalingFactor > 0.0) {
       nSat[priority] = 0;
       (*jointVelocity) = higherPriorityJointVelocity + scalingFactor * dq1 + dq2;
@@ -139,7 +136,6 @@ double FSNSVelocityIK::SNSsingle(int priority,
   }
 
   if (scalingFactor > best_Scale) {
-//    ROS_INFO("best scale I %f",scalingFactor);
     //save best solution so far
     best_Scale = scalingFactor;
     best_dq1 = dq1;
@@ -155,14 +151,7 @@ double FSNSVelocityIK::SNSsingle(int priority,
   int count = 0;
   do {
     count++;
-    //ROS_INFO("%d",count);
     if (count > 2 * n_dof) {
-#ifndef _ONLY_WARNING_ON_ERROR
-      ROS_ERROR("Infinite loop on SNS for task (%d)", priority);
-
-      exit(1);
-#else
-      ROS_WARN("Infinite loop on SNS for task (%d)",priority);
 
       // the task is not executed
       nSat[priority]=0;
@@ -172,7 +161,6 @@ double FSNSVelocityIK::SNSsingle(int priority,
       limit_excedeed=false;
       //continue;
       return -1.0;
-#endif
     }
     limit_excedeed = true;
 

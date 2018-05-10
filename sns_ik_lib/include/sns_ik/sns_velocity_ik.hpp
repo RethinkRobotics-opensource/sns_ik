@@ -38,12 +38,7 @@ struct Task {
     Eigen::VectorXd desired;   //!< desired velocity in task space
 };
 
-#define _ONLY_WARNING_ON_ERROR
-/*! \def _ONLY_WARNING_ON_ERROR
- * with this is possible to avoid to stop the code if some non critical errors appears.
- */
-
-#define SHAPE_MARGIN 0.98
+static const double SHAPE_MARGIN = 0.98;
 
 class SNSVelocityIK {
   public:

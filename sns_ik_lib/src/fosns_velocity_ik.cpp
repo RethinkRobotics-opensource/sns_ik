@@ -22,8 +22,7 @@
 
 #include <sns_ik/fosns_velocity_ik.hpp>
 
-#include <ros/ros.h>
-#include <iostream>
+#include <ros/console.h>
 
 namespace sns_ik {
 
@@ -99,8 +98,6 @@ double FOSNSVelocityIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
   return 1.0;
 }
 
-//#define LOG_ACTIVE
-
 double FOSNSVelocityIK::SNSsingle(int priority,
                                   const Eigen::VectorXd &higherPriorityJointVelocity,
                                   const Eigen::MatrixXd &higherPriorityNull,
@@ -147,11 +144,6 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 
   bool computedScalingFactor = false;
 
-#ifdef LOG_ACTIVE
-  int n_in=0,n_out=0;
-  std::stringstream log;
-#endif
-
   //compute the base solution
   singularTask = !pinv_QR_Z(jacobian, higherPriorityNull, &JPinverse, &tildeZ);
   *nullSpaceProjector = tildeZ * tildeZ.transpose();
@@ -165,13 +157,11 @@ double FOSNSVelocityIK::SNSsingle(int priority,
   b = dotQ.array() - a;
   getTaskScalingFactor(a, b, Eigen::VectorXi::Zero(n_dof), &scalingFactor, &mostCriticalJoint);
 
-#ifdef LOG_ACTIVE
-  log<<"task "<<priority<<std::endl;
-  log<<"base Z norm "<<higherPriorityNull.norm()<<std::endl;
-  log<<"base J*Z norm "<<(jacobian*higherPriorityNull).norm()<<std::endl;
-  log<<"scale factor at 0 "<<scalingFactor<<std::endl;
-  log<<"base S "<<S[priority].transpose()<<std::endl;
-#endif
+  ROS_DEBUG("task %d", priority);
+  ROS_DEBUG("base Z norm %f", higherPriorityNull.norm());
+  ROS_DEBUG("base J*Z norm %f", (jacobian*higherPriorityNull).norm());
+  ROS_DEBUG("scale factor at 0 %f", scalingFactor);
+  ROS_DEBUG_STREAM("base S " << S[priority].transpose());
 
   if (scalingFactor >= 1.0) {
     // then is clearly the optimum since all joints velocity are computed with the pseudoinverse
@@ -180,18 +170,11 @@ double FOSNSVelocityIK::SNSsingle(int priority,
     nSat[priority] = 0;
     satList[priority].clear();
     S[priority] = Eigen::VectorXi::Zero(n_dof);
-#ifdef LOG_ACTIVE
-    log<<"task accomplished without saturations"<<std::endl;
-    log<<"scale "<<scalingFactor<<std::endl;
-    //log<<"last dotQ "<<higherPriorityJointVelocity->transpose()<<std::endl;
-    //log<<"dotQ "<<dotQ.transpose()<<std::endl;
-    //log<<"dotQmin "<<dotQmin.transpose()<<std::endl;
-    //log<<"dotQmax "<<dotQmax.transpose()<<std::endl;
+    ROS_DEBUG("task accomplished without saturations");
+    ROS_DEBUG("scale %f", scalingFactor);
     if (singularTask){
-      log<<"THE TASK IS SINGULAR"<<std::endl;
-      ROS_WARN("\n%s\n\n",log.str().c_str());
+      ROS_DEBUG("THE TASK IS SINGULAR");
     }
-#endif
     return scalingFactor;
   } else {
     base_Scale = scalingFactor;
@@ -218,15 +201,9 @@ double FOSNSVelocityIK::SNSsingle(int priority,
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = higherPriorityNull;
     }
-#ifdef LOG_ACTIVE
-    if (singularTask) log<<"the task is singular"<<std::endl;
-    if (base_Scale<0) log<<"base scale < 0"<<std::endl;
-    log<<"scale "<<scalingFactor<<std::endl;
-    //  log<<"dotQ "<<dotQ.transpose();
-    //log<<"dotQmin "<<dotQmin.transpose();
-    //  log<<"dotQmax "<<dotQmax.transpose();
-    ROS_WARN("\n%s\n\n",log.str().c_str());
-#endif
+    if (singularTask) { ROS_DEBUG("the task is singular"); }
+    if (base_Scale<0) { ROS_DEBUG("base scale < 0"); }
+    ROS_DEBUG("scale %f", scalingFactor);
     nSat[priority] = 0;
     satList[priority].clear();
     S[priority] = Eigen::VectorXi::Zero(n_dof);
@@ -235,12 +212,8 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 
 //_______________________________________________________END of base computation
 
-#define WARM_START
-#ifdef  WARM_START
-//############### WARM START
 //B=Eigen::MatrixXd::Zero(n_dof,n_dof);
   if (nSat[priority]) {
-//    log<<"started with "<<nSat[priority]<< " saturated\n";
     Eigen::MatrixXd Zws = Eigen::MatrixXd::Zero(nSat[priority], tildeZ.cols());
     Eigen::MatrixXd invZws = Eigen::MatrixXd::Zero(tildeZ.cols(), nSat[priority]);
     Eigen::MatrixXd forMu = Eigen::MatrixXd::Zero(nSat[priority], nSat[priority]);
@@ -264,12 +237,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
         S[priority](id) = 0;
         nSat[priority]--;
       } else {
-
-#ifdef LOG_ACTIVE
-        n_in++;
-        log<<id<< " ";
-#endif
-
+        ROS_DEBUG("%d ", id);
         Zws.row(idws) = tildeZ.row(id);
         dq1_ws(idws) = dq1_base(id);
         dq2_ws(idws) = dq2_base(id);
@@ -293,20 +261,6 @@ double FOSNSVelocityIK::SNSsingle(int priority,
 
       if (!invertibelZws) {
         //  ROS_WARN("Zws is not invertible... what should I do?");
-#ifdef LOG_ACTIVE_NO
-        //log<<std::endl<<"Z \n"<<tildeZ;
-        //log<<std::endl<<"Zws \n"<<Zws;
-        log<<"\nS\n"<<S[priority].transpose()<<std::endl<<"norm Zws ";
-        for (int i=0;i<nSat[priority];i++) {
-          //for (it=satList[priority].begin(); it!=satList[priority].end(); ++it){
-          //  int id=*it;
-          //  log<<" "<<tildeZ.row(id).norm();
-          log<<" "<<Zws.row(i).norm();
-        }
-        log<<"\n Zws rows "<<Zws.rows();
-        ROS_WARN("%s",log.str().c_str());
-        exit(1);
-#endif
         satList[priority].clear();
         nSat[priority] = 0;
         S[priority] = Eigen::VectorXi::Zero(n_dof);
@@ -333,23 +287,17 @@ double FOSNSVelocityIK::SNSsingle(int priority,
         dotQ = higherPriorityJointVelocity + dq1 + dq2 + dqw;
 
         tildeZ = tildeZ - Bws * Zws;
-#ifdef LOG_ACTIVE
-        //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        a=dq1.array();
-        b=dotQ.array() - a;
-        getTaskScalingFactor(a, b, S[priority], &scalingFactor, &mostCriticalJoint);
-        scaledMU=scalingFactor*lagrangeMu1 + lagrangeMup2w;
-        //find the minimum negative mu
-        for (it=satList[priority].begin(); it!=satList[priority].end(); ++it) {
-          int id=*it;
-          if (dqn(id)>=0) scaledMU(id)=-scaledMU(id);
-        }
-        log<<"\nstart scale "<< scalingFactor<<std::endl;
-        //log<<"\nstart scaled Mu "<< scaledMU.transpose()<<std::endl;
-        log<<"\nstart scaled dq "<< (higherPriorityJointVelocity+scalingFactor*dq1+dq2+dqw).transpose()<<std::endl;
-        log<<"\nstart S "<<S[priority].transpose();
-        //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
-#endif
+        // Special function to call only when in debug mode
+        std::function<double()>  getScaleFactorForLogging = [&]() {
+          a=dq1.array();
+          b=dotQ.array() - a;
+          double sf;
+          getTaskScalingFactor(a, b, S[priority], &sf, &mostCriticalJoint);
+          return sf;
+        };
+        ROS_DEBUG("\nstart scale %f", getScaleFactorForLogging());
+        ROS_DEBUG_STREAM("\nstart scaled dq " << (higherPriorityJointVelocity+getScaleFactorForLogging()*dq1+dq2+dqw).transpose());
+        ROS_DEBUG_STREAM("\nstart S " << S[priority].transpose());
         //find the minimum negative mu
         min_mu = 0;
         id_min_mu = n_dof + 1;
@@ -362,45 +310,18 @@ double FOSNSVelocityIK::SNSsingle(int priority,
             id_min_mu = id;
           }
         }
-#ifdef LOG_ACTIVE
-        log<<"\nstart Mu "<< lagrangeMu.transpose()<<std::endl;
-#endif
+        ROS_DEBUG_STREAM("\nstart Mu "<< lagrangeMu.transpose());
       }
     }
   }
   computedScalingFactor = false;
-#else
-//######################### else
-  satList[priority].clear();
-  nSat[priority]=0;
-  S[priority]=Eigen::VectorXi::Zero(n_dof);
-
-//  lagrangeMu1=Eigen::VectorXd::Zero(n_dof);
-//  lagrangeMup2w=Eigen::VectorXd::Zero(n_dof);
-//#########################
-#endif
 
   //SNS
   int count = 0;
   do {
     count++;
-    //ROS_INFO("%d",count);
     if (count > 2 * n_dof) {
-#ifndef _ONLY_WARNING_ON_ERROR
-      ROS_ERROR("Infinite loop on SNS for task (%d)", priority);
-
-      exit(1);
-#else
       ROS_WARN("Infinite loop on SNS for task (%d): nSat=%d ",priority,nSat[priority]);
-      /*      //##############################
-       string s;
-       stringstream buffer;
-       streambuf * old = std::cout.rdbuf(buffer.rdbuf());
-       cout << "nSat\n" << nSat[priority]<<std::endl;
-       s = buffer.str();
-       ROS_INFO("\n p %d \n %s",priority,s.c_str());
-       //#############################
-       */
       // the task is not executed
       //nSat[priority]=0;
       satList[priority].clear();
@@ -410,15 +331,8 @@ double FOSNSVelocityIK::SNSsingle(int priority,
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = higherPriorityNull;
       limit_excedeed=false;
-#ifdef LOG_ACTIVE
-      //log<<std::endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose()  << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<std::endl;
-      log<<"last scaling factor "<< scalingFactor;
-      ROS_WARN("%s",log.str().c_str());
-      exit(1);
-#endif
-      //continue;
+      ROS_DEBUG("last scaling factor %f", scalingFactor);
       return -1.0;
-#endif
     }
     limit_excedeed = true;
 
@@ -429,38 +343,14 @@ double FOSNSVelocityIK::SNSsingle(int priority,
     }
     computedScalingFactor = false;
 
-#ifdef LOG_ACTIVE
-    //if (n_in>2*n_dof-3){
-//    log<<std::endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose()  << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<std::endl;
-    log<<" last scaling factor "<< scalingFactor;
-    log<<"\n n_in "<< n_in<<" n_out "<<n_out<<"  -> S "<<S[priority].transpose();
-//      log<<"\n nSat"<< nSat[priority];
-
-    log<<"\n best scale factor "<< best_Scale<<"\n\n";
-
-    scaledMU=scalingFactor*lagrangeMu1 + lagrangeMup2w;
-    //find the minimum negative mu
-    for (it=satList[priority].begin(); it!=satList[priority].end(); ++it) {
-      int id=*it;
-      if (dqn(id)>=0) scaledMU(id)=-scaledMU(id);
-    }
-    //log<<"/nstop scaled Mu "<< scaledMU.transpose()<<std::endl;
-    //log<<"stop scaled dq "<< (*higherPriorityJointVelocity)+scalingFactor*dq1+dq2+dqw<<std::endl;
-    log<<"error "<<(jacobian*dotQ - task).norm();
-
-    ROS_WARN("\n%s\n\n",log.str().c_str());
-    log.str("");
-    //    exit(1);
-    //  }
-#endif
+    ROS_DEBUG(" last scaling factor %f", scalingFactor);
+    ROS_DEBUG("\n best scale factor %f\n", best_Scale);
+    ROS_DEBUG("error %f ", (jacobian*dotQ - task).norm());
 
     if ((scalingFactor >= 1.0) || (scalingFactor < 0.0)) {
       //check the optimality of the solution
       if (id_min_mu < n_dof) {
-#ifdef LOG_ACTIVE
-        n_out++;
-        log<<" O"<<id_min_mu;
-#endif
+        ROS_DEBUG(" O%d",id_min_mu);
         //remove the id_min_mu joint from saturation and update B
         bout = B.col(id_min_mu);
         mu_out1 = lagrangeMu1(id_min_mu);
@@ -526,7 +416,6 @@ double FOSNSVelocityIK::SNSsingle(int priority,
       *jointVelocity = dotQ;
       //dotQopt[priority]=(*jointVelocity);
       *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
-//        ROS_INFO("n_in %d n_out %d",n_in,n_out);
 
       return scalingFactor;
 
@@ -556,10 +445,7 @@ double FOSNSVelocityIK::SNSsingle(int priority,
       }
 
       if (id_min_mu < n_dof) {
-#ifdef LOG_ACTIVE
-        n_out++;
-        log<<" Os"<<id_min_mu;
-#endif
+        ROS_DEBUG(" Os%d", id_min_mu);
         //remove the id_min_mu joint from saturation and update B
         bout = B.col(id_min_mu);
         mu_out1 = lagrangeMu1(id_min_mu);
@@ -649,24 +535,17 @@ double FOSNSVelocityIK::SNSsingle(int priority,
     getTaskScalingFactor(a, b, S[priority], &scalingFactor, &mostCriticalJoint);
     computedScalingFactor = true;
 
-#ifdef LOG_ACTIVE
-    log<<" I "<<idxW<< "norm zin "<<zin.norm()<<" at "<<dqw_in<<" with scale "<<scalingFactor<<std::endl;
-    if (scalingFactor<0) log<<"IT WAS < 0 "<<std::endl;
-    if (scalingFactor<1e-12) log<<"IT WAS < eps "<<std::endl;
-    n_in++;
-    //  ROS_WARN("\n%s\n\n",log.str().c_str());
-    //  log.str("");
+    ROS_DEBUG_STREAM(" I "<<idxW<< "norm zin "<<zin.norm()<<" at "<<dqw_in<<" with scale "<<scalingFactor);
+    if (scalingFactor<0) { ROS_DEBUG("IT WAS < 0 "); }
+    if (scalingFactor<1e-12) { ROS_DEBUG("IT WAS < eps "); }
+    // n_in++;
 
-#endif
     if ((zin.norm() < 1e-8) || (scalingFactor < 1e-12)) {
       S[priority](idxW) = 0;  //put it back to the right value
       if (best_Scale >= 0) {
         //take the best solution
         *jointVelocity = higherPriorityJointVelocity + best_Scale * best_dq1 + best_dq2 + best_dqw;
-        //dotQopt[priority]=(*jointVelocity);
-        //nSat[priority]=best_nSat;
         *nullSpaceProjector = tildeZ * tildeZ.transpose();  //if start net task from previous saturations
-//        ROS_INFO("n_in %d n_out %d",n_in,n_out);
         if (best_Scale == base_Scale) {
           //no saturation was needed to obtain the best scale
           satList[priority].clear();
@@ -674,22 +553,15 @@ double FOSNSVelocityIK::SNSsingle(int priority,
           S[priority] = Eigen::VectorXi::Zero(n_dof);
 
         }
-        //if (priority==1) *jointVelocity=(*higherPriorityJointVelocity);
         return best_Scale;
       } else {
-        //no solution
+        ROS_DEBUG("No Solution!");
         //nSat[priority]=0;
         *jointVelocity = higherPriorityJointVelocity;
         //dotQopt[priority]=(*jointVelocity);
         *nullSpaceProjector = higherPriorityNull;
         limit_excedeed = false;
         //continue;
-#ifdef LOG_ACTIVE_UNFEASIBLE
-        log<<std::endl<<"last dq "<<dotQ.transpose()<< "\ndq1"<<dq1.transpose()<< "\ndq2"<<dq2.transpose() << "\ndqn"<<dqn.transpose()<< "\ndqw"<<dqw.transpose()<< "\n\nS"<<S[priority].transpose()<<std::endl;
-        log<<"last scaling factor "<< scalingFactor;
-        ROS_WARN("%s",log.str().c_str());
-        exit(1);
-#endif
         return -1.0;
       }
     }

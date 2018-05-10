@@ -22,8 +22,7 @@
 
 #include <sns_ik/sns_velocity_ik.hpp>
 
-#include <ros/ros.h>
-#include <iostream>
+#include <ros/console.h>
 
 namespace sns_ik {
 
@@ -225,24 +224,8 @@ double SNSVelocityIK::SNSsingle(int priority,
   int count = 0;
   do {
     count++;
-    //ROS_INFO("%d",count);
+    ROS_DEBUG("%d",count);
     if (count > 2 * n_dof) {
-#ifndef _ONLY_WARNING_ON_ERROR
-      //ROS_ERROR("Infinite loop on SNS for task (%d)", priority);
-
-      //ROS_INFO("p:%d  scale:%f  mc:%d  sing:%d", priority, scalingFactor, mostCriticalJoint, (int) reachedSingularity);
-      //##############################
-      string s;
-      stringstream buffer;
-      streambuf * old = std::cout.rdbuf(buffer.rdbuf());
-      cout << "W\n" << W[priority] << endl << "P(k-1)\n" << (*higherPriorityNull) << endl << "Psat\n"
-          << projectorSaturated << endl << "dotQ\n" << dotQ << endl << "JPinverse\n" << JPinverse << endl;
-      s = buffer.str();
-      //ROS_INFO("\n p %d \n %s", priority, s.c_str());
-      //#############################
-
-      exit(1);
-#else
       ROS_WARN("Infinite loop on SNS for task (%d)", priority);
       ROS_INFO("p:%d  scale:%f  mc:%d  sing:%d", priority, scalingFactor, mostCriticalJoint, (int)reachedSingularity);
       // the task is not executed
@@ -250,7 +233,6 @@ double SNSVelocityIK::SNSsingle(int priority,
       *nullSpaceProjector = higherPriorityNull;
       limit_excedeed = false;
       continue;
-#endif
     }
     limit_excedeed = false;
 
@@ -277,7 +259,7 @@ double SNSVelocityIK::SNSsingle(int priority,
       limit_excedeed = true;
       if (singularTask) {
         // the task is singular so return a scaled damped solution (no SNS possible)
-        //ROS_WARN("task %d is singular, scaling factor: %f",priority,scalingFactor);
+        ROS_DEBUG("task %d is singular, scaling factor: %f", priority, scalingFactor);
         if (scalingFactor >= 0.0) {
           (*jointVelocity) = tildeDotQ + JPinverse * (scalingFactor * task - jacobian * tildeDotQ);
         } else {
@@ -325,7 +307,7 @@ double SNSVelocityIK::SNSsingle(int priority,
 
       if (reachedSingularity) {
         if (bestScale >= 0.0) {
-          //ROS_INFO("best solution %f",bestScale);
+          ROS_DEBUG("best solution %f",bestScale);
           dotQn = bestDotQn;
           dotQ = bestTildeDotQ + bestInvJP * (bestScale * task - jacobian * bestTildeDotQ);
           //use the best solution found... no further saturation possible
