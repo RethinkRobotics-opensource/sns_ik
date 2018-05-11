@@ -26,6 +26,23 @@
 
 namespace sns_ik {
 
+  std::string toStr(const sns_ik::VelocitySolveType& type) {
+   switch (type) {
+     case sns_ik::VelocitySolveType::SNS:
+       return "SNS";
+     case sns_ik::VelocitySolveType::SNS_Optimal:
+       return "SNS_Optimal";
+     case sns_ik::VelocitySolveType::SNS_OptimalScaleMargin:
+       return "SNS_OptimalScaleMargin";
+     case sns_ik::VelocitySolveType::SNS_Fast:
+       return "SNS_Fast";
+     case sns_ik::VelocitySolveType::SNS_FastOptimal:
+       return "SNS_FastOptimal";
+     default:
+       return "SNS_Unknown";
+   }
+  }
+
   SNS_IK::SNS_IK(const std::string& base_link, const std::string& tip_link,
                  const std::string& URDF_param, double loopPeriod, double eps,
                  sns_ik::VelocitySolveType type) :
@@ -231,7 +248,6 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
 
   // The position solver uses a barrier function instead of the hard position limits
   m_ik_vel_solver->usePositionLimits(false);
-
   int result;
   if (q_bias.rows()) {
     Eigen::MatrixXd ns_jacobian;
@@ -246,7 +262,6 @@ int SNS_IK::CartToJnt(const KDL::JntArray &q_init, const KDL::Frame &p_in,
   } else {
     result = m_ik_pos_solver->CartToJnt(q_init, p_in, &q_out, bounds);
   }
-
   m_ik_vel_solver->usePositionLimits(true);
   return result;
 }

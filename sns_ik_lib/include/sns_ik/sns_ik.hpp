@@ -34,6 +34,14 @@ namespace sns_ik {
                            SNS_FastOptimal
                          };
 
+
+  /*
+   * Convert velocity solver type to a string (for logging)
+   * @param solverType: solve type to convert
+   * @return: string representation of the solver type
+   */
+  std::string toStr(const sns_ik::VelocitySolveType& type);
+
   // Forward declare SNS Velocity Base Class
   class SNSVelocityIK;
   class SNS_IK

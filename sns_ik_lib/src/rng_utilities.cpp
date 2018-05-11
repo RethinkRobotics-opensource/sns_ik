@@ -13,12 +13,13 @@
  *    limitations under the License.
  */
 
-#include <sns_ik/sns_ik_data_utilities.hpp>
+#include <sns_ik/rng_utilities.hpp>
 
 #include <random>
+#include <ros/console.h>
 
 namespace sns_ik {
-namespace data_util {
+namespace rng_util {
 
 /*************************************************************************************************/
 
@@ -69,8 +70,39 @@ Eigen::MatrixXd getRngMatrixXdRanked(int seed, int nRows, int nCols, int nRank)
   Eigen::MatrixXd X = A * B;
   return X;
 }
+/*************************************************************************************************/
+
+KDL::JntArray getRngBoundedJoints(int seed, const KDL::JntArray& qLow, const KDL::JntArray& qUpp)
+{
+  if (qUpp.rows() != qLow.rows()) { ROS_ERROR("Invalid input!");  return qLow; }
+  int nJnt = qLow.rows();
+  KDL::JntArray q(nJnt);
+  for (int iJnt = 0; iJnt < nJnt; iJnt++) {
+    q(iJnt) = getRngDouble(seed, qLow(iJnt), qUpp(iJnt));
+    seed = 0;  // let the RNG update the sequence automatically after the first call
+  }
+  return q;
+}
 
 /*************************************************************************************************/
 
-}  // namespace data_util
+KDL::JntArray getNearbyJoints(int seed, const KDL::JntArray& qNom, double delta,
+                              const KDL::JntArray& qLow, const KDL::JntArray& qUpp)
+{
+  if (qLow.rows() != qNom.rows()) { ROS_ERROR("Invalid input!");  return qNom; }
+  if (qUpp.rows() != qNom.rows()) { ROS_ERROR("Invalid input!");  return qNom; }
+  int nJnt = qLow.rows();
+  KDL::JntArray q(nJnt);
+  for (int iJnt = 0; iJnt < nJnt; iJnt++) {
+    double low = std::max(qNom(iJnt) - delta, qLow(iJnt));
+    double upp = std::min(qNom(iJnt) + delta, qUpp(iJnt));
+    q(iJnt) = getRngDouble(seed, low, upp);
+    seed = 0;  // let the RNG update the sequence automatically after the first call
+  }
+  return q;
+}
+
+/*************************************************************************************************/
+
+}  // namespace rng_util
 }  // namespace sns_ik

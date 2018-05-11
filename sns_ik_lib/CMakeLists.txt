@@ -6,9 +6,9 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "-std=c++11 -O2")
+    set(CMAKE_CXX_FLAGS "-std=c++11 -O2 -Wall -Werror")
 elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "-std=c++0x -O2")
+    set(CMAKE_CXX_FLAGS "-std=c++0x -O2 -Wall -Werror")
 else()
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++0X or C++11 support. Please choose different C++ compiler.")
 endif()
@@ -39,7 +39,8 @@ add_library(sns_ik
             src/fsns_velocity_ik.cpp
             src/osns_sm_velocity_ik.cpp
             src/osns_velocity_ik.cpp
-            src/sns_ik_data_utilities.cpp
+            src/rng_utilities.cpp
+            src/robot_model.cpp
             src/sns_ik_math_utils.cpp
             src/sns_ik.cpp
             src/sns_position_ik.cpp
@@ -51,8 +52,12 @@ install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 # Unit tests (google framework)
 if (CATKIN_ENABLE_TESTING)
-  catkin_add_gtest(sns_ik_data_utilities_test test/sns_ik_data_utilities_test.cpp)
+  catkin_add_gtest(rng_utilities_test test/rng_utilities_test.cpp)
   catkin_add_gtest(sns_ik_math_utils_test test/sns_ik_math_utils_test.cpp)
-  target_link_libraries(sns_ik_data_utilities_test ${catkin_LIBRARIES} sns_ik)
+  catkin_add_gtest(sns_ik_pos_test test/sns_ik_pos_test.cpp)
+  catkin_add_gtest(sns_ik_vel_test test/sns_ik_vel_test.cpp)
+  target_link_libraries(rng_utilities_test ${catkin_LIBRARIES} sns_ik)
   target_link_libraries(sns_ik_math_utils_test ${catkin_LIBRARIES} sns_ik)
+  target_link_libraries(sns_ik_pos_test ${catkin_LIBRARIES} sns_ik)
+  target_link_libraries(sns_ik_vel_test ${catkin_LIBRARIES} sns_ik)
 endif()
