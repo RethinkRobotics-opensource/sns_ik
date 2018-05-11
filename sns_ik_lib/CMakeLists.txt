@@ -34,15 +34,25 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${oroc
 link_directories(${orocos_kdl_LIBRARY_DIRS})
 install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
-add_library(sns_ik src/sns_ik.cpp
-            src/sns_ik_math_utils.cpp
-            src/sns_velocity_ik.cpp
-            src/sns_position_ik.cpp
-            src/osns_velocity_ik.cpp
-            src/osns_sm_velocity_ik.cpp
+add_library(sns_ik
+            src/fosns_velocity_ik.cpp
             src/fsns_velocity_ik.cpp
-            src/fosns_velocity_ik.cpp)
+            src/osns_sm_velocity_ik.cpp
+            src/osns_velocity_ik.cpp
+            src/sns_ik_data_utilities.cpp
+            src/sns_ik_math_utils.cpp
+            src/sns_ik.cpp
+            src/sns_position_ik.cpp
+            src/sns_velocity_ik.cpp)
 target_link_libraries(sns_ik ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+
+# Unit tests (google framework)
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(sns_ik_data_utilities_test test/sns_ik_data_utilities_test.cpp)
+  catkin_add_gtest(sns_ik_math_utils_test test/sns_ik_math_utils_test.cpp)
+  target_link_libraries(sns_ik_data_utilities_test ${catkin_LIBRARIES} sns_ik)
+  target_link_libraries(sns_ik_math_utils_test ${catkin_LIBRARIES} sns_ik)
+endif()

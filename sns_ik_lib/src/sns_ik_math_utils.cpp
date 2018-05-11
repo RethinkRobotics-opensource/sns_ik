@@ -68,39 +68,6 @@ bool pinv_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P,
 
 }
 
-bool pinv_damped(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, double lambda_max, double eps) {
-
-  //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
-  int m = A.rows() - 1;
-  Eigen::VectorXd sigma;  //vector of singular values
-  double lambda2;
-  int r = 0;
-
-  Eigen::JacobiSVD<Eigen::MatrixXd> svd_A(A.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
-  sigma = svd_A.singularValues();
-  if (((m > 0) && (sigma(m) > eps)) || ((m == 0) && (A.array().abs() > eps).any())) {
-    for (int i = 0; i <= m; i++) {
-      sigma(i) = 1.0 / sigma(i);
-    }
-    (*invA) = svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
-    return true;
-  } else {
-    lambda2 = (1 - (sigma(m) / eps) * (sigma(m) / eps)) * lambda_max * lambda_max;
-    for (int i = 0; i <= m; i++) {
-      if (sigma(i) > EPSQ)
-        r++;
-      sigma(i) = (sigma(i) / (sigma(i) * sigma(i) + lambda2));
-    }
-    //only U till the rank
-    Eigen::MatrixXd subU = svd_A.matrixU().block(0, 0, A.cols(), r);
-    Eigen::MatrixXd subV = svd_A.matrixV().block(0, 0, A.rows(), r);
-
-    (*invA) = subU * sigma.asDiagonal() * subV.transpose();
-    return false;
-  }
-
-}
-
 bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P, double lambda_max, double eps) {
 
   //A (m x n) usually comes from a redundant task jacobian, therfore we consider m<n
