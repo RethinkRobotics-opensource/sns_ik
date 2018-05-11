@@ -19,7 +19,7 @@
 
 #include <sns_ik/sns_position_ik.hpp>
 #include <sns_ik/sns_velocity_ik.hpp>
-#include <iostream>
+#include <ros/console.h>
 
 namespace sns_ik {
 
@@ -53,8 +53,7 @@ bool SNSPositionIK::calcPoseError(const KDL::JntArray& q,
 {
   if (m_positionFK.JntToCart(q, *pose) < 0)
   {
-    // ERROR
-    std::cout << "JntToCart failed" << std::endl;
+    ROS_ERROR("JntToCart failed");
     return false;
   }
 
@@ -111,11 +110,9 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
   for (ii = 0; ii < m_maxIterations; ++ii) {
 
     if (!calcPoseError(q_i, goal_pose, &pose_i, &lineErr, &rotErr, &trans, &rotAxis)) {
-      // ERROR
+      ROS_ERROR("Failed to calculate pose error!");
       return -1;
     }
-
-    //std::cout << ii << ": Cartesian error: " << L << " m, " << theta << " rad" << std::endl;
 
     // Check stopping tolerances
     delta_twist = diffRelative(goal_pose, pose_i);
@@ -158,8 +155,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
     if (m_jacobianSolver.JntToJac(q_i, jacobian) < 0)
     {
-      // ERROR
-      std::cout << "JntToJac failed" << std::endl;
+      ROS_ERROR("JntToJac failed");
       return -1;
     }
     sot[0].jacobian = jacobian.data;
@@ -180,7 +176,7 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
     m_ikVelSolver->getJointVelocity(&qDot, sot, q_i.data);
 
     if (qDot.norm() < 1e-6) {  // TODO: config param
-      //std::cout << "ERROR: Solution stuck, iter: "<<ii<<", error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
+      ROS_ERROR("qDot.norm() too small!");
       return -2;
     }
 
@@ -208,10 +204,9 @@ int SNSPositionIK::CartToJnt(const KDL::JntArray& joint_seed,
 
   if (solutionFound) {
     *return_joints = q_i;
-    //std::cout << "Solution Found in "<< ii <<" iterations!" << std::endl;
+    ROS_DEBUG("Solution Found in %d iterations!", ii);
     return 1;  // TODO: return success/fail code
   } else {
-    //std::cout << "Reached max iterations:, error: " << lineErr << " m, " << rotErr << " rad" << std::endl;
     return -1;
   }
 }

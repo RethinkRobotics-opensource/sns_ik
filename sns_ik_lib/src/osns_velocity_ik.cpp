@@ -177,33 +177,6 @@ double OSNSVelocityIK::SNSsingle(int priority,
     reachedSingularity = false;
     count++;
     if (count > 2 * n_dof) {
-#ifndef _ONLY_WARNING_ON_ERROR
-      //ROS_ERROR("Infinite loop on SNS for task (%d)", priority);
-      /*
-       ROS_INFO("p:%d  scale:%f  mc:%d  sing:%d",priority,scalingFactor,mostCriticalJoint,(int)reachedSingularity);
-       //##############################
-       string s;
-       stringstream buffer;
-       streambuf * old = std::cout.rdbuf(buffer.rdbuf());
-       cout << "W\n" << W[priority] << endl << "P(k-1)\n" <<(*higherPriorityNull)<< endl<<"Psat\n" << projectorSaturated <<endl << "dotQ\n" << dotQopt[priority] <<endl << "JPinverse\n" << JPinverse <<endl;
-       s = buffer.str();
-       ROS_INFO("\n p %d \n %s",priority,s.c_str());
-       //#############################
-       */
-      exit(1);
-#else
-      //ROS_WARN("Infinite loop on SNS for task (%d)",priority);
-      /*
-       ROS_INFO("p:%d  scale:%f  mc:%d  sing:%d",priority,scalingFactor,mostCriticalJoint,(int)reachedSingularity);
-       //##############################
-       string s;
-       stringstream buffer;
-       streambuf * old = std::cout.rdbuf(buffer.rdbuf());
-       cout << "W\n" << W[priority]  <<endl;
-       s = buffer.str();
-       ROS_INFO("\n bs %f \n %s",scalingFactor,s.c_str());
-       //#############################
-       */
       // the task is not executed
       if (bestScale >= 0.0) {
         W[priority]=bestW;
@@ -217,7 +190,6 @@ double OSNSVelocityIK::SNSsingle(int priority,
 
       *jointVelocity = dotQopt[priority];
       return bestScale;
-#endif
     }
     limit_excedeed = false;
     // If W=I everything is done --> go to the saturation phase
