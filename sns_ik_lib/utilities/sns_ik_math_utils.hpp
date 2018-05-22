@@ -170,6 +170,19 @@ bool isIdentity(const Eigen::MatrixXd &A);
 bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
                    int* rank = nullptr, bool* damped = nullptr);
 
+/*
+ * Compute the solution to the linear system: A*x = b
+ * @param A: matrix of size [n, m]
+ * @param b: matrix of size [n, p]
+ * @param[out] x: matrix of size [m, p]
+ * @param[out, opt] rank: rank of the A
+ * @param[out, opt] res: residual error in solution: (A*x-b).squaredNorm()
+ * @return: true iff successful
+ */
+bool solveLinearSystem(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
+                       Eigen::MatrixXd* x,
+                       int* rank = nullptr, double* res = nullptr);
+
 }  // namespace sns_ik
 
 #endif

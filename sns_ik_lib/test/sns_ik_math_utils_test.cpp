@@ -87,6 +87,38 @@ void qrBlockDecompose(const Eigen::MatrixXd& A,
   *R = qr.matrixQR().topLeftCorner(m, m).template triangularView<Eigen::Upper>();
 }
 
+
+/*************************************************************************************************/
+
+/*
+ * Check that the solution to the linear system: A*x = b is valid
+ * @param A: matrix of size [n, m]
+ * @param b: matrix of size [n, p]
+ * @param x: matrix of size [m, p]
+ * @param rank: rank of the A
+ * @param res: residual error in solution: (A*x-b).squaredNorm()
+ * @param tol: tolerance for equality checks
+ */
+void checkLinearSolve(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
+                     const Eigen::MatrixXd& x, int rank, double res, double tol)
+{
+  // check sizes:
+  ASSERT_EQ(A.cols(), x.rows());
+  ASSERT_EQ(A.rows(), b.rows());
+  ASSERT_EQ(x.cols(), b.cols());
+
+  // Check residual:
+  ASSERT_NEAR(res, (A*x-b).squaredNorm(), tol);
+
+  // Check linear solve:
+  int n = A.rows();
+  int m = A.cols();
+  ASSERT_LE(rank, std::min(n, m));  // upper bound of rank is based on matrix size
+  if (m >= n && rank == std::min(n, m)) {  // there is a feasible solution
+    checkEqualMatricies(A*x, b, tol);
+  }  //  else: the solution is infeasible, x should minimize the norm
+}
+
 /*************************************************************************************************
  *                                        Tests                                                  *
  *************************************************************************************************/
@@ -409,6 +441,61 @@ TEST(sns_ik_math_utils, pseudoInverse_damped_test)
 }
 
 /*************************************************************************************************/
+
+TEST(sns_ik_math_utils, solveLinearSystem_fullRank_test)
+{
+  // test parameters
+  double tol = 1e-10;  // tolerance for matrix equality check
+  int nTest = 25;
+  int s1 = 84658;  // seed for the integer RNG
+  int s2 = 63541;  // seed for the floating point RNG
+  double low = -2.0;  double upp = 2.0;  // bounds on values in the A matrix
+  // test setup
+  Eigen::MatrixXd A, b;  // test linear system
+  Eigen::MatrixXd x;  // result
+  int rank; // rank of A, computed by linear solver
+  double res;  // residual error in the solution
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    int n = sns_ik::rng_util::getRngInt(s1, 3, 9);
+    int m = sns_ik::rng_util::getRngInt(0, n, n + 5);
+    int p = sns_ik::rng_util::getRngInt(0, 1, 3);
+    A = sns_ik::rng_util::getRngMatrixXd(s2, n, m, low, upp);
+    b = sns_ik::rng_util::getRngMatrixXd(s2, n, p, low, upp);
+    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &res));
+    checkLinearSolve(A, b, x, rank, res, tol);
+    s1 = s2 = 0; // let the RNG automatically increment after the first iteration
+  }
+}
+
+/*************************************************************************************************/
+
+TEST(sns_ik_math_utils, solveLinearSystem_rankDeficient_test)
+{
+  // test parameters
+  double tol = 1e-10;  // tolerance for matrix equality check
+  int nTest = 20;
+  int s1 = 84658;  // seed for the integer RNG
+  int s2 = 63541;  // seed for the floating point RNG
+  double low = -2.0;  double upp = 2.0;  // bounds on values in the A matrix
+  // test setup
+  Eigen::MatrixXd A, b;  // test linear system
+  Eigen::MatrixXd x;  // result
+  int rank; // rank of A, computed by linear solver
+  double res;  // residual error in the solution
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    int n = sns_ik::rng_util::getRngInt(s1, 4, 9);  // number of equations
+    int m = sns_ik::rng_util::getRngInt(0, 4, 9); // number of decision variables
+    int p = sns_ik::rng_util::getRngInt(0, 1, 3);
+    int r = sns_ik::rng_util::getRngInt(0, 1, std::min(n, m));  // rank
+    A = sns_ik::rng_util::getRngMatrixXdRanked(s2, n, m, r);
+    b = sns_ik::rng_util::getRngMatrixXd(s2, n, p, low, upp);
+    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &res));
+    ASSERT_EQ(r, rank);  // check the rank
+    checkLinearSolve(A, b, x, rank, res, tol);
+    s1 = s2 = 0; // let the RNG automatically increment after the first iteration
+  }
+}
+
 
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv){
