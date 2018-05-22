@@ -35,7 +35,7 @@ namespace robot_model {
 * This function returns a KDL chain object that represents the kinematics of a Sawyer Robot arm.
 * Full model description at: https://github.com/RethinkRobotics/sawyer_robot
 * @param[out] jointNames: names of all non-trivial joints
-* @return: kinematic chain betweem right_arm_mount and right_hand for Sawyer.
+* @return: kinematic chain between right_arm_mount and right_hand for Sawyer.
 */
 KDL::Chain getSawyerKdlChain(std::vector<std::string>* jointNames);
 

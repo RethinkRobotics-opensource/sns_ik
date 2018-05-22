@@ -39,12 +39,12 @@ add_library(sns_ik
             src/fsns_velocity_ik.cpp
             src/osns_sm_velocity_ik.cpp
             src/osns_velocity_ik.cpp
-            src/rng_utilities.cpp
-            src/robot_model.cpp
             src/sns_ik_math_utils.cpp
             src/sns_ik.cpp
             src/sns_position_ik.cpp
-            src/sns_velocity_ik.cpp)
+            src/sns_velocity_ik.cpp
+            test/rng_utilities.cpp
+            test/robot_model.cpp)
 target_link_libraries(sns_ik ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
@@ -52,12 +52,19 @@ install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 # Unit tests (google framework)
 if (CATKIN_ENABLE_TESTING)
+
+  add_library(sns_ik_test
+            test/rng_utilities.cpp
+            test/robot_model.cpp)
+  target_link_libraries(sns_ik_test sns_ik ${catkin_LIBRARIES})
+
   catkin_add_gtest(rng_utilities_test test/rng_utilities_test.cpp)
+  target_link_libraries(rng_utilities_test sns_ik ${catkin_LIBRARIES})
   catkin_add_gtest(sns_ik_math_utils_test test/sns_ik_math_utils_test.cpp)
+  target_link_libraries(sns_ik_math_utils_test sns_ik ${catkin_LIBRARIES})
   catkin_add_gtest(sns_ik_pos_test test/sns_ik_pos_test.cpp)
+  target_link_libraries(sns_ik_pos_test sns_ik ${catkin_LIBRARIES})
   catkin_add_gtest(sns_ik_vel_test test/sns_ik_vel_test.cpp)
-  target_link_libraries(rng_utilities_test ${catkin_LIBRARIES} sns_ik)
-  target_link_libraries(sns_ik_math_utils_test ${catkin_LIBRARIES} sns_ik)
-  target_link_libraries(sns_ik_pos_test ${catkin_LIBRARIES} sns_ik)
-  target_link_libraries(sns_ik_vel_test ${catkin_LIBRARIES} sns_ik)
+  target_link_libraries(sns_ik_vel_test sns_ik ${catkin_LIBRARIES})
+
 endif()

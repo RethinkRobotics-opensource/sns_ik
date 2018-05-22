@@ -1,5 +1,5 @@
-/*! \file sns_ik_test.cpp
- * \brief Unit Test: sns_ik_math_utils
+/*! \file sns_ik_pos_test.cpp
+ * \brief Unit Test: sns_ik position solver
  * \author Matthew Kelly
  */
 /*
@@ -29,8 +29,8 @@
 #include <ros/duration.h>
 #include <ros/time.h>
 
-#include <sns_ik/rng_utilities.hpp>
-#include <sns_ik/robot_model.hpp>
+#include "rng_utilities.hpp"
+#include "robot_model.hpp"
 #include <sns_ik/sns_ik.hpp>
 
 /*

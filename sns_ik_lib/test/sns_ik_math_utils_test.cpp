@@ -22,8 +22,8 @@
 #include <Eigen/Dense>
 #include <ros/console.h>
 
-#include <sns_ik/rng_utilities.hpp>
-#include <sns_ik/sns_ik_math_utils.hpp>
+#include "rng_utilities.hpp"
+#include "../src/sns_ik_math_utils.hpp"
 
 /*************************************************************************************************
  *                               Utilities Functions                                             *
@@ -364,7 +364,7 @@ TEST(sns_ik_math_utils, pseudoInverse_fullRank_test)
     int nRow = sns_ik::rng_util::getRngInt(0, 2, (nCol-1));
     A = sns_ik::rng_util::getRngMatrixXd(seed + 68409, nRow, nCol, low, upp);
     ASSERT_TRUE(sns_ik::pinv_damped_P(A, &X, nullptr, tolSvd, tolSvd));
-    sns_ik::pseudoInverse(A, tolSvd, &invA, &rank, &damped);
+    ASSERT_TRUE(sns_ik::pseudoInverse(A, tolSvd, &invA, &rank, &damped));
     checkPseudoInverse(A, X, tolMat);
     checkPseudoInverse(A, invA, tolMat);
     ASSERT_FALSE(damped);
@@ -399,7 +399,7 @@ TEST(sns_ik_math_utils, pseudoInverse_damped_test)
     int nRank = sns_ik::rng_util::getRngInt(seed + 94846, 1, (nRow-1));
     A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 43203, nRow, nCol, nRank);
     ASSERT_FALSE(sns_ik::pinv_damped_P(A, &X, nullptr, tolSvd, tolSvd));
-    sns_ik::pseudoInverse(A, tolSvd, &invA, &rank, &damped);
+    ASSERT_TRUE(sns_ik::pseudoInverse(A, tolSvd, &invA, &rank, &damped));
     checkPseudoInverse(A, X, tolMat);
     checkPseudoInverse(A, invA, tolMat);
     ASSERT_TRUE(damped);

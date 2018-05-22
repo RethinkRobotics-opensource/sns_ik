@@ -26,7 +26,6 @@
 #include <Eigen/Dense>
 #include <forward_list>
 
-#include "sns_ik/sns_ik_math_utils.hpp"
 #include "sns_ik/sns_velocity_ik.hpp"
 #include "sns_ik/fsns_velocity_ik.hpp"
 

@@ -25,7 +25,6 @@
 
 #include <Eigen/Dense>
 
-#include "sns_ik/sns_ik_math_utils.hpp"
 #include "sns_ik/osns_velocity_ik.hpp"
 
 namespace sns_ik {

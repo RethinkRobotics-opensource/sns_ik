@@ -21,6 +21,8 @@
 #include <sns_ik/sns_velocity_ik.hpp>
 #include <ros/console.h>
 
+#include "sns_ik_math_utils.hpp"
+
 namespace sns_ik {
 
 SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps) :

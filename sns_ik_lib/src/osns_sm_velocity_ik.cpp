@@ -22,6 +22,8 @@
 
 #include <sns_ik/osns_sm_velocity_ik.hpp>
 
+#include "sns_ik_math_utils.hpp"
+
 namespace sns_ik {
 
 OSNS_sm_VelocityIK::OSNS_sm_VelocityIK(int dof, double loop_period) :

@@ -26,6 +26,8 @@
 
 #include <Eigen/Dense>
 
+#include "sns_ik_math_utils.hpp"
+
 namespace sns_ik {
 
 static const double INF = std::numeric_limits<double>::max();
@@ -163,8 +165,9 @@ bool isIdentity(const Eigen::MatrixXd &A);
  * @param[out] invA: pseudo-inverse of the matrix
  * @param[out, opt] rank: the rank of matrix A
  * @param[out, opt] damped: true if a damped pseudo-inverse was used
+ * @return: true iff successful
  */
-void pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
+bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
                    int* rank = nullptr, bool* damped = nullptr);
 
 }  // namespace sns_ik

@@ -21,8 +21,9 @@
  */
 
 #include <ros/console.h>
+#include <limits>
 
-#include <sns_ik/sns_ik_math_utils.hpp>
+#include "sns_ik_math_utils.hpp"
 
 namespace {
   const double EPSQ = 1e-10;
@@ -231,9 +232,16 @@ bool isIdentity(const Eigen::MatrixXd &A) {
 
 /*************************************************************************************************/
 
-void pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
+bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
                    int* rank, bool* damped)
 {
+  // Input validation  (both rank and damped are allowed to be nullptr)
+  if (!invA) { ROS_ERROR("invA is nullptr!"); return false; }
+  if (eps < std::numeric_limits<double>::epsilon()) {
+    ROS_ERROR("Bad input:  eps (%e) must be positive!", eps);
+    return false;
+  }
+
   // Compute the singular value decomposition:
   Eigen::JacobiSVD<Eigen::MatrixXd> svd_A(A.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
   Eigen::VectorXd sigma = svd_A.singularValues();
@@ -271,6 +279,7 @@ void pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
   // Optional outputs:
   if (rank) { *rank = rankA; }
   if (damped) { *damped = !fullRank; }
+  return true;
 }
 
 /*************************************************************************************************/

@@ -13,7 +13,7 @@
  *    limitations under the License.
  */
 
-#include <sns_ik/rng_utilities.hpp>
+#include "rng_utilities.hpp"
 
 #include <random>
 #include <ros/console.h>

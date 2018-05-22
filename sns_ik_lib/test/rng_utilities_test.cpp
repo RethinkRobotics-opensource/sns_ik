@@ -1,5 +1,5 @@
 /*! \file rng_utilities_test.cpp
- * \brief Unit Test: sns_ik_math_utils
+ * \brief Unit Test: rng_utilities
  * \author Matthew Kelly
  *
  * Unit tests for the rng_utilities suite of functions.
@@ -24,7 +24,7 @@
 #include <Eigen/Dense>
 #include <ros/console.h>
 
-#include <sns_ik/rng_utilities.hpp>
+#include "rng_utilities.hpp"
 
 /*************************************************************************************************/
 

@@ -21,7 +21,7 @@
  *    limitations under the License.
  */
 
-#include <sns_ik/robot_model.hpp>
+#include "robot_model.hpp"
 
 #include <ros/console.h>
 
