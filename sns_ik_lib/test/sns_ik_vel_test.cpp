@@ -23,7 +23,6 @@
 #include <kdl/chain.hpp>
 #include <kdl/chainiksolvervel_pinv.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
-#include <kdl/chainiksolvervel_pinv_nso.hpp>
 #include <map>
 #include <ros/console.h>
 #include <ros/duration.h>

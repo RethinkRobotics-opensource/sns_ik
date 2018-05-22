@@ -358,7 +358,7 @@ TEST(sns_ik_math_utils, pseudoInverse_fullRank_test)
   Eigen::MatrixXd A;  // test matrix
   int rank; // rank of invA, computed by pseudoInverse(A)
   bool damped;  // true iff invA was computed with a damped pseudo-inverse
-  for (int iTest = 0; iTest < 20; iTest++) {
+  for (int iTest = 0; iTest < nTest; iTest++) {
     seed++;
     int nCol = sns_ik::rng_util::getRngInt(seed + 63541, 3, 9);
     int nRow = sns_ik::rng_util::getRngInt(0, 2, (nCol-1));
@@ -386,7 +386,6 @@ TEST(sns_ik_math_utils, pseudoInverse_damped_test)
   double tolMat = 1e-6;  // tolerance for matrix equality check
   int nTest = 15;
   int seed = 76407;
-  double low = -2.0;  double upp = 2.0;  // bounds on values in the A and P matrix
   Eigen::MatrixXd X;  // pinv(A)
   Eigen::MatrixXd invA;  // pseudoInverse(A)
   Eigen::MatrixXd A;

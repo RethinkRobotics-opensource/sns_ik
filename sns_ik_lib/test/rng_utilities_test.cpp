@@ -102,7 +102,6 @@ TEST(rng_utilities, getRngMatrixXd_test)
     seed++;
     int nRows = sns_ik::rng_util::getRngInt(seed + 20817, 1, 9);
     int nCols = sns_ik::rng_util::getRngInt(seed + 66461, 1, 9);
-    int nRank = sns_ik::rng_util::getRngInt(seed + 77126, 1, 9);
     double low = sns_ik::rng_util::getRngDouble(seed + 30185, -5, 20);
     double upp = low + sns_ik::rng_util::getRngDouble(seed + 45177, 1e-6, 10);
     X = sns_ik::rng_util::getRngMatrixXd(seed + 10883, nRows, nCols, low, upp);
@@ -133,7 +132,7 @@ TEST(rng_utilities, getRngMatrixXdRanked_test)
     // Check the rank:
     nRank = std::min({nRows, nCols, nRank});
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> decomp(X);
-    ASSERT_LE(decomp.rank(), nRank);
+    ASSERT_EQ(decomp.rank(), nRank);
 
     // Check the size:
     ASSERT_EQ(X.rows(), nRows);
