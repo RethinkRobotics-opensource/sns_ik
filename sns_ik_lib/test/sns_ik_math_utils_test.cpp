@@ -23,7 +23,7 @@
 #include <ros/console.h>
 
 #include "rng_utilities.hpp"
-#include "../src/sns_ik_math_utils.hpp"
+#include "sns_ik_math_utils.hpp"
 
 /*************************************************************************************************
  *                               Utilities Functions                                             *

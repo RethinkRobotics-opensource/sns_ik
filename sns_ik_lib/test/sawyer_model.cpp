@@ -1,4 +1,4 @@
-/** @file robot_model.cpp
+/** @file sawyer_model.cpp
  *
  * @brief The file provides simple functions to return robot models for testing.
  *
@@ -21,12 +21,12 @@
  *    limitations under the License.
  */
 
-#include "robot_model.hpp"
+#include "sawyer_model.hpp"
 
 #include <ros/console.h>
 
 namespace sns_ik {
-namespace robot_model {
+namespace sawyer_model {
 
 /*************************************************************************************************/
 
@@ -129,4 +129,4 @@ void getSawyerJointLimits(KDL::JntArray* qLow, KDL::JntArray* qUpp,
 /*************************************************************************************************/
 
 }  // namespace sns_ik
-}  // namespace robot_model
+}  // namespace sawyer_model

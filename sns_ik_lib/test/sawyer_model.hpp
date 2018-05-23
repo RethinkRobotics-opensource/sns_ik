@@ -1,4 +1,4 @@
-/** @file robot_model.hpp
+/** @file sawyer_model.hpp
  *
  * @brief The file provides simple functions to return robot models for testing.
  *
@@ -29,7 +29,7 @@
 #include <kdl/jntarray.hpp>
 
 namespace sns_ik {
-namespace robot_model {
+namespace sawyer_model {
 
 /*
 * This function returns a KDL chain object that represents the kinematics of a Sawyer Robot arm.
@@ -51,6 +51,6 @@ void getSawyerJointLimits(KDL::JntArray* qLow, KDL::JntArray* qUpp,
                          KDL::JntArray* vMax, KDL::JntArray* aMax);
 
 }  // namespace sns_ik
-}  // namespace robot_model
+}  // namespace sawyer_model
 
 #endif  // SNS_IK_ROBOT_MODELS_H_
