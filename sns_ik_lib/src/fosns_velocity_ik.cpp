@@ -24,6 +24,8 @@
 
 #include <ros/console.h>
 
+#include "sns_ik_math_utils.hpp"
+
 namespace sns_ik {
 
 FOSNSVelocityIK::FOSNSVelocityIK(int dof, double loop_period) :

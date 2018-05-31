@@ -25,8 +25,6 @@
 
 #include <Eigen/Dense>
 
-#include "sns_ik/sns_ik_math_utils.hpp"
-
 namespace sns_ik {
 
 /*! \struct Task

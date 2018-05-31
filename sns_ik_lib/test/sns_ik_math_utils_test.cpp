@@ -1,4 +1,4 @@
-/*! \file fosns_velocity_ik.hpp
+/*! \file sns_ik_math_utils_test.cpp
  * \brief Unit Test: sns_ik_math_utils
  * \author Matthew Kelly
  */
@@ -22,8 +22,8 @@
 #include <Eigen/Dense>
 #include <ros/console.h>
 
-#include <sns_ik/sns_ik_data_utilities.hpp>
-#include <sns_ik/sns_ik_math_utils.hpp>
+#include "rng_utilities.hpp"
+#include "sns_ik_math_utils.hpp"
 
 /*************************************************************************************************
  *                               Utilities Functions                                             *
@@ -106,17 +106,17 @@ TEST(sns_ik_math_utils, pinv_test)
   for (int i = 0; i < 25; i++) {
     // generate test data
     seed++;
-    int nCol = sns_ik::data_util::getRngInt(seed + 50322, 3, 9);
-    int nRow = sns_ik::data_util::getRngInt(seed + 87288, 2, (nCol-1));  // TODO: any number of rows
+    int nCol = sns_ik::rng_util::getRngInt(seed + 50322, 3, 9);
+    int nRow = sns_ik::rng_util::getRngInt(seed + 87288, 2, (nCol-1));  // TODO: any number of rows
     // Decide whether to use a full-rank or rank degenerate case
-    bool fullRank = sns_ik::data_util::getRngBool(seed + 96717, 0.85);  // usually full rank
+    bool fullRank = sns_ik::rng_util::getRngBool(seed + 96717, 0.85);  // usually full rank
     if (fullRank) {  // generate and test for a full-rank input
-      Eigen::MatrixXd A = sns_ik::data_util::getRngMatrixXd(seed + 81068, nRow, nCol, low, upp);
+      Eigen::MatrixXd A = sns_ik::rng_util::getRngMatrixXd(seed + 81068, nRow, nCol, low, upp);
       ASSERT_TRUE(sns_ik::pinv(A, &X, tolSvd));
       checkPseudoInverse(A, X, tolMat);
     } else {  // generate an test for a rank-deficient input
       int nRank = std::min(nRow, nCol) - 1;
-      Eigen::MatrixXd A = sns_ik::data_util::getRngMatrixXdRanked(seed + 81068, nRow, nCol, nRank);
+      Eigen::MatrixXd A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 81068, nRow, nCol, nRank);
       ASSERT_FALSE(sns_ik::pinv(A, &X, tolSvd));
     }
   }
@@ -140,20 +140,20 @@ TEST(sns_ik_math_utils, pinv_P_test)
   for (int iTest = 0; iTest < 25; iTest++) {
     // generate test data
     seed++;
-    int nCol = sns_ik::data_util::getRngInt(seed + 80226, 3, 9);
-    int nRow = sns_ik::data_util::getRngInt(seed + 49166, 2, (nCol-1));  // TODO: any number of rows
-    Eigen::MatrixXd P = sns_ik::data_util::getRngMatrixXd(seed + 70730, nCol, nCol, low, upp);
+    int nCol = sns_ik::rng_util::getRngInt(seed + 80226, 3, 9);
+    int nRow = sns_ik::rng_util::getRngInt(seed + 49166, 2, (nCol-1));  // TODO: any number of rows
+    Eigen::MatrixXd P = sns_ik::rng_util::getRngMatrixXd(seed + 70730, nCol, nCol, low, upp);
     Eigen::MatrixXd PP = P;  // Projected P matrix
     // Decide whether to use a full-rank or rank degenerate case
-    bool fullRank = sns_ik::data_util::getRngBool(seed + 11052, 0.85);  // usually full rank
+    bool fullRank = sns_ik::rng_util::getRngBool(seed + 11052, 0.85);  // usually full rank
     if (fullRank) {  // generate and test for a full-rank input
-      A = sns_ik::data_util::getRngMatrixXd(seed + 75011, nRow, nCol, low, upp);
+      A = sns_ik::rng_util::getRngMatrixXd(seed + 75011, nRow, nCol, low, upp);
       ASSERT_TRUE(sns_ik::pinv_P(A, &X, &PP, tolSvd));
       checkPseudoInverse(A, X, tolMat);
       checkEqualMatricies(PP, P - X*A, tolMat);
     } else {  // generate an test for a rank-deficient input
       int nRank = std::min(nRow, nCol) - 1;
-      A = sns_ik::data_util::getRngMatrixXdRanked(seed + 91579, nRow, nCol, nRank);
+      A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 91579, nRow, nCol, nRank);
       ASSERT_FALSE(sns_ik::pinv_P(A, &X, &PP, tolSvd));
     }
   }
@@ -177,19 +177,19 @@ TEST(sns_ik_math_utils, pinv_damped_P_test)
   Eigen::MatrixXd A;
   for (int iTest = 0; iTest < 25; iTest++) {
     // generate test data
-    int nCol = sns_ik::data_util::getRngInt(seed + 82956, 3, 9);
-    int nRow = sns_ik::data_util::getRngInt(seed + 44438, 2, (nCol-1));  // TODO: any number of rows
-    Eigen::MatrixXd P = sns_ik::data_util::getRngMatrixXd(seed + 54852, nCol, nCol, low, upp);
+    int nCol = sns_ik::rng_util::getRngInt(seed + 82956, 3, 9);
+    int nRow = sns_ik::rng_util::getRngInt(seed + 44438, 2, (nCol-1));  // TODO: any number of rows
+    Eigen::MatrixXd P = sns_ik::rng_util::getRngMatrixXd(seed + 54852, nCol, nCol, low, upp);
     Eigen::MatrixXd PP = P;  // Projected P matrix
     // Decide whether to use a full-rank or rank degenerate case
-    bool fullRank = sns_ik::data_util::getRngBool(seed + 86532, 0.85);  // usually full rank
+    bool fullRank = sns_ik::rng_util::getRngBool(seed + 86532, 0.85);  // usually full rank
     if (fullRank) {  // generate and test for a full-rank input
-      A = sns_ik::data_util::getRngMatrixXd(seed + 75312, nRow, nCol, low, upp);
+      A = sns_ik::rng_util::getRngMatrixXd(seed + 75312, nRow, nCol, low, upp);
       ASSERT_TRUE(sns_ik::pinv_damped_P(A, &X, &PP, lambda, tolSvd));
       checkPseudoInverse(A, X, tolMat);
     } else {  // generate an test for a rank-deficient input
       int nRank = std::min(nRow, nCol) - 1;
-      A = sns_ik::data_util::getRngMatrixXdRanked(seed + 88433, nRow, nCol, nRank);
+      A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 88433, nRow, nCol, nRank);
       ASSERT_FALSE(sns_ik::pinv_damped_P(A, &X, &PP, lambda, tolSvd));
     }
     checkEqualMatricies(PP, P - X*A, tolMat);
@@ -208,10 +208,10 @@ TEST(sns_ik_math_utils, pinv_forBarP_test)
     seed++;
 
     // Compute the selection matrix (W) and data matrix (P)
-    int nDim = sns_ik::data_util::getRngInt(seed + 85004, 2, 11);
+    int nDim = sns_ik::rng_util::getRngInt(seed + 85004, 2, 11);
     std::vector<bool> selectionVector(nDim);
     for (int iDim = 0; iDim < nDim; iDim++) {
-      selectionVector[iDim] = sns_ik::data_util::getRngBool(0, 0.6);
+      selectionVector[iDim] = sns_ik::rng_util::getRngBool(0, 0.6);
     }
     int nnz = 0; // number of non-zero elements
     for (int iDim = 0; iDim < nDim; iDim++) {
@@ -224,10 +224,10 @@ TEST(sns_ik_math_utils, pinv_forBarP_test)
     }
 
     // Decide whether to use a full-rank or rank degenerate case
-    bool fullRank = sns_ik::data_util::getRngBool(seed + 86532, 0.7);  // usually full rank
+    bool fullRank = sns_ik::rng_util::getRngBool(seed + 86532, 0.7);  // usually full rank
     bool smallNullSpace = nDim - nnz < 2;  // true if the nullspace has fewer than two dimensions
     if (fullRank || smallNullSpace) {  // generate and test for a full-rank input
-      P = sns_ik::data_util::getRngMatrixXd(seed + 47524, nDim, nDim, low, upp);
+      P = sns_ik::rng_util::getRngMatrixXd(seed + 47524, nDim, nDim, low, upp);
 
       // Compute the sub-selection matrix:
       K = Eigen::MatrixXd::Zero(nnz, nDim);
@@ -243,7 +243,7 @@ TEST(sns_ik_math_utils, pinv_forBarP_test)
 
     } else { // use the rank-deficient case
         int nRank = 1;
-        P = sns_ik::data_util::getRngMatrixXdRanked(seed + 20880, nDim, nDim, nRank);
+        P = sns_ik::rng_util::getRngMatrixXdRanked(seed + 20880, nDim, nDim, nRank);
 
         // Call the function to be tested:
         ASSERT_FALSE(sns_ik::pinv_forBarP(W, P, &C));
@@ -270,17 +270,17 @@ TEST(sns_ik_math_utils, pinv_QR_test)
   for (int iTest = 0; iTest < 25; iTest++) {
     // generate test data
     seed++;
-    int nCol = sns_ik::data_util::getRngInt(seed + 59010, 3, 9);
-    int nRow = sns_ik::data_util::getRngInt(seed + 73052, 2, (nCol-1));  // TODO: any number of rows
+    int nCol = sns_ik::rng_util::getRngInt(seed + 59010, 3, 9);
+    int nRow = sns_ik::rng_util::getRngInt(seed + 73052, 2, (nCol-1));  // TODO: any number of rows
     // Decide whether to use a full-rank or rank degenerate case
-    bool fullRank = sns_ik::data_util::getRngBool(seed + 51348, 0.85);  // usually full rank
+    bool fullRank = sns_ik::rng_util::getRngBool(seed + 51348, 0.85);  // usually full rank
     if (fullRank) {  // generate and test for a full-rank input
-      Eigen::MatrixXd A = sns_ik::data_util::getRngMatrixXd(seed + 23253, nRow, nCol, low, upp);
+      Eigen::MatrixXd A = sns_ik::rng_util::getRngMatrixXd(seed + 23253, nRow, nCol, low, upp);
       ASSERT_TRUE(sns_ik::pinv_QR(A, &X, tolSvd));
       checkPseudoInverse(A, X, tolMat);
     } else {  // generate an test for a rank-deficient input
       int nRank = std::min(nRow, nCol) - 1;
-      Eigen::MatrixXd A = sns_ik::data_util::getRngMatrixXdRanked(seed + 19669, nRow, nCol, nRank);
+      Eigen::MatrixXd A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 19669, nRow, nCol, nRank);
       ASSERT_FALSE(sns_ik::pinv_QR(A, &X, tolSvd));
     }
   }
@@ -303,17 +303,17 @@ TEST(sns_ik_math_utils, pinv_QR_Z_test)
   Eigen::MatrixXd A;
   for (int iTest = 0; iTest < 25; iTest++) {
     // generate test data
-    int nJoint = sns_ik::data_util::getRngInt(seed + 98138, 4, 12);
-    int nTask = sns_ik::data_util::getRngInt(seed + 90906, 2, nJoint);
-    bool fullRank = sns_ik::data_util::getRngBool(seed + 51348, 0.85);  // usually full rank
+    int nJoint = sns_ik::rng_util::getRngInt(seed + 98138, 4, 12);
+    int nTask = sns_ik::rng_util::getRngInt(seed + 90906, 2, nJoint);
+    bool fullRank = sns_ik::rng_util::getRngBool(seed + 51348, 0.85);  // usually full rank
     Eigen::MatrixXd J1;
-    Eigen::MatrixXd Za0 = sns_ik::data_util::getRngMatrixXd(seed + 10218, nJoint, nJoint, low, upp);
+    Eigen::MatrixXd Za0 = sns_ik::rng_util::getRngMatrixXd(seed + 10218, nJoint, nJoint, low, upp);
     if (fullRank) {  // generate and test for a full-rank input
-      J1 = sns_ik::data_util::getRngMatrixXd(seed + 65903, nTask, nJoint, low, upp);
+      J1 = sns_ik::rng_util::getRngMatrixXd(seed + 65903, nTask, nJoint, low, upp);
       ASSERT_TRUE(sns_ik::pinv_QR_Z(J1, Za0, &Jstar, &Za1, lambda, tolSvd));
     } else {  // test the rank-deficient case
-      int nRank = sns_ik::data_util::getRngInt(seed + 82189, 1, nTask-1);
-      Eigen::MatrixXd J1 = sns_ik::data_util::getRngMatrixXdRanked(seed + 48185, nTask, nJoint, nRank);
+      int nRank = sns_ik::rng_util::getRngInt(seed + 82189, 1, nTask-1);
+      Eigen::MatrixXd J1 = sns_ik::rng_util::getRngMatrixXdRanked(seed + 48185, nTask, nJoint, nRank);
       ASSERT_FALSE(sns_ik::pinv_QR_Z(J1, Za0, &Jstar, &Za1, lambda, tolSvd));
     }
     // generate matricies for checking the result
@@ -335,6 +335,77 @@ TEST(sns_ik_math_utils, isIdentity_test)
   ASSERT_TRUE(sns_ik::isIdentity(M));
   M(1,1) = 0.3;
   ASSERT_FALSE(sns_ik::isIdentity(M));
+}
+
+/*************************************************************************************************/
+
+/*
+ * Unit test for pseudoInverse() with full rank A matrix
+ *  -- this is primarily a regression test, confirming that the new implementation of the pseudo-
+ *     inverse gives the same results as the version that was originally implemented in this code.
+ */
+TEST(sns_ik_math_utils, pseudoInverse_fullRank_test)
+{
+  // test parameters
+  double tolSvd = 1e-8;  // svd minimum value tolerance
+  double tolMat = 1e-6;  // tolerance for matrix equality check
+  int nTest = 20;
+  int seed = 84658;
+  double low = -2.0;  double upp = 2.0;  // bounds on values in the A matrix
+  // test setup
+  Eigen::MatrixXd X;  // pinv(A)
+  Eigen::MatrixXd invA;  // pseudoInverse(A)
+  Eigen::MatrixXd A;  // test matrix
+  int rank; // rank of invA, computed by pseudoInverse(A)
+  bool damped;  // true iff invA was computed with a damped pseudo-inverse
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    seed++;
+    int nCol = sns_ik::rng_util::getRngInt(seed + 63541, 3, 9);
+    int nRow = sns_ik::rng_util::getRngInt(0, 2, (nCol-1));
+    A = sns_ik::rng_util::getRngMatrixXd(seed + 68409, nRow, nCol, low, upp);
+    ASSERT_TRUE(sns_ik::pinv_damped_P(A, &X, nullptr, tolSvd, tolSvd));
+    ASSERT_TRUE(sns_ik::pseudoInverse(A, tolSvd, &invA, &rank, &damped));
+    checkPseudoInverse(A, X, tolMat);
+    checkPseudoInverse(A, invA, tolMat);
+    ASSERT_FALSE(damped);
+    ASSERT_EQ(rank, nRow);
+    checkEqualMatricies(X, invA, tolMat);
+  }
+}
+
+/*************************************************************************************************/
+
+/*
+ * Unit test for pseudoInverse() for rank-deficient inputs
+ *  -- this is primarily a regression test, confirming that the new implementation of the pseudo-
+ *     inverse gives the same results as the version that was originally implemented in this code.
+ */
+TEST(sns_ik_math_utils, pseudoInverse_damped_test)
+{
+  double tolSvd = 1e-8;  // svd minimum value tolerance
+  double tolMat = 1e-6;  // tolerance for matrix equality check
+  int nTest = 15;
+  int seed = 76407;
+  Eigen::MatrixXd X;  // pinv(A)
+  Eigen::MatrixXd invA;  // pseudoInverse(A)
+  Eigen::MatrixXd A;
+  int rank; // rank of invA, computed by pseudoInverse(A)
+  bool damped;  // true iff invA was computed with a damped pseudo-inverse
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    // generate test data
+    seed++;
+    int nCol = sns_ik::rng_util::getRngInt(seed + 75019, 6, 9);
+    int nRow = sns_ik::rng_util::getRngInt(seed + 94846, 4, (nCol-1));
+    int nRank = sns_ik::rng_util::getRngInt(seed + 94846, 1, (nRow-1));
+    A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 43203, nRow, nCol, nRank);
+    ASSERT_FALSE(sns_ik::pinv_damped_P(A, &X, nullptr, tolSvd, tolSvd));
+    ASSERT_TRUE(sns_ik::pseudoInverse(A, tolSvd, &invA, &rank, &damped));
+    checkPseudoInverse(A, X, tolMat);
+    checkPseudoInverse(A, invA, tolMat);
+    ASSERT_TRUE(damped);
+    ASSERT_EQ(rank, nRank);
+    checkEqualMatricies(X, invA, tolMat);
+  }
 }
 
 /*************************************************************************************************/

@@ -26,8 +26,6 @@
 #include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 
-#include "sns_ik/sns_ik_math_utils.hpp"
-
 namespace sns_ik {
 
 // Forward declare SNS Velocity Base Class

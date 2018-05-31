@@ -1,8 +1,15 @@
-/*! \file sns_ik_data_utilities.h
- * \brief Unit Test: sns_ik_math_utils
- * \author Matthew Kelly
- */
-/*
+/** @file rng_utilities.hpp
+ *
+ * @brief a collection of functions for generating repeatable pseudo-random test data
+ *
+ * @author Matthew Kelly
+ *
+ * This file provides a set of functions that are used to generate repeatable pseudo-random
+ * data for unit tests. All functions provide the caller with direct control over the seed that
+ * is used by the random number generator. Passing a seed of zero is used to indicate that the
+ * seed should not be reset, instead letting the random generator progress to the next value in
+ * the sequence. This is useful for generating numbers in a loop, such as for a matrix.
+ *
  *    Copyright 2018 Rethink Robotics
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,21 +24,14 @@
  *    limitations under the License.
  */
 
-#ifndef SNS_IK_DATA_UTILITIES_H
-#define SNS_IK_DATA_UTILITIES_H
+#ifndef SNS_IK_RNG_UTILITIES_H_
+#define SNS_IK_RNG_UTILITIES_H_
 
 #include <Eigen/Dense>
+#include <kdl/jntarray.hpp>
 
 namespace sns_ik {
-namespace data_util {
-
-/*
- * This namespace provides a set of functions that are used to generate repeatable pseudo-random
- * data for unit tests. All functions provide the caller with direct control over the seed that
- * is used by the random number generator. Passing a seed of zero is used to indicate that the
- * seed should not be reset, instead letting the random generator progress to the next value in
- * the sequence. This is useful for generating numbers in a loop, such as for a matrix.
- */
+namespace rng_util {
 
 /*************************************************************************************************/
 
@@ -101,7 +101,34 @@ Eigen::MatrixXd getRngMatrixXd(int seed, int nRows, int nCols,
 Eigen::MatrixXd getRngMatrixXdRanked(int seed, int nRows, int nCols, int nRank);
 
 /*************************************************************************************************/
-}  // namespace data_util
+
+/*
+ * Compute a pseudo-random joint position, drawn from a uniform distribution between the bounds
+ * @param seed: seed to pass to the RNG on each call
+ *              if seed == 0, then RNG seed is not updated
+ * @param qLow: lower bound for each joint
+ * @param qUpp: upper bound for each joint
+ * @return: joint angles bettween qLow and qUpp.  (return qLow if inconsistent input)
+ */
+KDL::JntArray getRngBoundedJoints(int seed, const KDL::JntArray& qLow, const KDL::JntArray& qUpp);
+
+/*************************************************************************************************/
+/*
+ * Compute a pseudo-random joint position, drawn from a uniform distribution between the bounds
+ * @param seed: seed to pass to the RNG on each call
+ *              if seed == 0, then RNG seed is not updated
+ * @param qNom: nominal set of joint angles
+ * @param delta: maximum perturbation magnitude along each dimension
+ * @param qLow: lower bound for each joint
+ * @param qUpp: upper bound for each joint
+ * @return: joint angles near qNom and between qLow and qUpp.  (return qNom if inconsistent input)
+ */
+KDL::JntArray getNearbyJoints(int seed, const KDL::JntArray& qNom, double delta,
+                              const KDL::JntArray& qLow, const KDL::JntArray& qUpp);
+
+/*************************************************************************************************/
+
+}  // namespace rng_util
 }  // namespace sns_ik
 
-#endif // SNS_IK_DATA_UTILITIES_H
+#endif // SNS_IK_RNG_UTILITIES_H_

@@ -26,6 +26,8 @@
 
 #include <Eigen/Dense>
 
+#include "sns_ik_math_utils.hpp"
+
 namespace sns_ik {
 
 static const double INF = std::numeric_limits<double>::max();
@@ -70,14 +72,14 @@ bool pinv_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P,
  * @param A: input matrix
  *   FIXME: if A.rows() >= A.cols() causes a failed assertion, but this should be valid input
  * @param[out] invA: pseudoinverse of A
- * @param[in/out] P: the nullspace projector matrix:  P = (P - pinv(A)*A)
+ * @param[in/out/opt] P: the nullspace projector matrix:  P = (P - pinv(A)*A)
  *                   P.rows() == P.cols() = A.cols() is required
  *                   P should be initialized with the identity matrix
  * @param[opt] lambda_max: damping parameter for the damped pseudoinverse
  * @param[opt] eps: singular values smaller than this will be set to zero
  * @return: true if A is full rank, false if A is rank deficient
  */
-bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P,
+bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::MatrixXd *P = nullptr,
                    double lambda_max = 1e-6, double eps = 1e-6);
 
 /*
@@ -154,6 +156,19 @@ bool pinv_forBarP(const Eigen::MatrixXd &W, const Eigen::MatrixXd &P, Eigen::Mat
  *   FIXME: if A(i,i) > 1.0, then this function returns the wrong answer
  */
 bool isIdentity(const Eigen::MatrixXd &A);
+
+/*
+ * Compute the pseudo-inverse of a matrix.
+ * Note: do not use this to solve a linear system: use solveLinearSystem() instead.
+ * @param A: matrix of interest
+ * @param eps: small parameter, used for singular value threshold and damping
+ * @param[out] invA: pseudo-inverse of the matrix
+ * @param[out, opt] rank: the rank of matrix A
+ * @param[out, opt] damped: true if a damped pseudo-inverse was used
+ * @return: true iff successful
+ */
+bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
+                   int* rank = nullptr, bool* damped = nullptr);
 
 }  // namespace sns_ik
 

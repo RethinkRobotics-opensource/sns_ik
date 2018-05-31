@@ -20,7 +20,10 @@
  *    limitations under the License.
  */
 
-#include <sns_ik/sns_ik_math_utils.hpp>
+#include <ros/console.h>
+#include <limits>
+
+#include "sns_ik_math_utils.hpp"
 
 namespace {
   const double EPSQ = 1e-10;
@@ -83,7 +86,7 @@ bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::Matri
       sigma(i) = 1.0 / sigma(i);
     }
     (*invA) = svd_A.matrixU() * sigma.asDiagonal() * svd_A.matrixV().transpose();
-    (*P) = ((*P) - svd_A.matrixU() * svd_A.matrixU().transpose()).eval();
+    if (P){ *P = ((*P) - svd_A.matrixU() * svd_A.matrixU().transpose()).eval(); }
     return true;
   } else {
     lambda2 = (1 - (sigma(m) / eps) * (sigma(m) / eps)) * lambda_max * lambda_max;
@@ -97,8 +100,7 @@ bool pinv_damped_P(const Eigen::MatrixXd &A, Eigen::MatrixXd *invA, Eigen::Matri
     //only U till the rank
     Eigen::MatrixXd subU = svd_A.matrixU().block(0, 0, A.cols(), r);
     Eigen::MatrixXd subV = svd_A.matrixV().block(0, 0, A.rows(), r);
-    (*P) = ((*P) - subU * subU.transpose()).eval();
-
+    if (P){ *P = ((*P) - subU * subU.transpose()).eval(); }
     (*invA) = subU * subSigma.head(r).asDiagonal() * subV.transpose();
     return false;
   }
@@ -227,5 +229,59 @@ bool isIdentity(const Eigen::MatrixXd &A) {
 
   return isIdentity;
 }
+
+/*************************************************************************************************/
+
+bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
+                   int* rank, bool* damped)
+{
+  // Input validation  (both rank and damped are allowed to be nullptr)
+  if (!invA) { ROS_ERROR("invA is nullptr!"); return false; }
+  if (eps < std::numeric_limits<double>::epsilon()) {
+    ROS_ERROR("Bad input:  eps (%e) must be positive!", eps);
+    return false;
+  }
+
+  // Compute the singular value decomposition:
+  Eigen::JacobiSVD<Eigen::MatrixXd> svd_A(A.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Eigen::VectorXd sigma = svd_A.singularValues();
+
+  // Compute the rank by checking for non-zero singular values
+  int rankA = 0;
+  int nSigma = sigma.size();
+  for (int i = 0; i < nSigma; i++) {
+    if (sigma(i) > eps) rankA++;  // increment the rank counter
+  }
+  bool fullRank = rankA == nSigma;
+
+  // Compute the inverse of the singular values
+  Eigen::VectorXd subSigma = Eigen::VectorXd::Ones(nSigma);
+  if (fullRank) {  // general case: simple inverse
+    for (int i = 0; i < nSigma; i++) {
+      subSigma(i) = 1.0 / sigma(i);  // invert each singular value
+    }
+  } else {  //rank-deficient. Use damped psuedo-inverse to prevent divide by zero
+    double sigMin = sigma.minCoeff();  // minimum singular value
+    double alpha = sigMin / eps;
+    double lambda = (1.0 - alpha*alpha) * (eps * eps);
+    for (int i = 0; i < nSigma; i++) {
+      if (sigma(i) > eps) {
+        subSigma(i) = sigma(i) / (sigma(i) * sigma(i) + lambda);
+      }
+    }
+  }
+
+  // Key Line:  compute the pseudo-inverse
+  Eigen::MatrixXd subU = svd_A.matrixU().block(0, 0, A.cols(), rankA);
+  Eigen::MatrixXd subV = svd_A.matrixV().block(0, 0, A.rows(), rankA);
+  *invA = subU * subSigma.head(rankA).asDiagonal() * subV.transpose();
+
+  // Optional outputs:
+  if (rank) { *rank = rankA; }
+  if (damped) { *damped = !fullRank; }
+  return true;
+}
+
+/*************************************************************************************************/
 
 } // namespace sns_ik
