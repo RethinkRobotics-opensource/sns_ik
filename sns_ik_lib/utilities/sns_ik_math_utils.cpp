@@ -24,6 +24,7 @@
 #include <limits>
 
 #include "sns_ik_math_utils.hpp"
+#include "sns_linear_solver.hpp"
 
 namespace {
   const double EPSQ = 1e-10;
@@ -169,7 +170,7 @@ bool pinv_QR_Z(const Eigen::MatrixXd &A, const Eigen::MatrixXd &Z0, Eigen::Matri
     Eigen::MatrixXd R = Eigen::MatrixXd::Zero(m, m);
     //take the useful part of R
     for (int i = 0; i < m; i++) {
-      for (int j = i; j < m; j++)  // TODO: is starting at i correct?
+      for (int j = i; j < m; j++)
         R(i, j) = hR(i, j);
     }
 
@@ -279,6 +280,46 @@ bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
   // Optional outputs:
   if (rank) { *rank = rankA; }
   if (damped) { *damped = !fullRank; }
+  return true;
+}
+
+/*************************************************************************************************/
+
+bool solveLinearSystem(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
+                       Eigen::MatrixXd* x, int* rank, double* err)
+{
+  // Input validation:
+  if (A.rows() != b.rows()) {
+    ROS_ERROR("Bad Input:  A.rows(%d) != b.rows(%d)", int(A.rows()), int(b.rows()));
+    return false;
+  }
+  if (!x) { ROS_ERROR("x is nullptr!"); return false; }
+
+  // Decompose the matrix A and then check the it worked
+  int n = A.rows();
+  int m = A.cols();
+  SnsLinearSolver solver(n, m);
+  solver.setThreshold(Eigen::Default); // Eigen does something reasonable here
+  solver.compute(A);  // perform matrix decomposition
+  if(solver.info() != Eigen::ComputationInfo::Success) {
+    ROS_ERROR("Solver failed to decompose the combined sparse matrix!");
+    return false;
+  }
+
+  // Solve the linear system and then check that it worked
+  *x = solver.solve(b);
+  if (solver.info() != Eigen::ComputationInfo::Success) {
+    ROS_ERROR("Solver failed to find a valid solution!");
+    return false;
+  }
+
+  // Optional outputs:
+  if (rank) {  // then compute the number of degrees of freedom in the solution
+    *rank = solver.rank();
+  }
+  if (err) {  // then compute the residual error in the solution
+    *err = (A*(*x) - b).squaredNorm();
+  }
   return true;
 }
 

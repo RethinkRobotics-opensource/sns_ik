@@ -35,7 +35,8 @@ link_directories(${orocos_kdl_LIBRARY_DIRS})
 
 # library for private utilities
 add_library(sns_ik_util
-            utilities/sns_ik_math_utils.cpp)
+            utilities/sns_ik_math_utils.cpp
+            utilities/sns_linear_solver.cpp)
 
 # library for public API
 add_library(sns_ik

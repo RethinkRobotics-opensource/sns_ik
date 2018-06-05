@@ -30,12 +30,12 @@
  *************************************************************************************************/
 
 /*
- * Element-wise check that two matricies are equal to within some tolerance
+ * Element-wise check that two matrices are equal to within some tolerance
  * @param A: first input matrix
  * @param B: second input matrix
  * @param tol: tolerance on equality checks
  */
-void checkEqualMatricies(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B, double tol)
+void checkEqualMatrices(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B, double tol)
 {
   ASSERT_EQ(A.rows(), B.rows());
   ASSERT_EQ(A.cols(), B.cols());
@@ -51,7 +51,7 @@ void checkEqualMatricies(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B, dou
 /*************************************************************************************************/
 
 /*
- * Check that two matricies are related by a Moore-Penrose pseudoinverse, to within tol.
+ * Check that two matrices are related by a Moore-Penrose pseudoinverse, to within tol.
  * X = pinv(A)
  * @param A: matrix A
  * @param X: the pseudoinverse of matrix A
@@ -59,12 +59,12 @@ void checkEqualMatricies(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B, dou
  */
 void checkPseudoInverse(const Eigen::MatrixXd& A, const Eigen::MatrixXd& X, double tol)
 {
-  checkEqualMatricies(A*X*A, A, tol);
-  checkEqualMatricies(X*A*X, X, tol);
+  checkEqualMatrices(A*X*A, A, tol);
+  checkEqualMatrices(X*A*X, X, tol);
   Eigen::MatrixXd XA = X*A;
   Eigen::MatrixXd AX = A*X;
-  checkEqualMatricies(XA, XA.transpose(), tol);
-  checkEqualMatricies(AX, AX.transpose(), tol);
+  checkEqualMatrices(XA, XA.transpose(), tol);
+  checkEqualMatrices(AX, AX.transpose(), tol);
 }
 
 /*************************************************************************************************/
@@ -87,13 +87,45 @@ void qrBlockDecompose(const Eigen::MatrixXd& A,
   *R = qr.matrixQR().topLeftCorner(m, m).template triangularView<Eigen::Upper>();
 }
 
+
+/*************************************************************************************************/
+
+/*
+ * Check that the solution to the linear system: A*x = b is valid
+ * @param A: matrix of size [n, m]
+ * @param b: matrix of size [n, p]
+ * @param x: matrix of size [m, p]
+ * @param rank: rank of the A
+ * @param err: residual error in solution: (A*x-b).squaredNorm()
+ * @param tol: tolerance for equality checks
+ */
+void checkLinearSolve(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
+                     const Eigen::MatrixXd& x, int rank, double err, double tol)
+{
+  // check sizes:
+  ASSERT_EQ(A.cols(), x.rows());
+  ASSERT_EQ(A.rows(), b.rows());
+  ASSERT_EQ(x.cols(), b.cols());
+
+  // Check residual:
+  ASSERT_NEAR(err, (A*x-b).squaredNorm(), tol);
+
+  // Check linear solve:
+  int n = A.rows();
+  int m = A.cols();
+  ASSERT_LE(rank, std::min(n, m));  // upper bound of rank is based on matrix size
+  if (m >= n && rank == std::min(n, m)) {  // there is a feasible solution
+    checkEqualMatrices(A*x, b, tol);
+  }  //  else: the solution is infeasible, x should minimize the norm
+}
+
 /*************************************************************************************************
  *                                        Tests                                                  *
  *************************************************************************************************/
 
 /*
  * Unit test for the method sns_ik::pinv()
- * TODO: pass arbitrary size matricies into pinv() once the code is fixed to support it
+ * TODO: pass arbitrary size matrices into pinv() once the code is fixed to support it
  */
 TEST(sns_ik_math_utils, pinv_test)
 {
@@ -126,7 +158,7 @@ TEST(sns_ik_math_utils, pinv_test)
 
 /*
  * Unit test for pinv_P()
- * TODO: pass arbitrary size matricies into pinv() once the code is fixed to support it
+ * TODO: pass arbitrary size matrices into pinv() once the code is fixed to support it
  */
 TEST(sns_ik_math_utils, pinv_P_test)
 {
@@ -150,7 +182,7 @@ TEST(sns_ik_math_utils, pinv_P_test)
       A = sns_ik::rng_util::getRngMatrixXd(seed + 75011, nRow, nCol, low, upp);
       ASSERT_TRUE(sns_ik::pinv_P(A, &X, &PP, tolSvd));
       checkPseudoInverse(A, X, tolMat);
-      checkEqualMatricies(PP, P - X*A, tolMat);
+      checkEqualMatrices(PP, P - X*A, tolMat);
     } else {  // generate an test for a rank-deficient input
       int nRank = std::min(nRow, nCol) - 1;
       A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 91579, nRow, nCol, nRank);
@@ -163,7 +195,7 @@ TEST(sns_ik_math_utils, pinv_P_test)
 
 /*
  * Unit test for pinv_damped_P()
- * TODO: pass arbitrary size matricies into pinv_damped_P() once the code is fixed to support it
+ * TODO: pass arbitrary size matrices into pinv_damped_P() once the code is fixed to support it
  */
 TEST(sns_ik_math_utils, pinv_damped_P_test)
 {
@@ -192,7 +224,7 @@ TEST(sns_ik_math_utils, pinv_damped_P_test)
       A = sns_ik::rng_util::getRngMatrixXdRanked(seed + 88433, nRow, nCol, nRank);
       ASSERT_FALSE(sns_ik::pinv_damped_P(A, &X, &PP, lambda, tolSvd));
     }
-    checkEqualMatricies(PP, P - X*A, tolMat);
+    checkEqualMatrices(PP, P - X*A, tolMat);
   }
 }
 
@@ -239,7 +271,7 @@ TEST(sns_ik_math_utils, pinv_forBarP_test)
       // Call the function to be tested:
       ASSERT_TRUE(sns_ik::pinv_forBarP(W, P, &C));
       // Check that the result is valid:
-      checkEqualMatricies(Eigen::MatrixXd::Identity(nnz, nnz), K*C*(K.transpose()), tolMat);
+      checkEqualMatrices(Eigen::MatrixXd::Identity(nnz, nnz), K*C*(K.transpose()), tolMat);
 
     } else { // use the rank-deficient case
         int nRank = 1;
@@ -248,7 +280,7 @@ TEST(sns_ik_math_utils, pinv_forBarP_test)
         // Call the function to be tested:
         ASSERT_FALSE(sns_ik::pinv_forBarP(W, P, &C));
         // Check that the result is valid:
-        checkEqualMatricies(Eigen::MatrixXd::Zero(nDim, nDim), C, tolMat);
+        checkEqualMatrices(Eigen::MatrixXd::Zero(nDim, nDim), C, tolMat);
     }
   }
 }
@@ -257,7 +289,7 @@ TEST(sns_ik_math_utils, pinv_forBarP_test)
 
 /*
  * Unit test for the method sns_ik::pinv_QR()
- * TODO: pass arbitrary size matricies into pinv_QR() once the code is fixed to support it
+ * TODO: pass arbitrary size matrices into pinv_QR() once the code is fixed to support it
  */
 TEST(sns_ik_math_utils, pinv_QR_test)
 {
@@ -316,13 +348,13 @@ TEST(sns_ik_math_utils, pinv_QR_Z_test)
       Eigen::MatrixXd J1 = sns_ik::rng_util::getRngMatrixXdRanked(seed + 48185, nTask, nJoint, nRank);
       ASSERT_FALSE(sns_ik::pinv_QR_Z(J1, Za0, &Jstar, &Za1, lambda, tolSvd));
     }
-    // generate matricies for checking the result
+    // generate matrices for checking the result
     Eigen::MatrixXd A = (J1 * Za0).transpose();
-    Eigen::MatrixXd Ya1, Z1, Ra1;  // QR decomposition block matricies
+    Eigen::MatrixXd Ya1, Z1, Ra1;  // QR decomposition block matrices
     qrBlockDecompose(A, &Ya1, &Z1, &Ra1);  // perform QR decomposition (for checking result only)
     // checks:
-    checkEqualMatricies(Za1, Za0 * Z1, tolMat);
-    checkEqualMatricies(Jstar * (Ra1.transpose()), Za0 * Ya1, tolMat);
+    checkEqualMatrices(Za1, Za0 * Z1, tolMat);
+    checkEqualMatrices(Jstar * (Ra1.transpose()), Za0 * Ya1, tolMat);
   }
 }
 
@@ -369,7 +401,7 @@ TEST(sns_ik_math_utils, pseudoInverse_fullRank_test)
     checkPseudoInverse(A, invA, tolMat);
     ASSERT_FALSE(damped);
     ASSERT_EQ(rank, nRow);
-    checkEqualMatricies(X, invA, tolMat);
+    checkEqualMatrices(X, invA, tolMat);
   }
 }
 
@@ -404,11 +436,66 @@ TEST(sns_ik_math_utils, pseudoInverse_damped_test)
     checkPseudoInverse(A, invA, tolMat);
     ASSERT_TRUE(damped);
     ASSERT_EQ(rank, nRank);
-    checkEqualMatricies(X, invA, tolMat);
+    checkEqualMatrices(X, invA, tolMat);
   }
 }
 
 /*************************************************************************************************/
+
+TEST(sns_ik_math_utils, solveLinearSystem_fullRank_test)
+{
+  // test parameters
+  double tol = 1e-10;  // tolerance for matrix equality check
+  int nTest = 25;
+  int s1 = 84658;  // seed for the integer RNG
+  int s2 = 63541;  // seed for the floating point RNG
+  double low = -2.0;  double upp = 2.0;  // bounds on values in the A matrix
+  // test setup
+  Eigen::MatrixXd A, b;  // test linear system
+  Eigen::MatrixXd x;  // result
+  int rank; // rank of A, computed by linear solver
+  double err;  // residual error in the solution
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    int n = sns_ik::rng_util::getRngInt(s1, 3, 9);
+    int m = sns_ik::rng_util::getRngInt(0, 3, 9);
+    int p = sns_ik::rng_util::getRngInt(0, 1, 3);
+    A = sns_ik::rng_util::getRngMatrixXd(s2, n, m, low, upp);
+    b = sns_ik::rng_util::getRngMatrixXd(s2, n, p, low, upp);
+    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &err));
+    checkLinearSolve(A, b, x, rank, err, tol);
+    s1 = s2 = 0; // let the RNG automatically increment after the first iteration
+  }
+}
+
+/*************************************************************************************************/
+
+TEST(sns_ik_math_utils, solveLinearSystem_rankDeficient_test)
+{
+  // test parameters
+  double tol = 1e-10;  // tolerance for matrix equality check
+  int nTest = 20;
+  int s1 = 84658;  // seed for the integer RNG
+  int s2 = 63541;  // seed for the floating point RNG
+  double low = -2.0;  double upp = 2.0;  // bounds on values in the A matrix
+  // test setup
+  Eigen::MatrixXd A, b;  // test linear system
+  Eigen::MatrixXd x;  // result
+  int rank; // rank of A, computed by linear solver
+  double err;  // residual error in the solution
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    int n = sns_ik::rng_util::getRngInt(s1, 4, 9);  // number of equations
+    int m = sns_ik::rng_util::getRngInt(0, 4, 9); // number of decision variables
+    int p = sns_ik::rng_util::getRngInt(0, 1, 3);
+    int r = sns_ik::rng_util::getRngInt(0, 1, std::min(n, m));  // rank
+    A = sns_ik::rng_util::getRngMatrixXdRanked(s2, n, m, r);
+    b = sns_ik::rng_util::getRngMatrixXd(s2, n, p, low, upp);
+    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &err));
+    ASSERT_EQ(r, rank);  // check the rank
+    checkLinearSolve(A, b, x, rank, err, tol);
+    s1 = s2 = 0; // let the RNG automatically increment after the first iteration
+  }
+}
+
 
 // Run all the tests that were declared with TEST()
 int main(int argc, char **argv){
