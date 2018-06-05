@@ -2,11 +2,9 @@
  *
  * @brief Linear Solver, used by the SNS-IK velocity IK solvers.
  * @author: Matthew Kelly
- *
- * This class is used to solve linear systems. It is a wrapper for two different internal solvers:
- *   --> psuedo-inverse solver: included for legacy support on Eigen 3.2.0
- *   --> direct linear solver: prefered solver when available. Requries Eigen 3.3.4
- *
+ */
+
+/**
  *    Copyright 2018 Rethink Robotics
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +17,13 @@
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
+ */
+
+/*
+ *
+ * This class is used to solve linear systems. It is a wrapper for two different internal solvers:
+ *   --> psuedo-inverse solver: included for legacy support on Eigen 3.2.0
+ *   --> direct linear solver: prefered solver when available. Requries Eigen 3.3.4
  */
 
 #include "sns_linear_solver.hpp"

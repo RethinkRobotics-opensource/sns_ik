@@ -96,11 +96,11 @@ void qrBlockDecompose(const Eigen::MatrixXd& A,
  * @param b: matrix of size [n, p]
  * @param x: matrix of size [m, p]
  * @param rank: rank of the A
- * @param res: residual error in solution: (A*x-b).squaredNorm()
+ * @param err: residual error in solution: (A*x-b).squaredNorm()
  * @param tol: tolerance for equality checks
  */
 void checkLinearSolve(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
-                     const Eigen::MatrixXd& x, int rank, double res, double tol)
+                     const Eigen::MatrixXd& x, int rank, double err, double tol)
 {
   // check sizes:
   ASSERT_EQ(A.cols(), x.rows());
@@ -108,7 +108,7 @@ void checkLinearSolve(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
   ASSERT_EQ(x.cols(), b.cols());
 
   // Check residual:
-  ASSERT_NEAR(res, (A*x-b).squaredNorm(), tol);
+  ASSERT_NEAR(err, (A*x-b).squaredNorm(), tol);
 
   // Check linear solve:
   int n = A.rows();
@@ -454,15 +454,15 @@ TEST(sns_ik_math_utils, solveLinearSystem_fullRank_test)
   Eigen::MatrixXd A, b;  // test linear system
   Eigen::MatrixXd x;  // result
   int rank; // rank of A, computed by linear solver
-  double res;  // residual error in the solution
+  double err;  // residual error in the solution
   for (int iTest = 0; iTest < nTest; iTest++) {
     int n = sns_ik::rng_util::getRngInt(s1, 3, 9);
     int m = sns_ik::rng_util::getRngInt(0, n, n + 5);
     int p = sns_ik::rng_util::getRngInt(0, 1, 3);
     A = sns_ik::rng_util::getRngMatrixXd(s2, n, m, low, upp);
     b = sns_ik::rng_util::getRngMatrixXd(s2, n, p, low, upp);
-    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &res));
-    checkLinearSolve(A, b, x, rank, res, tol);
+    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &err));
+    checkLinearSolve(A, b, x, rank, err, tol);
     s1 = s2 = 0; // let the RNG automatically increment after the first iteration
   }
 }
@@ -481,7 +481,7 @@ TEST(sns_ik_math_utils, solveLinearSystem_rankDeficient_test)
   Eigen::MatrixXd A, b;  // test linear system
   Eigen::MatrixXd x;  // result
   int rank; // rank of A, computed by linear solver
-  double res;  // residual error in the solution
+  double err;  // residual error in the solution
   for (int iTest = 0; iTest < nTest; iTest++) {
     int n = sns_ik::rng_util::getRngInt(s1, 4, 9);  // number of equations
     int m = sns_ik::rng_util::getRngInt(0, 4, 9); // number of decision variables
@@ -489,9 +489,9 @@ TEST(sns_ik_math_utils, solveLinearSystem_rankDeficient_test)
     int r = sns_ik::rng_util::getRngInt(0, 1, std::min(n, m));  // rank
     A = sns_ik::rng_util::getRngMatrixXdRanked(s2, n, m, r);
     b = sns_ik::rng_util::getRngMatrixXd(s2, n, p, low, upp);
-    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &res));
+    ASSERT_TRUE(sns_ik::solveLinearSystem(A, b, &x, &rank, &err));
     ASSERT_EQ(r, rank);  // check the rank
-    checkLinearSolve(A, b, x, rank, res, tol);
+    checkLinearSolve(A, b, x, rank, err, tol);
     s1 = s2 = 0; // let the RNG automatically increment after the first iteration
   }
 }
