@@ -176,12 +176,12 @@ bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
  * @param b: matrix of size [n, p]
  * @param[out] x: matrix of size [m, p]
  * @param[out, opt] rank: rank of the A
- * @param[out, opt] res: residual error in solution: (A*x-b).squaredNorm()
+ * @param[out, opt] err: residual error in solution: (A*x-b).squaredNorm()
  * @return: true iff successful
  */
 bool solveLinearSystem(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
                        Eigen::MatrixXd* x,
-                       int* rank = nullptr, double* res = nullptr);
+                       int* rank = nullptr, double* err = nullptr);
 
 }  // namespace sns_ik
 

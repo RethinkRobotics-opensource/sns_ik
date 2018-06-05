@@ -286,7 +286,7 @@ bool pseudoInverse(const Eigen::MatrixXd& A, double eps, Eigen::MatrixXd* invA,
 /*************************************************************************************************/
 
 bool solveLinearSystem(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
-                       Eigen::MatrixXd* x, int* rank, double* res)
+                       Eigen::MatrixXd* x, int* rank, double* err)
 {
   // Input validation:
   if (A.rows() != b.rows()) {
@@ -317,8 +317,8 @@ bool solveLinearSystem(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b,
   if (rank) {  // then compute the number of degrees of freedom in the solution
     *rank = solver.rank();
   }
-  if (res) {  // then compute the residual error in the solution
-    *res = (A*(*x) - b).squaredNorm();
+  if (err) {  // then compute the residual error in the solution
+    *err = (A*(*x) - b).squaredNorm();
   }
   return true;
 }
