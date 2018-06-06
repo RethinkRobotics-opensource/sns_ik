@@ -5,6 +5,12 @@ The Saturation in the Null-Space (SNS) Inverse-Kinematics (IK) Library
 implements a collection of algorithms written by Fabrizio Flacco for
 inverting the differential kinematics of a robot.
 
+### Continuous Integration Builds
+
+ROS Indigo | ROS Kinetic | ROS Melodic
+---------- | ----------- | -----------
+[![Build Status](https://travis-ci.org/RethinkRobotics-opensource/sns_ik.svg?branch=indigo-devel)](https://travis-ci.org/RethinkRobotics-opensource/sns_ik) | [![Build Status](https://travis-ci.org/RethinkRobotics-opensource/sns_ik.svg?branch=kinetic-devel)](https://travis-ci.org/RethinkRobotics-opensource/sns_ik) | [![Build Status](https://travis-ci.org/RethinkRobotics-opensource/sns_ik.svg?branch=melodic-devel)](https://travis-ci.org/RethinkRobotics-opensource/sns_ik) |
+
 ## What problems are solved by this library?
 
 The SNS-IK library is a library that is designed to compute fast solutions to

@@ -1,0 +1,19 @@
+# This config file for Travis CI utilizes
+sudo: required
+dist: trusty
+services:
+  - docker
+language: cpp
+cache: ccache
+compiler: gcc
+
+notifications:
+  email:
+    recipients:
+      - git@ianthe.engineer
+env:
+  matrix:
+    - ROS_DISTRO=indigo ROS_REPO=ros
+    - ROS_DISTRO=indigo ROS_REPO=ros-shadow-fixed
+script:
+  - .travis_ci/travis.sh
