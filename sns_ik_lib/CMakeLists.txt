@@ -33,11 +33,6 @@ catkin_package(
 include_directories(include utilities ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS})
 
-# library for private utilities
-add_library(sns_ik_util
-            utilities/sns_ik_math_utils.cpp
-            utilities/sns_linear_solver.cpp)
-
 # library for public API
 add_library(sns_ik
             src/fosns_velocity_ik.cpp
@@ -46,8 +41,10 @@ add_library(sns_ik
             src/osns_velocity_ik.cpp
             src/sns_ik.cpp
             src/sns_position_ik.cpp
-            src/sns_velocity_ik.cpp)
-target_link_libraries(sns_ik sns_ik_util ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+            src/sns_velocity_ik.cpp
+            utilities/sns_ik_math_utils.cpp
+            utilities/sns_linear_solver.cpp)
+target_link_libraries(sns_ik ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 # install the public API
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
