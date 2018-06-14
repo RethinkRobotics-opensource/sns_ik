@@ -1,20 +1,20 @@
 function [ddq, s, exitCode] = snsIk_acc_rr(ddqLow, ddqUpp, ddxGoal, J, dJdq)
 % [ddq, s, exitCode] = snsIk_acc_rr(ddqLow, ddqUpp, ddxGoal, J, dJdq)
 %
-% This function implements the basic QP version of the SNS-IK velocity
+% This function implements the basic version of the SNS-IK acceleration
 % solver.
 %
 % INPUTS:
 %   ddqLow: lower limit for joint acceleration
 %   ddqUpp: upper limit for joint acceleration
-%   ddxGoal: task-space velocity
+%   ddxGoal: task-space acceleration
 %   J: jacoabian mapping joint space to task space
 %   dJdq = dJ * dq
 %       dJ = time-derivative of the task jacobian
 %       dq = current joint velocity
 %
 % OUTPUTS:
-%   ddq = joint velocity solution with maximum task scale factor
+%   ddq = joint acceleration solution with maximum task scale factor
 %   s = task scale factor [0, 1]
 %   exitCode    (1 == success)
 %
@@ -25,6 +25,22 @@ function [ddq, s, exitCode] = snsIk_acc_rr(ddqLow, ddqUpp, ddxGoal, J, dJdq)
 % This function is a modification of the basic SNS-IK algorithm that is
 % presented in the original SNS-IK papers. It was developed by Andy Park at
 % Rethink Robotics in June 2018.
+%
+%
+% LICENSE:
+%
+%    Copyright 2018 Rethink Robotics
+%
+%    Licensed under the Apache License, Version 2.0 (the "License");
+%    you may not use this file except in compliance with the License.
+%    You may obtain a copy of the License at
+%    http://www.apache.org/licenses/LICENSE-2.0
+%
+%    Unless required by applicable law or agreed to in writing, software
+%    distributed under the License is distributed on an "AS IS" BASIS,
+%    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%    See the License for the specific language governing permissions and
+%    limitations under the License.
 %
 
 % TODO: input validation
@@ -42,7 +58,7 @@ limitExceeded = true;
 while limitExceeded == true
     limitExceeded = false;
     ddq = ddqNull + pinv(J*W) * (ddxGoal -dJdq - J*ddqNull);
-    
+
     if any(ddq < (ddqLow - tol)) || any(ddq > (ddqUpp + tol))
         limitExceeded = true;
     end
@@ -78,10 +94,10 @@ while limitExceeded == true
         Wstar = W;
         ddqNullStar = ddqNull;
     end
-    
+
     W(jntIdx, jntIdx) = 0;
     ddqNull(jntIdx) = min(max(ddqLow(jntIdx), ddq(jntIdx)), ddqUpp(jntIdx));
-    
+
     if rank(J*W) < nTask
         s = sStar;
         W = Wstar;
@@ -100,21 +116,21 @@ function taskScale = FindScaleFactor(low, upp, a)
 % TODO: documentation
 
 if a < 0 && low < 0
-    
+
     if a < low
         taskScale = low / a;
     else
         taskScale = 1.0;
     end
-    
+
 elseif a > 0 && upp > 0
-    
+
     if upp < a
         taskScale = upp / a;
     else
         taskScale = 1.0;
     end
-    
+
 else
     taskScale = 0.0;
 end

@@ -1,7 +1,7 @@
 function [dq, s, exitCode] = snsIk_vel_basic(dqLow, dqUpp, dx, J)
 % [dq, s, exitCode] = snsIk_vel_basic(dqLow, dqUpp, dx, J)
 %
-% This function implements the basic QP version of the SNS-IK velocity
+% This function implements the basic version of the SNS-IK velocity
 % solver.
 %
 % INPUTS:
@@ -22,12 +22,28 @@ function [dq, s, exitCode] = snsIk_vel_basic(dqLow, dqUpp, dx, J)
 %  --> This implementation is as close to the standard SNS-IK algorithm as
 %      is possible, outlined in the main SNS-IK paper.
 %
+%
+% LICENSE:
+%
+%    Copyright 2018 Rethink Robotics
+%
+%    Licensed under the Apache License, Version 2.0 (the "License");
+%    you may not use this file except in compliance with the License.
+%    You may obtain a copy of the License at
+%    http://www.apache.org/licenses/LICENSE-2.0
+%
+%    Unless required by applicable law or agreed to in writing, software
+%    distributed under the License is distributed on an "AS IS" BASIS,
+%    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%    See the License for the specific language governing permissions and
+%    limitations under the License.
+%
 
 % TODO: input validation
 % TODO: return optimization status
 
-% This implementation is not reliable, and in many cases will fail to 
-% compute the correct solution. It is unclear whether this is a bug in 
+% This implementation is not reliable, and in many cases will fail to
+% compute the correct solution. It is unclear whether this is a bug in
 % this implementation, or a bug in the algorithm that is described in the
 % paper. See snsIk_vel_rr() for a modified version of this algorithm that
 % does pass all of the unit tests.
