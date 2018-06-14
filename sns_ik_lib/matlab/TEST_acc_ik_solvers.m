@@ -32,3 +32,7 @@ result.QP = runTest_snsIk_acc(solver, nTest, optTol, cstTol, fid);
 
 %% SNS-IK solver, Rethink Robotics revised algorithm (Andy Park)
 result.rr = runTest_snsIk_acc(@snsIk_acc_rr, nTest, optTol, cstTol, fid);
+
+%% SNS-IK solver, Rethink Robotics revised optimal algorithm (Andy Park)
+result.opt = runTest_snsIk_acc(@snsIk_acc_opt, nTest, optTol, cstTol, fid);
+

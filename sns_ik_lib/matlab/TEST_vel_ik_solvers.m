@@ -34,6 +34,9 @@ result.QP = runTest_snsIk_vel(solver, nTest, optTol, cstTol, fid);
 %% SNS-IK solver, Rethink Robotics revised algorithm (Andy Park)
 result.rr = runTest_snsIk_vel(@snsIk_vel_rr, nTest, optTol, cstTol, fid);
 
+%% SNS-IK solver, Rethink Robotics revised optimal algorithm (Andy Park)
+result.opt = runTest_snsIk_vel(@snsIk_vel_opt, nTest, optTol, cstTol, fid);
+
 %% SNS-IK solver, original SNS-IK algorithm
 % % This solver currently does not pass the test
 % result.basic = runTest_snsIk_vel(@snsIk_vel_basic, nTest, optTol, cstTol, fid);
