@@ -13,3 +13,6 @@ nTest = 100;
 alpha = 1e-4;  % trade-off between minimum joint speed and max task scale
 solver = @(dqLow, dqUpp, dx, J, dJdq)( snsIk_acc_QP(dqLow, dqUpp, dx, J, dJdq, alpha) );
 result.QP = runTest_snsIk_acc(solver, nTest, optTol, cstTol, fid);
+
+%% SNS-IK solver, Rethink Robotics revised algorithm (Andy Park)
+result.rr = runTest_snsIk_acc(@snsIk_acc_rr, nTest, optTol, cstTol, fid);

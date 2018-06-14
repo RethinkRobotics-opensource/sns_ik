@@ -16,7 +16,7 @@ solver = @(dqLow, dqUpp, dx, J)( snsIk_vel_QP(dqLow, dqUpp, dx, J, alpha) );
 result.QP = runTest_snsIk_vel(solver, nTest, optTol, cstTol, fid);
 
 %% SNS-IK solver, Rethink Robotics revised algorithm (Andy Park)
-result.andy = runTest_snsIk_vel(@snsIk_vel_rr, nTest, optTol, cstTol, fid);
+result.rr = runTest_snsIk_vel(@snsIk_vel_rr, nTest, optTol, cstTol, fid);
 
 %% SNS-IK solver, original SNS-IK algorithm
 % % This solver currently does not pass the test
