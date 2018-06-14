@@ -1,21 +1,17 @@
+% Copyright 2018 Rethink Robotics
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+% http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
+
 % This script sets up an runs a set of unit tests on the acceleration IK solvers.
-%
-%
-% LICENSE:
-%
-%    Copyright 2018 Rethink Robotics
-%
-%    Licensed under the Apache License, Version 2.0 (the "License");
-%    you may not use this file except in compliance with the License.
-%    You may obtain a copy of the License at
-%    http://www.apache.org/licenses/LICENSE-2.0
-%
-%    Unless required by applicable law or agreed to in writing, software
-%    distributed under the License is distributed on an "AS IS" BASIS,
-%    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-%    See the License for the specific language governing permissions and
-%    limitations under the License.
-%
 
 clc; clear;
 
@@ -35,4 +31,3 @@ result.rr = runTest_snsIk_acc(@snsIk_acc_rr, nTest, optTol, cstTol, fid);
 
 %% SNS-IK solver, Rethink Robotics revised optimal algorithm (Andy Park)
 result.opt = runTest_snsIk_acc(@snsIk_acc_opt, nTest, optTol, cstTol, fid);
-
