@@ -46,6 +46,7 @@ add_library(sns_ik
             src/osns_velocity_ik.cpp
             src/sns_ik.cpp
             src/sns_position_ik.cpp
+            src/sns_vel_ik_base.cpp
             src/sns_velocity_ik.cpp)
 target_link_libraries(sns_ik sns_ik_util ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
@@ -65,11 +66,17 @@ if (CATKIN_ENABLE_TESTING)
   # unit tests
   catkin_add_gtest(rng_utilities_test test/rng_utilities_test.cpp)
   target_link_libraries(rng_utilities_test sns_ik sns_ik_test ${catkin_LIBRARIES})
+
   catkin_add_gtest(sns_ik_math_utils_test test/sns_ik_math_utils_test.cpp)
   target_link_libraries(sns_ik_math_utils_test sns_ik sns_ik_test ${catkin_LIBRARIES})
+
   catkin_add_gtest(sns_ik_pos_test test/sns_ik_pos_test.cpp)
   target_link_libraries(sns_ik_pos_test sns_ik sns_ik_test ${catkin_LIBRARIES})
+
   catkin_add_gtest(sns_ik_vel_test test/sns_ik_vel_test.cpp)
   target_link_libraries(sns_ik_vel_test sns_ik sns_ik_test ${catkin_LIBRARIES})
+
+  catkin_add_gtest(sns_vel_ik_base_test test/sns_vel_ik_base_test.cpp)
+  target_link_libraries(sns_vel_ik_base_test sns_ik sns_ik_test sns_ik_util ${catkin_LIBRARIES})
 
 endif()
