@@ -27,9 +27,6 @@
 
 namespace sns_ik {
 
-// Nice formatting for printing eigen arrays.
-static const Eigen::IOFormat EigArrFmt4(4, 0, ", ", "\n", "[", "]");
-
 /*
  * The code of the SNS-IK solver relies on a linear solver. If the linear system is infeasible,
  * then the solver will return the minimum-norm solution with a non-zero (positive) residual.
@@ -58,40 +55,6 @@ static const double MAXIMUM_FINITE_SCALE_FACTOR = 1e10;
 
 // Tolerance for checks on the velocity limits
 static const double VELOCITY_BOUND_TOLERANCE = 1e-8;
-
-/*************************************************************************************************
- *                                Private Functions                                              *
- *************************************************************************************************/
-
-/*
- * This algorithm computes the scale factor that is associated with a given joint, but considering
- * both the sensativity of the joint (a) and the distance to the upper and lower limits.
- * @param low: lower margin
- * @param upp: upper margin
- * @param a: margin scale factor
- * @return: joint scale factor
- */
-double fingScaleFactor(double low, double upp, double a)
-{
-  if (std::abs(a) > MAXIMUM_FINITE_SCALE_FACTOR) {
-    return 0.0;
-  }
-  if (a < 0.0 && low < 0.0) {
-    if (a < low) {
-      return low / std::min(a, -MINIMUM_FINITE_SCALE_FACTOR);
-    } else {
-      return 1.0;  // feasible without scaling!
-    }
-  } else if (a > 0.0 && upp > 0.0) {
-    if (upp < a) {
-      return upp / std::max(a, MINIMUM_FINITE_SCALE_FACTOR);
-    } else {
-      return 1.0;  // feasible without scaling!
-    }
-  } else {
-    return 0.0;  // infeasible
-  }
-}
 
 /*************************************************************************************************
  *                                 Public Methods                                                *
@@ -150,27 +113,31 @@ bool SnsVelIkBase::setVelBnd(const Eigen::ArrayXd& dqLow, const Eigen::ArrayXd& 
 
 /*************************************************************************************************/
 
-SnsIkExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx,
+SnsVelIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx,
                                Eigen::VectorXd* dq, double* taskScale)
 {
   // Input validation
-  if (!dq) { ROS_ERROR("dq is nullptr!"); return SnsIkExitCode::BadUserInput; }
-  if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return SnsIkExitCode::BadUserInput; }
+  if (!dq) { ROS_ERROR("dq is nullptr!"); return ExitCode::BadUserInput; }
+  if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return ExitCode::BadUserInput; }
   int nTask = dx.size();
   if (nTask <= 0) {
     ROS_ERROR("Bad Input: dx.size() > 0 is required!");
-    return SnsIkExitCode::BadUserInput;
+    return ExitCode::BadUserInput;
   }
   if (int(J.rows()) != nTask) {
     ROS_ERROR("Bad Input: J.rows() == dx.size() is required!");
-    return SnsIkExitCode::BadUserInput;
+    return ExitCode::BadUserInput;
   }
   if (int(J.cols()) != nJnt_) {
     ROS_ERROR("Bad Input: J.cols() == nJnt is required!");
-    return SnsIkExitCode::BadUserInput;
+    return ExitCode::BadUserInput;
   }
 
-  // Local variable initialization:
+  /*
+   * W is a diagonal selection matrix which indicates free joints.
+   * The entry of 1 indicates the corresponding joint is free for the task,
+   * and 0 indicates the corresponding joint is saturated.
+   */
   Eigen::MatrixXd W = Eigen::MatrixXd::Identity(nJnt_, nJnt_);  // null-space selection matrix
   Eigen::VectorXd dqNull = Eigen::VectorXd::Zero(nJnt_);  // velocity in the null-space
   *taskScale = 1.0;  // task scale (assume feasible solution until proven otherwise)
@@ -180,13 +147,12 @@ SnsIkExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorX
   Eigen::MatrixXd bestW;  // temp variable to track W before it has been accepted
   Eigen::VectorXd bestDqNull;  // temp variable to track dqNull between iterations
 
-  // TODO: see if this can be moved into the main loop, rather than calling here and again at the end
   // Set the linear solver for this iteration:
   Eigen::MatrixXd JW = J*W;
   linSolver_ = SnsLinearSolver(JW);
   if(linSolver_.info() != Eigen::ComputationInfo::Success) {
     ROS_ERROR("Solver failed to decompose the combined sparse matrix!");
-    return SnsIkExitCode::InternalError;
+    return ExitCode::InternalError;
   }
 
   // Keep track of which joints are saturated:
@@ -199,38 +165,38 @@ SnsIkExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorX
     // Compute the joint velocity given current saturation set:
     if (!solveProjectionEquation(J, JW, dqNull, dx, dq, &resErr)) {
       ROS_ERROR("Failed to solve projection equation!");
-      return SnsIkExitCode::InternalError;
+      return ExitCode::InternalError;
     }
     if (resErr > LIN_SOLVE_RESIDUAL_TOL) { // check that the solver found a feasible solution
       ROS_ERROR("Task is infeasible!  resErr: %e > tol: %e", resErr, LIN_SOLVE_RESIDUAL_TOL);
-      return SnsIkExitCode::InfeasibleTask;
+      return ExitCode::InfeasibleTask;
     }
 
     // Check to see if the solution satisfies the joint limits
     if (checkVelBnd(*dq)) { // Done! solution is feasible and task scale is at maximum value
-      return SnsIkExitCode::Success;
+      return ExitCode::Success;
     }  //  else joint velocity is infeasible: saturate joint and then try again
 
     // Compute the task scaling factor
     double tmpScale;
     int jntIdx;
-    SnsIkExitCode taskScaleExit = computeTaskScalingFactor(J, JW, dx, *dq, jointIsFree, &tmpScale, &jntIdx, &resErr);
+    ExitCode taskScaleExit = computeTaskScalingFactor(J, JW, dx, *dq, jointIsFree, &tmpScale, &jntIdx, &resErr);
     if (resErr > LIN_SOLVE_RESIDUAL_TOL) { // check that the solver found a feasible solution
       ROS_ERROR("Failed to compute task scale!  resErr: %e > tol: %e", resErr, LIN_SOLVE_RESIDUAL_TOL);
-      return SnsIkExitCode::InfeasibleTask;
+      return ExitCode::InfeasibleTask;
     }
-    if (taskScaleExit != SnsIkExitCode::Success) {
+    if (taskScaleExit != ExitCode::Success) {
       ROS_ERROR("Failed to compute task scale!");
       return taskScaleExit;
     }
     if (tmpScale < MINIMUM_FINITE_SCALE_FACTOR) { // check that the solver found a feasible solution
       ROS_ERROR("Task is infeasible! scaling --> zero");
-      return SnsIkExitCode::InfeasibleTask;
+      return ExitCode::InfeasibleTask;
     }
 
     if (tmpScale > 1.0) {
       ROS_ERROR("Task scale is %f, which is more than 1.0", tmpScale);
-      return SnsIkExitCode::InternalError;
+      return ExitCode::InternalError;
     }
 
     // If the task scale exceeds previous, then cache the results as "best so far"
@@ -249,7 +215,7 @@ SnsIkExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorX
       dqNull(jntIdx) = dqLow_(jntIdx);
     } else {
       ROS_ERROR("Internal error in computing task scale!  dq(%d) = %f", jntIdx, (*dq)(jntIdx));
-      return SnsIkExitCode::InternalError;
+      return ExitCode::InternalError;
     }
 
     // Update the linear solver
@@ -257,7 +223,7 @@ SnsIkExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorX
     linSolver_ = SnsLinearSolver(JW);
     if(linSolver_.info() != Eigen::ComputationInfo::Success) {
       ROS_ERROR("Solver failed to decompose the combined sparse matrix!");
-      return SnsIkExitCode::InternalError;
+      return ExitCode::InternalError;
     }
 
     // Test the rank:
@@ -271,28 +237,28 @@ SnsIkExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::VectorX
       linSolver_ = SnsLinearSolver(JW);
       if(linSolver_.info() != Eigen::ComputationInfo::Success) {
         ROS_ERROR("Solver failed to decompose the combined sparse matrix!");
-        return SnsIkExitCode::InternalError;
+        return ExitCode::InternalError;
       }
 
       // Compute the joint velocity given current saturation set:
       Eigen::VectorXd dxScaled = (dx.array() * (*taskScale)).matrix();
       if (!solveProjectionEquation(J, JW, dqNull, dxScaled, dq, &resErr)) {
         ROS_ERROR("Failed to solve projection equation!");
-        return SnsIkExitCode::InternalError;
+        return ExitCode::InternalError;
       }
       if (resErr > LIN_SOLVE_RESIDUAL_TOL) { // check that the solver found a feasible solution
         ROS_ERROR("Task is infeasible!  resErr: %e > tol: %e", resErr, LIN_SOLVE_RESIDUAL_TOL);
-        return SnsIkExitCode::InfeasibleTask;
+        return ExitCode::InfeasibleTask;
       }
 
-      return SnsIkExitCode::Success;  // DONE
+      return ExitCode::Success;  // DONE
 
     } // end rank test
 
   }  // end main solver loop
 
   ROS_ERROR("Internal Error: reached maximum iteration in solver main loop!");
-  return SnsIkExitCode::InternalError;
+  return ExitCode::InternalError;
 }
 
 /*************************************************************************************************
@@ -342,24 +308,24 @@ bool SnsVelIkBase::solveProjectionEquation(const Eigen::MatrixXd& J, const Eigen
 
 /*************************************************************************************************/
 
-SnsIkExitCode SnsVelIkBase::computeTaskScalingFactor(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
+SnsVelIkBase::ExitCode SnsVelIkBase::computeTaskScalingFactor(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
                                             const Eigen::VectorXd& dx, const Eigen::VectorXd& dq,
                                             const std::vector<bool>& jntIsFree,
                                             double* taskScale, int* jntIdx, double* resErr)
 {
-  if (J.cols() != JW.cols()) { ROS_ERROR("Bad Input!  J.cols() != JW.cols()"); return SnsIkExitCode::BadUserInput; }
-  if (J.rows() != JW.rows()) { ROS_ERROR("Bad Input!  J.rows() != JW.rows()"); return SnsIkExitCode::BadUserInput; }
-  if (dx.size() != J.rows()) { ROS_ERROR("Bad Input!  dx.size() != J.rows()"); return SnsIkExitCode::BadUserInput; }
-  if (dq.size() != J.cols()) { ROS_ERROR("Bad Input!  dq.size() != J.cols()"); return SnsIkExitCode::BadUserInput; }
-  if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return SnsIkExitCode::BadUserInput; }
-  if (!jntIdx) { ROS_ERROR("jntIdx is nullptr!"); return SnsIkExitCode::BadUserInput; }
-  if (!resErr) { ROS_ERROR("resErr is nullptr!"); return SnsIkExitCode::BadUserInput; }
+  if (J.cols() != JW.cols()) { ROS_ERROR("Bad Input!  J.cols() != JW.cols()"); return ExitCode::BadUserInput; }
+  if (J.rows() != JW.rows()) { ROS_ERROR("Bad Input!  J.rows() != JW.rows()"); return ExitCode::BadUserInput; }
+  if (dx.size() != J.rows()) { ROS_ERROR("Bad Input!  dx.size() != J.rows()"); return ExitCode::BadUserInput; }
+  if (dq.size() != J.cols()) { ROS_ERROR("Bad Input!  dq.size() != J.cols()"); return ExitCode::BadUserInput; }
+  if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return ExitCode::BadUserInput; }
+  if (!jntIdx) { ROS_ERROR("jntIdx is nullptr!"); return ExitCode::BadUserInput; }
+  if (!resErr) { ROS_ERROR("resErr is nullptr!"); return ExitCode::BadUserInput; }
 
   // Compute "a" and "b" from the paper.   (J*W*a = dx)
   Eigen::VectorXd a = linSolver_.solve(dx);
   if(linSolver_.info() != Eigen::ComputationInfo::Success) {
     ROS_ERROR("Failed to solve projection equations!");
-    return SnsIkExitCode::InternalError;
+    return ExitCode::InternalError;
   }
   *resErr = (JW*a - dx).squaredNorm();
   Eigen::ArrayXd b = (dq - a).array();
@@ -370,7 +336,7 @@ SnsIkExitCode SnsVelIkBase::computeTaskScalingFactor(const Eigen::MatrixXd& J, c
   Eigen::ArrayXd uppMargin = (dqUpp_ - b);
   for (int i = 0; i < nJnt_; i++) {
     if (jntIsFree[i]) {
-      jntScaleFactorArr(i) = fingScaleFactor(lowMargin(i), uppMargin(i), a(i));
+      jntScaleFactorArr(i) = SnsVelIkBase::findScaleFactor(lowMargin(i), uppMargin(i), a(i));
     } else {  // joint is constrained
       jntScaleFactorArr(i) = POS_INF;
     }
@@ -378,14 +344,38 @@ SnsIkExitCode SnsVelIkBase::computeTaskScalingFactor(const Eigen::MatrixXd& J, c
 
   // Compute the most critical scale factor and corresponding joint index
   *jntIdx = 0;  // index of the most critical joint
-  *taskScale = jntScaleFactorArr(0);  // minimum value of jntScaleFactorArr()
+  *taskScale = jntScaleFactorArr(*jntIdx);  // minimum value of jntScaleFactorArr()
   for (int i = 1; i < nJnt_; i++) {
     if (jntScaleFactorArr(i) < *taskScale) {
       *jntIdx = i;
       *taskScale = jntScaleFactorArr(i);
     }
   }
-  return SnsIkExitCode::Success;
+  return ExitCode::Success;
+}
+
+/*************************************************************************************************/
+
+double SnsVelIkBase::findScaleFactor(double low, double upp, double a)
+{
+  if (std::abs(a) > MAXIMUM_FINITE_SCALE_FACTOR) {
+    return 0.0;
+  }
+  if (a < 0.0 && low < 0.0) {
+    if (a < low) {
+      return low / std::min(a, -MINIMUM_FINITE_SCALE_FACTOR);
+    } else {
+      return 1.0;  // feasible without scaling!
+    }
+  } else if (a > 0.0 && upp > 0.0) {
+    if (upp < a) {
+      return upp / std::max(a, MINIMUM_FINITE_SCALE_FACTOR);
+    } else {
+      return 1.0;  // feasible without scaling!
+    }
+  } else {
+    return 0.0;  // infeasible
+  }
 }
 
 /*************************************************************************************************/

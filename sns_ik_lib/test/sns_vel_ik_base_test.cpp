@@ -73,8 +73,8 @@ TEST(sns_vel_ik_base, basic_no_limits)
     // solve
     sns_ik::SnsVelIkBase::uPtr ikSolver = sns_ik::SnsVelIkBase::create(nJoint);
     ASSERT_TRUE(ikSolver.get() != nullptr);
-    sns_ik::SnsIkExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
-    ASSERT_TRUE(exitCode == sns_ik::SnsIkExitCode::Success);
+    sns_ik::SnsVelIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
+    ASSERT_TRUE(exitCode == sns_ik::SnsVelIkBase::ExitCode::Success);
 
     // check requirements
     ASSERT_LE(taskScale, 1.0 + tol);
@@ -91,23 +91,24 @@ TEST(sns_vel_ik_base, basic_no_limits)
 TEST(sns_vel_ik_base, basic_with_limits)
 {
   sns_ik::rng_util::setRngSeed(65444, 24635);  // set the initial seed for the random number generators
-  int nTest = 1000;
+  int nTest = 10000;
   double tol = 1e-10;
   int nPass = 0;
   int nFail = 0;
+  int nSubOpt = 0;
   double meanSolveTime = 0.0;
   for (int iTest = 0; iTest < nTest; iTest++) {
     // generate a test problem
     int nTask = sns_ik::rng_util::getRngInt(0, 1, 6);
     int nJoint = sns_ik::rng_util::getRngInt(0, nTask, nTask + 4);
-    Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -1.0, 1.0);
-    Eigen::ArrayXd dqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -5.0, -1.0);
-    Eigen::ArrayXd dqUpp = sns_ik::rng_util::getRngVectorXd(0, nJoint, 1.0, 5.0);
+    Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -2.0, 2.0);
+    Eigen::ArrayXd dqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -5.0, -0.5);
+    Eigen::ArrayXd dqUpp = sns_ik::rng_util::getRngVectorXd(0, nJoint, 0.5, 5.0);
     Eigen::VectorXd dqTest = sns_ik::rng_util::getRngArrBndXd(0, dqLow, dqUpp).matrix();
 
     // create a task that is feasible with scaling
     Eigen::VectorXd dxFeas = J*dqTest; // this task velocity is feasible by definition
-    double taskScaleMin = sns_ik::rng_util::getRngDouble(0, 0.4, 1.2);
+    double taskScaleMin = sns_ik::rng_util::getRngDouble(0, 0.2, 1.2);
     taskScaleMin = std::min(1.0, taskScaleMin);  // clamp max value to 1.0
     Eigen::VectorXd dx = dxFeas / taskScaleMin;
 
@@ -117,15 +118,15 @@ TEST(sns_vel_ik_base, basic_with_limits)
     sns_ik::SnsVelIkBase::uPtr ikSolver = sns_ik::SnsVelIkBase::create(dqLow, dqUpp);
     ASSERT_TRUE(ikSolver.get() != nullptr);
     ros::Time startTime = ros::Time::now();
-    sns_ik::SnsIkExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
+    sns_ik::SnsVelIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
     double solveTime = (ros::Time::now() - startTime).toSec();
     meanSolveTime += solveTime;
 
-    if (exitCode == sns_ik::SnsIkExitCode::Success) {
+    if (exitCode == sns_ik::SnsVelIkBase::ExitCode::Success) {
       nPass++;
       // check requirements
       ASSERT_LE(taskScale, 1.0 + tol);
-      ASSERT_GE(taskScale, taskScaleMin - tol);
+      if (taskScale < taskScaleMin - tol) nSubOpt++;
       checkEqualVector(taskScale * dx, J * dq, tol);
       checkVectorLimits(dqLow, dq, dqUpp, tol);
     } else {
@@ -134,7 +135,8 @@ TEST(sns_vel_ik_base, basic_with_limits)
     }
   }
   meanSolveTime /= static_cast<double>(nPass + nFail);
-  ROS_INFO("Pass: %d  --  Fail: %d  --  Mean solve time: %.4f ms", nPass, nFail, meanSolveTime*1000.0);
+  ROS_INFO("Pass: %d  --  Fail: %d  --  nSubOpt: %d  --  Mean solve time: %.4f ms",
+           nPass, nFail, nSubOpt, meanSolveTime*1000.0);
 }
 
 /*************************************************************************************************/

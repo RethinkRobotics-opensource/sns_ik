@@ -31,13 +31,6 @@
 
 namespace sns_ik {
 
-enum class SnsIkExitCode {
-  Success,  // successfully solver the optimization problem
-  BadUserInput,  // user input failed basic checks (eg. inconsistent matrix size)
-  InfeasibleTask,  // there is no feasible solution to the primary task
-  InternalError  // there was an internal error in the solver (should never happen...)
-};
-
 class SnsVelIkBase {
 
 public:
@@ -45,6 +38,13 @@ public:
   // Smart pointer typedefs. Note: all derived classes MUST override these smart pointers.
   typedef std::shared_ptr<SnsVelIkBase> Ptr;
   typedef std::unique_ptr<SnsVelIkBase> uPtr;
+
+  enum class ExitCode {
+    Success,  // successfully solved the optimization problem
+    BadUserInput,  // user input failed basic checks (eg. inconsistent matrix size)
+    InfeasibleTask,  // there is no feasible solution to the primary task
+    InternalError  // there was an internal error in the solver (should never happen...)
+  };
 
   /**
    * Create a default solver with nJnt joints and no bounds on joint velocity
@@ -54,7 +54,7 @@ public:
   static std::unique_ptr<SnsVelIkBase> create(int nJnt);
 
   /**
-   * Create a default solver with nJnt joints and infinite bounds on the joint velocity.
+   * Create a default solver with constant bounds on the joint velocity
    * @param dqLow: lower bound on the velocity of each joint
    * @param dqUpp: upper bound on the velocity of each joint
    * @return: velocity solver iff successful, nullptr otherwise
@@ -100,7 +100,7 @@ public:
    * @return: Success: the algorithm worked correctly and satisfied the problem statement
    *          otherwise: something went wrong
    */
-  SnsIkExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx,
+  ExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx,
                       Eigen::VectorXd* dq, double* taskScale);
 
 
@@ -154,7 +154,6 @@ protected:
    * @param JW: J*W = Jacobian projected onto the active joints. Size = [nTask, nJoint]
    * @param dx: task velocity vector. Length = nTask
    * @param dq: joint velocity. Length = nJoint
-   * @param dq: joint velocity. Length = nJoint
    * @param jntIsFree: which joints are free to saturate? Length = nJoint
    * @param[out] taskScale: task scale factor
    * @param[out] jntIdx: index corresponding to the most critical joint that is free
@@ -162,10 +161,19 @@ protected:
    * @return: true --> success!
    *          false --> invalid input or other error
    */
-  SnsIkExitCode computeTaskScalingFactor(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
+  ExitCode computeTaskScalingFactor(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
                                 const Eigen::VectorXd& dx, const Eigen::VectorXd& dq,
                                 const std::vector<bool>& jntIsFree,
                                  double* taskScale, int* jntIdx, double* resErr);
+  /*
+   * This algorithm computes the scale factor that is associated with a given joint, but considering
+   * both the sensativity of the joint (a) and the distance to the upper and lower limits.
+   * @param low: lower margin
+   * @param upp: upper margin
+   * @param a: margin scale factor
+   * @return: joint scale factor
+   */
+  static double findScaleFactor(double low, double upp, double a);
 
 private:
 
