@@ -23,6 +23,13 @@ namespace rng_util {
 
 /*************************************************************************************************/
 
+void setRngSeed(int seedDouble, int seedInt) {
+  getRngDouble(seedDouble);
+  getRngInt(seedInt);
+}
+
+/*************************************************************************************************/
+
 double getRngDouble(int seed, double low, double upp) {
   static std::mt19937 gen;  // mersenne-twister pseudo-random number generator
   if (upp <= low) { return low; } // catch edge case
@@ -70,6 +77,20 @@ Eigen::MatrixXd getRngMatrixXdRanked(int seed, int nRows, int nCols, int nRank)
   Eigen::MatrixXd X = A * B;
   return X;
 }
+
+/*************************************************************************************************/
+
+Eigen::ArrayXd getRngArrBndXd(int seed, const Eigen::ArrayXd& low, const Eigen::ArrayXd& upp)
+{
+  int n = std::min(low.size(), upp.size());
+  Eigen::ArrayXd data(n);
+  for (int i = 0; i < n; i++) {
+    data(i) = getRngDouble(seed, low(i), upp(i));
+    seed = 0;  // automatically update RNG after first call
+  }
+  return data;
+}
+
 /*************************************************************************************************/
 
 KDL::JntArray getRngBoundedJoints(int seed, const KDL::JntArray& qLow, const KDL::JntArray& qUpp)

@@ -36,6 +36,15 @@ namespace rng_util {
 /*************************************************************************************************/
 
 /*
+ * Set the seeds that are used for both random number generators in this library.
+ * @param seedDouble: the seed that is used for generating double precision floating point data
+ * @param seedInt: the seed that is used for generating int data
+ */
+void setRngSeed(int seedDouble, int seedInt);
+
+/*************************************************************************************************/
+
+/*
  * Generate a pseudo-random value on the range [low, upp], given a starting seed.
  * Given the same input seed, it will return the same output.
  * The distribution is uniform between the specified bounds.
@@ -99,6 +108,37 @@ Eigen::MatrixXd getRngMatrixXd(int seed, int nRows, int nCols,
  * @return: a randomly generated matrix that is at most of rank nRank
  */
 Eigen::MatrixXd getRngMatrixXdRanked(int seed, int nRows, int nCols, int nRank);
+
+/*************************************************************************************************/
+
+/*
+ * Generate a pseudorandom matrix with elements on a specified range and a specified rank.
+ * This is used to test functions that operate on rank-deficient matricies.
+ * Note: the values in the matrix are on the order of one, but not strictly bounded.
+ * @param seed: seed to pass to the RNG on each call
+ *              if seed == 0, then seed is ignored
+ * @param nRows: number of elements in the output data (must be positive)
+ * @param[opt] low: lower bound on values in the data  (default: 0.0)
+ * @param[opt] upp: upper bound on values in the data  (default: 1.0)
+ * @return: a randomly generated vector
+ */
+Eigen::VectorXd getRngVectorXd(int seed, int nRows, double low = 0.0, double upp = 1.0) {
+  return getRngMatrixXd(seed, nRows, 1, low, upp).col(0);
+}
+
+/*************************************************************************************************/
+
+/*
+ * Generate a pseudorandom matrix with elements on a specified range and a specified rank.
+ * This is used to test functions that operate on rank-deficient matricies.
+ * Note: the values in the matrix are on the order of one, but not strictly bounded.
+ * @param seed: seed to pass to the RNG on each call
+ *              if seed == 0, then seed is ignored
+ * @param low: lower bound on data
+ * @param upp: upper bound on data
+ * @return: data such that: low <= data <= upp
+ */
+Eigen::ArrayXd getRngArrBndXd(int seed, const Eigen::ArrayXd& low, const Eigen::ArrayXd& upp);
 
 /*************************************************************************************************/
 
