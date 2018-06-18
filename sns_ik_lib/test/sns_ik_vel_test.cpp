@@ -272,8 +272,10 @@ void runSnsVelkTest(int seed, sns_ik::VelocitySolveType solverType) {
  */
 TEST(sns_ik, vel_ik_SNS_test) {
     runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS); }
-TEST(sns_ik, vel_ik_SNS_Optimal_test) {
-    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_Optimal); }
+// FIXME - uncomment to run test. For details, see
+// https://github.com/RethinkRobotics-opensource/sns_ik/issues/87
+// TEST(sns_ik, vel_ik_SNS_Optimal_test) {
+//    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_Optimal); }
 TEST(sns_ik, vel_ik_SNS_OptimalScaleMargin_test) {
     runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_OptimalScaleMargin); }
 TEST(sns_ik, vel_ik_SNS_Fast_test) {
