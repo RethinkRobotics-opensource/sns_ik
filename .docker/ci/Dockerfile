@@ -1,14 +1,14 @@
-# rethinkroboticsopensource/sns-ik:kinetic-ci
+# rethinkroboticsopensource/sns-ik:melodic-ci
 # Sets up a base image to use for running Continuous Integration on Travis
 
-FROM ros:kinetic-ros-base
+FROM ros:melodic-ros-base
 MAINTAINER Ian McMahon git@ianthe.engineer
 
 ENV TERM xterm
 
 # Setup catkin workspace
 ENV CATKIN_WS=/root/ws_sns_ik
-ENV ROS_DISTRO=kinetic
+ENV ROS_DISTRO=melodic
 WORKDIR $CATKIN_WS
 # Continous Integration Setting
 ENV IN_DOCKER 1
