@@ -97,8 +97,8 @@ public:
    * @param[out] taskScale: task scale.  fwdKin(dq) = taskScale*dx
    *                            taskScale == 1.0  --> task was feasible
    *                            taskScale < 1.0  --> task was infeasible and had to be scaled
-   * @return: Success: the algorithm worked correctly and satisfied the problem statement
-   *          otherwise: something went wrong
+   * @return: ExitCode::Success: the algorithm worked correctly and satisfied the problem statement
+   *          otherwise: something went wrong, exit code specifics the type of problem
    */
   ExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx,
                       Eigen::VectorXd* dq, double* taskScale);
@@ -138,9 +138,9 @@ protected:
    * @return: true --> success!
    *          false --> invalid input or other error
    */
-  bool solveProjectionEquation(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
-                               const Eigen::VectorXd& dqNull, const Eigen::VectorXd& dx,
-                               Eigen::VectorXd* dq, double* resErr);
+  ExitCode solveProjectionEquation(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
+                                   const Eigen::VectorXd& dqNull, const Eigen::VectorXd& dx,
+                                   Eigen::VectorXd* dq, double* resErr);
 
   /*
    * This method implements Algorithm 2 (and a bit of Algorithm 1) from the paper:
@@ -158,8 +158,8 @@ protected:
    * @param[out] taskScale: task scale factor
    * @param[out] jntIdx: index corresponding to the most critical joint that is free
    * @param[out] resErr: residual error (norm-squared) in the linear solve
-   * @return: true --> success!
-   *          false --> invalid input or other error
+   * @return: ExitCode::Success: the algorithm worked correctly and satisfied the problem statement
+   *          otherwise: something went wrong, exit code specifics the type of problem
    */
   ExitCode computeTaskScalingFactor(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
                                 const Eigen::VectorXd& dx, const Eigen::VectorXd& dq,

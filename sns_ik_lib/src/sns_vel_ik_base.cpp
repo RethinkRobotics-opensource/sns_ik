@@ -163,7 +163,7 @@ SnsVelIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen
   for (int iter = 0; iter < nJnt_ * MAXIMUM_SOLVER_ITERATION_FACTOR; iter++) {
 
     // Compute the joint velocity given current saturation set:
-    if (!solveProjectionEquation(J, JW, dqNull, dx, dq, &resErr)) {
+    if (solveProjectionEquation(J, JW, dqNull, dx, dq, &resErr) != ExitCode::Success) {
       ROS_ERROR("Failed to solve projection equation!");
       return ExitCode::InternalError;
     }
@@ -242,7 +242,7 @@ SnsVelIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen
 
       // Compute the joint velocity given current saturation set:
       Eigen::VectorXd dxScaled = (dx.array() * (*taskScale)).matrix();
-      if (!solveProjectionEquation(J, JW, dqNull, dxScaled, dq, &resErr)) {
+      if (solveProjectionEquation(J, JW, dqNull, dxScaled, dq, &resErr) != ExitCode::Success) {
         ROS_ERROR("Failed to solve projection equation!");
         return ExitCode::InternalError;
       }
@@ -280,30 +280,32 @@ bool SnsVelIkBase::checkVelBnd(const Eigen::VectorXd& dq)
 
 /*************************************************************************************************/
 
-bool SnsVelIkBase::solveProjectionEquation(const Eigen::MatrixXd& J, const Eigen::MatrixXd& JW,
-                                           const Eigen::VectorXd& dqNull, const Eigen::VectorXd& dx,
-                                           Eigen::VectorXd* dq, double* resErr)
+SnsVelIkBase::ExitCode SnsVelIkBase::solveProjectionEquation(const Eigen::MatrixXd& J,
+                                                             const Eigen::MatrixXd& JW,
+                                                             const Eigen::VectorXd& dqNull,
+                                                             const Eigen::VectorXd& dx,
+                                                             Eigen::VectorXd* dq, double* resErr)
 {
   // Input validation:
-  if (J.cols() != JW.cols()) { ROS_ERROR("Bad Input!  J.cols() != JW.cols()"); return false; }
-  if (J.rows() != JW.rows()) { ROS_ERROR("Bad Input!  J.rows() != JW.rows()"); return false; }
-  if (dx.size() != J.rows()) { ROS_ERROR("Bad Input!  dx.size() != J.rows()"); return false; }
-  if (J.cols() != dqNull.rows()) { ROS_ERROR("Bad Input!  J.cols() != dqNull.rows()"); return false; }
-  if (!dq) { ROS_ERROR("Bad Input!  dq is nullptr!"); return false; }
-  if (!resErr) { ROS_ERROR("Bad Input!  resErr is nullptr!"); return false; }
+  if (J.cols() != JW.cols()) { ROS_ERROR("Bad Input!  J.cols() != JW.cols()"); return ExitCode::BadUserInput; }
+  if (J.rows() != JW.rows()) { ROS_ERROR("Bad Input!  J.rows() != JW.rows()"); return ExitCode::BadUserInput; }
+  if (dx.size() != J.rows()) { ROS_ERROR("Bad Input!  dx.size() != J.rows()"); return ExitCode::BadUserInput; }
+  if (J.cols() != dqNull.rows()) { ROS_ERROR("Bad Input!  J.cols() != dqNull.rows()"); return ExitCode::BadUserInput; }
+  if (!dq) { ROS_ERROR("Bad Input!  dq is nullptr!"); return ExitCode::BadUserInput; }
+  if (!resErr) { ROS_ERROR("Bad Input!  resErr is nullptr!"); return ExitCode::BadUserInput; }
 
   // Solve the linear system
   Eigen::MatrixXd B = dx - J*dqNull;
   Eigen::MatrixXd X = linSolver_.solve(B);
   if(linSolver_.info() != Eigen::ComputationInfo::Success) {
     ROS_ERROR("Failed to solve projection equations!");
-    return false;
+    return ExitCode::InfeasibleTask;
   }
 
   // Solve for dq
   *dq = X + dqNull;
   *resErr = (JW*X - B).squaredNorm();
-  return true;
+  return ExitCode::Success;
 }
 
 /*************************************************************************************************/
