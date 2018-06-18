@@ -1,12 +1,12 @@
-# rethinkroboticsopensource/sns-ik:indigo-source
+# rethinkroboticsopensource/sns-ik:kinetic-source
 # Downloads the moveit source code, install remaining debian dependencies, and builds workspace
 
-FROM rethinkroboticsopensource/sns-ik:indigo-ci-shadow-fixed
+FROM rethinkroboticsopensource/sns-ik:kinetic-ci-shadow-fixed
 MAINTAINER Ian McMahon git@ianthe.engineer
 
 # Setup catkin workspace
 ENV CATKIN_WS=/root/ws_sns_ik
-ENV ROS_DISTRO=indigo
+ENV ROS_DISTRO=kinetic
 WORKDIR $CATKIN_WS
 
 # Commands are combined in single RUN statement with "apt/lists" folder removal to reduce image size

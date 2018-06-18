@@ -1,14 +1,14 @@
-# rethinkroboticsopensource/sns-ik:indigo-ci
+# rethinkroboticsopensource/sns-ik:kinetic-ci
 # Sets up a base image to use for running Continuous Integration on Travis
 
-FROM ros:indigo-ros-base
+FROM ros:kinetic-ros-base
 MAINTAINER Ian McMahon git@ianthe.engineer
 
 ENV TERM xterm
 
 # Setup catkin workspace
 ENV CATKIN_WS=/root/ws_sns_ik
-ENV ROS_DISTRO=indigo
+ENV ROS_DISTRO=kinetic
 WORKDIR $CATKIN_WS
 # Continous Integration Setting
 ENV IN_DOCKER 1
