@@ -31,3 +31,8 @@ result.rr = runTest_snsIk_acc(@snsIk_acc_rr, nTest, optTol, cstTol, fid);
 
 %% SNS-IK solver, Rethink Robotics revised optimal algorithm (Andy Park)
 result.opt = runTest_snsIk_acc(@snsIk_acc_opt, nTest, optTol, cstTol, fid);
+
+%% SNS-IK solver, Rethink Robotics revised algorithm with a secondary configuration space task (Andy Park)
+result.rrCS = runTest_snsIk_acc_cs(@snsIk_acc_rr_cs, nTest, optTol, cstTol, fid);
+fprintf(fid, 'average primary task scale factor: %.4f\n', mean(result.rrCS.sData));
+fprintf(fid, 'average secondary task scale factor: %.4f\n', mean(result.rrCS.sCSData));
