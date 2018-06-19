@@ -26,6 +26,9 @@
  *   --> direct linear solver: prefered solver when available. Requries Eigen 3.3.4
  */
 
+#ifndef SNS_IK_LIB__SNS_LINEAR_SOLVER_H_
+#define SNS_IK_LIB__SNS_LINEAR_SOLVER_H_
+
 #include <Eigen/Dense>
 
 namespace sns_ik {
@@ -116,3 +119,5 @@ private:
 #endif  // EIGEN_VERSION_AT_LEAST(3,3,4)  //- - - - - - - - - - - - - - - - - - - - - - - - - - //
 
 }  // namespace sns_ik
+
+#endif // SNS_IK_LIB__SNS_LINEAR_SOLVER_H_
