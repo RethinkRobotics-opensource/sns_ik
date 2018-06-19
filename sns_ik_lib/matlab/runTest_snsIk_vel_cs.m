@@ -1,8 +1,8 @@
 function result = runTest_snsIk_vel_cs(solver, nTest, optTol, cstTol, fid)
 % result = runTest_snsIk_vel_cs(solver, nTest, optTol, cstTol, fid)
 %
-% This function runs a unit test on a candidate velocity IK solver with
-% secondary configuration space task.
+% This function runs a unit test on a candidate velocity IK solver
+% that supports a configuration-space secondary objective term.
 %
 % INPUTS:
 %   solver: velocity Ik solver

@@ -2,6 +2,7 @@ function result = runTest_snsIk_acc_cs(solver, nTest, optTol, cstTol, fid)
 % result = runTest_snsIk_acc(solver, nTest, optTol, cstTol, fid)
 %
 % This function runs a unit test on a candidate acceleration IK solver
+% that supports a configuration-space secondary objective term.
 %
 % INPUTS:
 %   solver: acceleration Ik solver
@@ -74,7 +75,7 @@ for iTest = 1:nTest
 
     % compute the task velocity, then scale
     scale = 1.0;
-    if rand(1) < 0.4;
+    if rand(1) < 0.4
         scale = 0.1 + 0.8 * rand(1);
     end
     ddxGoal = (J * ddqTmp + dJdq)/ scale;

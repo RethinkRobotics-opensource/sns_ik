@@ -1,8 +1,10 @@
 function [dq, s, sCS, exitCode] = snsIk_vel_rr_cs(dqLow, dqUpp, dx, dqCS, J)
 % [dq, s, sCS, exitCode] = snsIk_vel_rr(dqLow, dqUpp, dx, dqCS, J)
 %
-% This function implements a simple multi-task version of the SNS-IK velocity
-% solver with a secondary configuration space task.
+% This function implements a simplified multi-task version of the SNS-IK
+% acceleration solver that supports a secondary objective term.
+% In this function, the secondary task is assumed to be a desired
+% configuration-space velocity.
 %
 % INPUTS:
 %   dqLow: lower limit for joint velocities
@@ -97,18 +99,22 @@ end
 dq1 = dq;
 I = eye(nJnt);
 Wcs = I;
-P1 = (I - pinv(J)*J);
 
 %-- start of the algorithm
 
-% use only non-saturated joints from the previous task
+% set Wcs in order to use only non-saturated joints from the primary task
 for i=1:nJnt
     if (abs(dq1(i)-dqLow(i)) < tol || abs(dq1(i)-dqUpp(i)) < tol)
         Wcs(i,i) = 0;
     end
 end
 
-% compute pseudo-inverse with tolerance
+% compute nullspace projection matrices
+% P1: nullspace projection matrix of the primary task
+% Pcs ensures that the projected joint velocity does not
+% interfere with joint saturation and the primary task
+% tolerance is used for numerical stability
+P1 = (I - pinv(J)*J);
 Pcs = (I - pinv((I - Wcs)*P1, tol))*P1;
 
 % validate Pcs
