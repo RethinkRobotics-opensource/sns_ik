@@ -80,7 +80,6 @@ namespace sns_ik {
     }
 
     std::vector<KDL::Segment> chain_segments = m_chain.segments;
-    boost::shared_ptr<const urdf::Joint> joint;
     m_lower_bounds.resize(m_chain.getNrOfJoints());
     m_upper_bounds.resize(m_chain.getNrOfJoints());
     m_velocity.resize(m_chain.getNrOfJoints());
@@ -89,7 +88,10 @@ namespace sns_ik {
 
     unsigned int joint_num=0;
     for(std::size_t i = 0; i < chain_segments.size(); ++i) {
-      joint = robot_model.getJoint(chain_segments[i].getJoint().getName());
+      // auto joint is of type shared_ptr<const urdf::Joint>
+      // prior to ROS Melodic, this is a boost::shared_ptr
+      // ROS Melodic and later, this is a std::shared_ptr
+      auto joint = robot_model.getJoint(chain_segments[i].getJoint().getName());
       if (joint->type != urdf::Joint::UNKNOWN && joint->type != urdf::Joint::FIXED) {
         double lower=0; //TODO Better default values? Error if these arent found?
         double upper=0;

@@ -26,6 +26,7 @@
 
 #include <Eigen/Dense>
 #include <memory>
+#include <vector>
 
 #include "sns_linear_solver.hpp"
 
