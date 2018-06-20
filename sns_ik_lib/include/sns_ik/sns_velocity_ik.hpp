@@ -24,6 +24,7 @@
 #define SNS_IK_VELOCITY_IK
 
 #include <Eigen/Dense>
+#include <vector>
 
 namespace sns_ik {
 
