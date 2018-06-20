@@ -38,6 +38,42 @@ result.rrCS = runTest_snsIk_vel_cs(@snsIk_vel_rr_cs, nTest, optTol, cstTol, fid)
 fprintf(fid, 'average primary task scale factor: %.4f\n', mean(result.rrCS.sData));
 fprintf(fid, 'average secondary task scale factor: %.4f\n', mean(result.rrCS.sCSData));
 
+%% SNS-IK solver, Rethink Robotics revised algorithm for multiple tasks (Andy Park)
+result.rrMT = runTest_snsIk_vel_mt(@snsIk_vel_rr_mt, nTest, optTol, cstTol, fid);
+sDataTotal= result.rrMT.sDataTotal;
+sDataPrimary = zeros(nTest,1);
+sDataSecondary = zeros(nTest,1);
+numTaskData = zeros(nTest,1);
+numTaskFeasibleData = zeros(nTest,1);
+for i=1:nTest
+    sDataTmp = sDataTotal{i};
+    sDataPrimary(i) = sDataTmp(1);
+    sDataSecondary(i) = sDataTmp(2);
+    numTaskData(i) = numel(sDataTmp);
+    numTaskFeasibleData(i) = numel(find(sDataTmp > 0));
+end
+fprintf(fid, 'average primary task scale factor: %.4f\n', mean(sDataPrimary));
+fprintf(fid, 'average secondary task scale factor: %.4f\n', mean(sDataSecondary));
+fprintf(fid, 'average number of feasible tasks: (%.4f/%.4f)\n', mean(numTaskFeasibleData), mean(numTaskData));
+
+%% SNS-IK solver, QP implementation for multiple tasks (Andy Park)
+result.QPMT = runTest_snsIk_vel_mt(@snsIk_vel_QP_mt, nTest, optTol, cstTol, fid);
+sDataTotal= result.QPMT.sDataTotal;
+sDataPrimary = zeros(nTest,1);
+sDataSecondary = zeros(nTest,1);
+numTaskData = zeros(nTest,1);
+numTaskFeasibleData = zeros(nTest,1);
+for i=1:nTest
+    sDataTmp = sDataTotal{i};
+    sDataPrimary(i) = sDataTmp(1);
+    sDataSecondary(i) = sDataTmp(2);
+    numTaskData(i) = numel(sDataTmp);
+    numTaskFeasibleData(i) = numel(find(sDataTmp > 0));
+end
+fprintf(fid, 'average primary task scale factor: %.4f\n', mean(sDataPrimary));
+fprintf(fid, 'average secondary task scale factor: %.4f\n', mean(sDataSecondary));
+fprintf(fid, 'average number of feasible tasks: (%.4f/%.4f)\n', mean(numTaskFeasibleData), mean(numTaskData));
+
 %% SNS-IK solver, original SNS-IK algorithm
 % % This solver currently does not pass the test
 % result.basic = runTest_snsIk_vel(@snsIk_vel_basic, nTest, optTol, cstTol, fid);
