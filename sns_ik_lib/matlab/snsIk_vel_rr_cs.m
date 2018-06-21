@@ -1,5 +1,5 @@
-function [dq, s, sCS, exitCode] = snsIk_vel_rr_cs(dqLow, dqUpp, dx, dqCS, J)
-% [dq, s, sCS, exitCode] = snsIk_vel_rr(dqLow, dqUpp, dx, dqCS, J)
+function [dq, s, sCS, exitCode] = snsIk_vel_rr_cs(dqLow, dqUpp, dxGoal, dqCS, J)
+% [dq, s, sCS, exitCode] = snsIk_vel_rr(dqLow, dqUpp, dxGoal, dqCS, J)
 %
 % This function implements a simplified multi-task version of the SNS-IK
 % acceleration solver that supports a secondary objective term.
@@ -7,14 +7,14 @@ function [dq, s, sCS, exitCode] = snsIk_vel_rr_cs(dqLow, dqUpp, dx, dqCS, J)
 % configuration-space velocity.
 %
 % INPUTS:
-%   dqLow: lower limit for joint velocities
-%   dqUpp: upper limit for joint velocities
-%   dx: task-space velocity (primary goal)
-%   dqCS = configuration space velocity (secondary goal)
-%   J: jacoabian mapping joint space to task space
+%   dqLow (nJnt x 1): lower limit for joint velocities
+%   dqUpp (nJnt x 1): upper limit for joint velocities
+%   dxGoal (ndx x 1): task-space velocity (primary goal)
+%   dqCS (nJnt x 1): configuration space velocity (secondary goal)
+%   J (ndx x nJnt): jacoabian mapping joint space to task space
 %
 % OUTPUTS:
-%   dq = joint velocity solution with maximum task scale factor
+%   dq (nJnt x 1): joint velocity solution with maximum task scale factor
 %   s = task scale factor [0, 1]
 %   sCS = nullspace configuration task scale factor [0, 1]
 %   exitCode    (1 == success)
@@ -40,10 +40,8 @@ function [dq, s, sCS, exitCode] = snsIk_vel_rr_cs(dqLow, dqUpp, dx, dqCS, J)
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-%
 
 % TODO: input validation
-% TODO: return optimization status
 
 %% compute the solution for the primary task
 [nTask, nJnt] = size(J);
@@ -56,11 +54,11 @@ tol = 1e-6;
 limitExceeded = true;
 while limitExceeded == true
     limitExceeded = false;
-    dq = dqNull + pinv(J*W) * (dx - J*dqNull);
+    dq = dqNull + pinv(J*W) * (dxGoal - J*dqNull);
     if any(dq < (dqLow - tol)) || any(dq > (dqUpp + tol))
         limitExceeded = true;
     end
-    a = pinv(J*W) * dx;
+    a = pinv(J*W) * dxGoal;
     b = dq - a;
 
     marginL = dqLow - b;
@@ -89,7 +87,7 @@ while limitExceeded == true
         s = sStar;
         W = Wstar;
         dqNull = dqNullStar;
-        dq = dqNull + pinv(J*W)*(s * dx - J * dqNull);
+        dq = dqNull + pinv(J*W)*(s * dxGoal - J * dqNull);
         limitExceeded = false;
     end
 end
@@ -157,38 +155,5 @@ dq2 = dq1 + sCS*Pcs*dqCS;
 %-- end of algorithm
 
 dq = dq2;
-
-end
-
-%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
-
-function taskScale = FindScaleFactor(low, upp, a)
-
-% TODO: documentation
-if (a < 1e10 && a > -1e10)
-
-    if a < 0 && low < 0
-
-        if a < low
-            taskScale = low / a;
-        else
-            taskScale = 1.0;
-        end
-
-    elseif a > 0 && upp > 0
-
-        if upp < a
-            taskScale = upp / a;
-        else
-            taskScale = 1.0;
-        end
-
-    else
-        taskScale = 0.0;
-    end
-
-else
-    taskScale = 0.0;
-end
 
 end

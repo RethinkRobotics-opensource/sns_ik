@@ -6,15 +6,15 @@ function [ddq, sData, exitCode] = snsIk_acc_rr_mt(ddqLow, ddqUpp, ddxGoalData, J
 % in a prioritized manner.
 %
 % INPUTS:
-%   ddqLow: lower limit for JDataoint accelerations
-%   ddqUpp: upper limit for JDataoint accelerations
-%   ddxGoalDataData: task-space accelerations of all the tasks in the order of priorities
-%   JData: Jacobians of all the task in corresponding order
-%   dJdqData: dJ * dq of all the task in corresponding order
+%   ddqLow (nJnt x 1): lower limit for joint accelerations
+%   ddqUpp (nJnt x 1): upper limit for joint accelerations
+%   ddxGoalData (cell array): task-space accelerations of all the tasks in the order of priorities
+%   JData (cell array): Jacobians of all the task in corresponding order
+%   dJdqData (cell array): dJ * dq of all the task in corresponding order
 %
 % OUTPUTS:
-%   ddq = Joint acceleration solution with maximum task scale factor
-%   sData = task scale factors [0, 1] for all the tasks
+%   ddq (nJnt x 1): Joint acceleration solution with maximum task scale factor
+%   sData (nTask x 1): task scale factors [0, 1] for all the tasks
 %   exitCode    (1 == success)
 %
 % NOTES:
@@ -35,17 +35,15 @@ function [ddq, sData, exitCode] = snsIk_acc_rr_mt(ddqLow, ddqUpp, ddxGoalData, J
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-%
 
 % TODO: input validation
-% TODO: return optimization status
 
 % get the number of tasks
-numTask = size(JData,1);
-WData = cell(numTask,1);
-sData = zeros(numTask,1);
-ddqData = cell(numTask,1);
-ddqNullData = cell(numTask,1);
+nTask = size(JData,1);
+WData = cell(nTask,1);
+sData = zeros(nTask,1);
+ddqData = cell(nTask,1);
+ddqNullData = cell(nTask,1);
 
 % initialization
 exitCode = 1;
@@ -56,11 +54,11 @@ I = eye(nJnt);
 Pi = I;
 ddqi = zeros(nJnt,1);
 
-for iTask = 1:numTask
+for iTask = 1:nTask
 
     % get i-th task Jacobian
     Ji = JData{iTask};
-    nTask = size(Ji,1);
+    nddxGoal = size(Ji,1);
 
     % get i-th task velocity
     ddxGoali = ddxGoalData{iTask};
@@ -154,7 +152,7 @@ for iTask = 1:numTask
 
             % if rank is below task dimension, terminate the loop and output
             % the current best solution
-            if (rank(Ji*PiBar) < nTask)
+            if (rank(Ji*PiBar) < nddxGoal)
                 si = siStar;
                 Wi = Wistar;
                 ddqNulli = ddqNulliStar;
@@ -217,38 +215,5 @@ end
 
 %-- end of algorithm
 ddq = ddqi;
-
-end
-
-%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
-
-function taskScale = FindScaleFactor(low, upp, a)
-
-% TODO: documentation
-if (a < 1e10 && a > -1e10)
-
-    if a < 0 && low < 0
-
-        if a < low
-            taskScale = low / a;
-        else
-            taskScale = 1.0;
-        end
-
-    elseif a > 0 && upp > 0
-
-        if upp < a
-            taskScale = upp / a;
-        else
-            taskScale = 1.0;
-        end
-
-    else
-        taskScale = 0.0;
-    end
-
-else
-    taskScale = 0.0;
-end
 
 end

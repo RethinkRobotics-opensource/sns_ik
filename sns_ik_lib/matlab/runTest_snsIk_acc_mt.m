@@ -7,13 +7,13 @@ function result = runTest_snsIk_acc_mt(solver, nTest, optTol, cstTol, fid)
 % INPUTS:
 %   solver: acceleration Ik solver
 %       [ddq, sData, exitCode] = solver(ddqLow, ddqUpp, ddxData, JData)
-%       IN: ddqLow = lower bound on joint acceleration
-%       IN: ddqUpp = upper bound on joint acceleration
-%       IN: ddxGoalData = task accelerations
-%       IN: JData = task jacobians
-%       IN: dJdqData = the product of task jacobian derivative and joint accelerations
-%       OUT: ddq = joint acceleration (solution)
-%       OUT: sData = task scales
+%       IN: ddqLow (nJnt x 1)= lower bound on joint acceleration
+%       IN: ddqUpp (nJnt x 1)= upper bound on joint acceleration
+%       IN: ddxGoalData (cell array)= task accelerations
+%       IN: JData (cell array)= task jacobians
+%       IN: dJdqData (cell array)= the product of task jacobian derivative and joint accelerations
+%       OUT: ddq (nJnt x 1)= joint acceleration (solution)
+%       OUT: sData (nTask x 1)= task scales
 %       OUT: exitCode  (1 == success)
 %   nTest: how many tests to run?
 %   optTol: optimality tolerance
@@ -22,7 +22,6 @@ function result = runTest_snsIk_acc_mt(solver, nTest, optTol, cstTol, fid)
 %
 % OUTPUTS:
 %   result: struct with test results
-%
 
 % Copyright 2018 Rethink Robotics
 %
@@ -54,20 +53,20 @@ for iTest = 1:nTest
     ddqLow = -0.1 - rand(nJnt, 1);
     ddqUpp = 0.1 + rand(nJnt, 1);
 
-    numTask = 2 + randi(4); % number of tasks
-    nTask = cell(numTask,1);
-    scale = ones(numTask,1);
-    JData = cell(numTask,1);
-    dJdqData = cell(numTask,1);
-    ddqTmp = zeros(nJnt,numTask);
-    ddxGoal = cell(numTask,1);
+    nTask = 2 + randi(4); % number of tasks
+    nddxGoal = cell(nTask,1);
+    scale = ones(nTask,1);
+    JData = cell(nTask,1);
+    dJdqData = cell(nTask,1);
+    ddqTmp = zeros(nJnt,nTask);
+    ddxGoal = cell(nTask,1);
 
-    for iTask = 1:numTask
-        nTask{iTask} = randi(nJnt); % task space dimension
+    for iTask = 1:nTask
+        nddxGoal{iTask} = randi(nJnt); % task space dimension
 
         % set up the problem itself
-        JData{iTask} = randn(nTask{iTask}, nJnt);  % jacobian
-        dJdqData{iTask} = randn(nTask{iTask}, 1);  % jacobian rate * joint velocity
+        JData{iTask} = randn(nddxGoal{iTask}, nJnt);  % jacobian
+        dJdqData{iTask} = randn(nddxGoal{iTask}, 1);  % jacobian rate * joint velocity
 
         % compute the unscaled solution
         ddqTmp(:,iTask) = ddqLow + (ddqUpp - ddqLow) .* rand(nJnt, 1);

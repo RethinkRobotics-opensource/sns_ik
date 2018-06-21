@@ -7,17 +7,17 @@ function [ddq, s, sCS, exitCode] = snsIk_acc_rr_cs(ddqLow, ddqUpp, ddxGoal, ddqC
 % configuration-space acceleration.
 %
 % INPUTS:
-%   ddqLow: lower limit for joint acceleration
-%   ddqUpp: upper limit for joint acceleration
-%   ddxGoal: task-space acceleration (primary goal)
-%   ddqCS = configuration space (CS) task acceleration (secondary goal)
-%   J: jacoabian mapping joint space to task space
-%   dJdq = dJ * dq
+%   ddqLow (nJnt x 1): lower limit for joint acceleration
+%   ddqUpp (nJnt x 1): upper limit for joint acceleration
+%   ddxGoal (ndx x 1): task-space acceleration (primary goal)
+%   ddqCS (nJnt x 1) = configuration space (CS) task acceleration (secondary goal)
+%   J(ndx x nJnt): jacoabian mapping joint space to task space
+%   dJdq (ndx x 1) = dJ * dq
 %       dJ = time-derivative of the task jacobian
 %       dq = current joint velocity
 %
 % OUTPUTS:
-%   ddq = joint acceleration solution with maximum task scale factor
+%   ddq (nJnt x 1): joint acceleration solution with maximum task scale factor
 %   s = task scale factor [0, 1]
 %   sCS = nullspace configuration space (CS) task scale
 %   exitCode    (1 == success)
@@ -30,7 +30,6 @@ function [ddq, s, sCS, exitCode] = snsIk_acc_rr_cs(ddqLow, ddqUpp, ddxGoal, ddqC
 % This function is a modification of the basic SNS-IK algorithm that is
 % presented in the original SNS-IK papers. It was developed by Andy Park at
 % Rethink Robotics in June 2018.
-%
 
 % Copyright 2018 Rethink Robotics
 %
@@ -44,10 +43,8 @@ function [ddq, s, sCS, exitCode] = snsIk_acc_rr_cs(ddqLow, ddqUpp, ddxGoal, ddqC
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-%
 
 % TODO: input validation
-% TODO: return optimization status
 
 %% compute the solution for the primary task
 [nTask, nJnt] = size(J);
@@ -173,38 +170,5 @@ ddq2 = ddq1 + sCS*Pcs*ddqCS;
 %-- end of algorithm
 
 ddq = ddq2;
-
-end
-
-%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
-
-function taskScale = FindScaleFactor(low, upp, a)
-
-% TODO: documentation
-if (a < 1e10 && a > -1e10)
-
-    if a < 0 && low < 0
-
-        if a < low
-            taskScale = low / a;
-        else
-            taskScale = 1.0;
-        end
-
-    elseif a > 0 && upp > 0
-
-        if upp < a
-            taskScale = upp / a;
-        else
-            taskScale = 1.0;
-        end
-
-    else
-        taskScale = 0.0;
-    end
-
-else
-    taskScale = 0.0;
-end
 
 end
