@@ -5,17 +5,17 @@ function [ddq, s, exitCode] = snsIk_acc_rr(ddqLow, ddqUpp, ddxGoal, J, dJdq)
 % solver.
 %
 % INPUTS:
-%   ddqLow: lower limit for joint acceleration
-%   ddqUpp: upper limit for joint acceleration
-%   ddxGoal: task-space acceleration
-%   J: jacoabian mapping joint space to task space
-%   dJdq = dJ * dq
+%   ddqLow (nJnt x 1): lower limit for joint acceleration
+%   ddqUpp (nJnt x 1): upper limit for joint acceleration
+%   ddxGoal (ndx x 1): task-space acceleration
+%   J (ndx x nJnt): jacoabian mapping joint space to task space
+%   dJdq (ndx x 1) = dJ * dq
 %       dJ = time-derivative of the task jacobian
 %       dq = current joint velocity
 %
 % OUTPUTS:
-%   ddq = joint acceleration solution with maximum task scale factor
-%   s = task scale factor [0, 1]
+%   ddq (nJnt x 1): joint acceleration solution with maximum task scale factor
+%   s: task scale factor [0, 1]
 %   exitCode    (1 == success)
 %
 %
@@ -25,7 +25,6 @@ function [ddq, s, exitCode] = snsIk_acc_rr(ddqLow, ddqUpp, ddxGoal, J, dJdq)
 % This function is a modification of the basic SNS-IK algorithm that is
 % presented in the original SNS-IK papers. It was developed by Andy Park at
 % Rethink Robotics in June 2018.
-%
 
 % Copyright 2018 Rethink Robotics
 %
@@ -39,10 +38,8 @@ function [ddq, s, exitCode] = snsIk_acc_rr(ddqLow, ddqUpp, ddxGoal, J, dJdq)
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-%
 
 % TODO: input validation
-% TODO: return optimization status
 
 [nTask, nJnt] = size(J);
 
@@ -69,7 +66,7 @@ while limitExceeded == true
     for i=1:nJnt
         if W(i,i) == 0
             sMax(i) = inf;
-        elseif ~isinf(a(i))
+        else
             sMax(i) = FindScaleFactor(marginL(i), marginU(i), a(i));
             % if scale factor is 1 but joint limit is violated,
             % set a scale factor to a small number so that the
@@ -77,8 +74,6 @@ while limitExceeded == true
             if(sMax(i) == 1 && (ddq(i) < (ddqLow(i) - tol) || ddq(i) > (ddqUpp(i) + tol)))
                 sMax(i) = 1e-3;
             end
-        else
-            sMax(i) = 0.0;  % infeasible
         end
     end
 
@@ -104,33 +99,4 @@ while limitExceeded == true
         limitExceeded = false;
     end
 end
-
-end
-
-%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
-
-function taskScale = FindScaleFactor(low, upp, a)
-
-% TODO: documentation
-
-if a < 0 && low < 0
-
-    if a < low
-        taskScale = low / a;
-    else
-        taskScale = 1.0;
-    end
-
-elseif a > 0 && upp > 0
-
-    if upp < a
-        taskScale = upp / a;
-    else
-        taskScale = 1.0;
-    end
-
-else
-    taskScale = 0.0;
-end
-
 end
