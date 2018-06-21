@@ -5,22 +5,21 @@ function [dq, s, exitCode] = snsIk_vel_QP(dqLow, dqUpp, dxGoal, J, alpha)
 % solver.
 %
 % INPUTS:
-%   dqLow: lower limit for joint velocities
-%   dqUpp: upper limit for joint velocities
-%   dxGoal: task-space velocity
-%   J: jacoabian mapping joint space to task space
+%   dqLow (nJnt x 1): lower limit for joint velocities
+%   dqUpp (nJnt x 1): upper limit for joint velocities
+%   dxGoal (nJnt x 1): task-space velocity
+%   J (ndxGoal x nJnt): jacoabian mapping joint space to task space
 %   alpha: trade-off between minimum-joint velocity and maximum task scale
 %      default: alpha = 1e-3
 %      small alpha: favor solutions that maximize task scale
 %      large alpha: favor minimum-joint velocity solutions
 %
 % OUTPUTS:
-%   dq = joint velocity solution with maximum task scale factor
+%   dq (nJnt x 1): joint velocity solution with maximum task scale factor
 %   s = task scale factor [0, 1]
 %
 % NOTES:
 %   s * dxGoal = J * dq;
-%
 
 % Licensed under the Apache License, Version 2.0 (the "License");
 % you may not use this file except in compliance with the License.
@@ -32,7 +31,6 @@ function [dq, s, exitCode] = snsIk_vel_QP(dqLow, dqUpp, dxGoal, J, alpha)
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-%
 
 % TODO: input validation
 % TODO: return optimization status
