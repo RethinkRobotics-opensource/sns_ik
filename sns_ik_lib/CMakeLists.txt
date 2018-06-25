@@ -39,6 +39,7 @@ add_library(sns_ik
             src/fsns_velocity_ik.cpp
             src/osns_sm_velocity_ik.cpp
             src/osns_velocity_ik.cpp
+            src/sns_acc_ik_base.cpp
             src/sns_ik.cpp
             src/sns_position_ik.cpp
             src/sns_vel_ik_base.cpp
@@ -71,5 +72,7 @@ if (CATKIN_ENABLE_TESTING)
   target_link_libraries(sns_ik_vel_test sns_ik sns_ik_test ${catkin_LIBRARIES})
   catkin_add_gtest(sns_vel_ik_base_test test/sns_vel_ik_base_test.cpp)
   target_link_libraries(sns_vel_ik_base_test sns_ik sns_ik_test ${catkin_LIBRARIES})
+  catkin_add_gtest(sns_acc_ik_base_test test/sns_acc_ik_base_test.cpp)
+  target_link_libraries(sns_acc_ik_base_test sns_ik sns_ik_test ${catkin_LIBRARIES})
 
 endif()
