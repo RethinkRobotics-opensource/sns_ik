@@ -1,8 +1,9 @@
-/** @file sns_vel_ik_base.cpp
+/** @file sns_acc_ik_base.cpp
  *
  * @brief The file provides the basic implementation of the SNS-IK acceleration solver
  *
  * @author Matthew Kelly
+ * @author Andy Park
  *
  * This file provides a set of functions that return simple kinematic chains that are used for the
  * unit tests. This allows unit tests to run quickly without depending on external URDF files.
@@ -124,11 +125,11 @@ SnsAccIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen
   if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return ExitCode::BadUserInput; }
   int nTask = ddx.size();
   if (nTask <= 0) {
-    ROS_ERROR("Bad Input: dx.size() > 0 is required!");
+    ROS_ERROR("Bad Input: ddx.size() > 0 is required!");
     return ExitCode::BadUserInput;
   }
   if (int(J.rows()) != nTask) {
-    ROS_ERROR("Bad Input: J.rows() == dx.size() is required!");
+    ROS_ERROR("Bad Input: J.rows() == ddx.size() is required!");
     return ExitCode::BadUserInput;
   }
   if (int(J.cols()) != nJnt_) {

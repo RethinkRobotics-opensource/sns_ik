@@ -2,6 +2,7 @@
  *
  *  @brief Unit Test: sns_acc_ik_base solver
  *  @author Matthew Kelly
+ *  @author Andy Park
  *
  *    Copyright 2018 Rethink Robotics
  *
@@ -24,35 +25,13 @@
 
 #include <sns_ik/sns_acc_ik_base.hpp>
 #include "rng_utilities.hpp"
-
-/*************************************************************************************************/
-
-void checkEqualVector(const Eigen::VectorXd& A, const Eigen::VectorXd& B, double tol)
-{
-  ASSERT_EQ(A.size(), B.size());
-  int n = A.size();
-  for (int i = 0; i < n; i++) {
-    ASSERT_NEAR(A(i), B(i), tol);
-  }
-}
-
-/*************************************************************************************************/
-
-void checkVectorLimits(const Eigen::VectorXd& low, const Eigen::VectorXd& val, const Eigen::VectorXd& upp, double tol)
-{
-  ASSERT_EQ(low.size(), val.size());
-  ASSERT_EQ(upp.size(), val.size());
-  int n = val.size();
-  for (int i = 0; i < n; i++) {
-    ASSERT_LE(val(i), upp(i) + tol);
-    ASSERT_GE(val(i), low(i) - tol);
-  }
-}
+#include "test_utilities.hpp"
 
 /*************************************************************************************************/
 
 /*
- * This test is for the solveAccIkBasic()
+ * This test is for the SnsAccIkBase::solve() without any joint limits.
+ * This checks whether the solution obtained from SNS IK without limits is valid.
  */
 TEST(sns_acc_ik_base, basic_no_limits)
 {
@@ -62,8 +41,8 @@ TEST(sns_acc_ik_base, basic_no_limits)
   for (int iTest = 0; iTest < nTest; iTest++) {
 
     // generate a test problem
-    int nTask = sns_ik::rng_util::getRngInt(0, 1, 6);
-    int nJoint = sns_ik::rng_util::getRngInt(0, nTask, nTask + 4);
+    int nJoint = sns_ik::rng_util::getRngInt(0, 1, 8);
+    int nTask = sns_ik::rng_util::getRngInt(0, 1, nJoint);
     Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -1.0, 1.0);
     Eigen::MatrixXd dJdq = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
     Eigen::VectorXd ddx = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
@@ -80,14 +59,19 @@ TEST(sns_acc_ik_base, basic_no_limits)
     // check requirements
     ASSERT_LE(taskScale, 1.0 + tol);
     ASSERT_GT(taskScale, 0.0);
-    checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
+    sns_ik::test_util::checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
   }
 }
 
 /*************************************************************************************************/
 
 /*
- * This test is for the solveAccIkBasic()
+ * This test is for the SnsAccIkBase::solve() with joint limits.
+ * This checks if the solution obtained from SNS IK with limits is valid.
+ * Test data including task scale factor is randomly generated and they
+ * will be compared against the solution from the solver. A solution is
+ * considered valid if it is within the limits while meeting the goal
+ * task acceleration with the computed task scale factor.
  */
 TEST(sns_acc_ik_base, basic_with_limits)
 {
@@ -129,8 +113,8 @@ TEST(sns_acc_ik_base, basic_with_limits)
       // check requirements
       ASSERT_LE(taskScale, 1.0 + tol);
       if (taskScale < taskScaleMin - tol) nSubOpt++;
-      checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
-      checkVectorLimits(ddqLow, ddq, ddqUpp, tol);
+      sns_ik::test_util::checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
+      sns_ik::test_util::checkVectorLimits(ddqLow, ddq, ddqUpp, tol);
     } else {
       nFail++;
       EXPECT_TRUE(false) << "Solver failed  --  infeasible task?";

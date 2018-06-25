@@ -3,6 +3,7 @@
  * @brief The file provides the basic implementation of the SNS-IK acceleration solver
  *
  * @author Matthew Kelly
+ * @author Andy Park
  *
  * This file provides a set of functions that return simple kinematic chains that are used for the
  * unit tests. This allows unit tests to run quickly without depending on external URDF files.

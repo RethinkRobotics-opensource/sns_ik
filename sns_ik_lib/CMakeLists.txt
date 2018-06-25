@@ -58,7 +58,8 @@ if (CATKIN_ENABLE_TESTING)
   # library for test utilities
   add_library(sns_ik_test
             test/rng_utilities.cpp
-            test/sawyer_model.cpp)
+            test/sawyer_model.cpp
+            test/test_utilities.cpp)
   target_link_libraries(sns_ik_test sns_ik ${catkin_LIBRARIES})
 
   # unit tests
