@@ -1,6 +1,6 @@
-/**  @file sns_vel_ik_base_test.cpp
+/**  @file sns_acc_ik_base_test.cpp
  *
- *  @brief Unit Test: sns_vel_ik_base solver
+ *  @brief Unit Test: sns_acc_ik_base solver
  *  @author Matthew Kelly
  *  @author Andy Park
  *
@@ -23,17 +23,17 @@
 #include <Eigen/Dense>
 #include <ros/console.h>
 
-#include <sns_ik/sns_vel_ik_base.hpp>
+#include <sns_ik/sns_acc_ik_base.hpp>
 #include "rng_utilities.hpp"
 #include "test_utilities.hpp"
 
 /*************************************************************************************************/
 
 /*
- * This test is for the SnsVelIkBase::solve() without any joint limits.
+ * This test is for the SnsAccIkBase::solve() without any joint limits.
  * This checks whether the solution obtained from SNS IK without limits is valid.
  */
-TEST(sns_vel_ik_base, basic_no_limits)
+TEST(sns_acc_ik_base, basic_no_limits)
 {
   sns_ik::rng_util::setRngSeed(75716, 11487);  // set the initial seed for the random number generators
   int nTest = 100;
@@ -41,40 +41,41 @@ TEST(sns_vel_ik_base, basic_no_limits)
   for (int iTest = 0; iTest < nTest; iTest++) {
 
     // generate a test problem
-    int nTask = sns_ik::rng_util::getRngInt(0, 1, 6);
-    int nJoint = sns_ik::rng_util::getRngInt(0, nTask, nTask + 4);
+    int nJoint = sns_ik::rng_util::getRngInt(0, 1, 8);
+    int nTask = sns_ik::rng_util::getRngInt(0, 1, nJoint);
     Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -1.0, 1.0);
-    Eigen::VectorXd dx = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
+    Eigen::MatrixXd dJdq = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
+    Eigen::VectorXd ddx = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
     Eigen::VectorXd tolVec = tol * Eigen::VectorXd::Ones(nJoint);
-    Eigen::VectorXd dq;
+    Eigen::VectorXd ddq;
     double taskScale;
 
     // solve
-    sns_ik::SnsVelIkBase::uPtr ikSolver = sns_ik::SnsVelIkBase::create(nJoint);
+    sns_ik::SnsAccIkBase::uPtr ikSolver = sns_ik::SnsAccIkBase::create(nJoint);
     ASSERT_TRUE(ikSolver.get() != nullptr);
-    sns_ik::SnsVelIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
-    ASSERT_TRUE(exitCode == sns_ik::SnsVelIkBase::ExitCode::Success);
+    sns_ik::SnsAccIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, &ddq, &taskScale);
+    ASSERT_TRUE(exitCode == sns_ik::SnsAccIkBase::ExitCode::Success);
 
     // check requirements
     ASSERT_LE(taskScale, 1.0 + tol);
     ASSERT_GT(taskScale, 0.0);
-    sns_ik::test_util::checkEqualVector(taskScale * dx, J * dq, tol);
+    sns_ik::test_util::checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
   }
 }
 
 /*************************************************************************************************/
 
 /*
- * This test is for the SnsVelIkBase::solve() with joint limits.
+ * This test is for the SnsAccIkBase::solve() with joint limits.
  * This checks if the solution obtained from SNS IK with limits is valid.
  * Test data including task scale factor is randomly generated and they
  * will be compared against the solution from the solver. A solution is
  * considered valid if it is within the limits while meeting the goal
- * task velocity with the computed task scale factor.
+ * task acceleration with the computed task scale factor.
  */
-TEST(sns_vel_ik_base, basic_with_limits)
+TEST(sns_acc_ik_base, basic_with_limits)
 {
-  sns_ik::rng_util::setRngSeed(65444, 24635);  // set the initial seed for the random number generators
+  sns_ik::rng_util::setRngSeed(65444, 48535);  // set the initial seed for the random number generators
   int nTest = 10000;
   double tol = 1e-10;
   int nPass = 0;
@@ -83,36 +84,37 @@ TEST(sns_vel_ik_base, basic_with_limits)
   double meanSolveTime = 0.0;
   for (int iTest = 0; iTest < nTest; iTest++) {
     // generate a test problem
-    int nTask = sns_ik::rng_util::getRngInt(0, 1, 6);
-    int nJoint = sns_ik::rng_util::getRngInt(0, nTask, nTask + 4);
-    Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -2.0, 2.0);
-    Eigen::ArrayXd dqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -5.0, -0.5);
-    Eigen::ArrayXd dqUpp = sns_ik::rng_util::getRngVectorXd(0, nJoint, 0.5, 5.0);
-    Eigen::VectorXd dqTest = sns_ik::rng_util::getRngArrBndXd(0, dqLow, dqUpp).matrix();
+    int nJoint = sns_ik::rng_util::getRngInt(0, 1, 8);
+    int nTask = sns_ik::rng_util::getRngInt(0, 1, nJoint);
+    Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -3.0, 3.0);
+    Eigen::ArrayXd ddqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -3.0, -1.0);
+    Eigen::ArrayXd ddqUpp = sns_ik::rng_util::getRngVectorXd(0, nJoint, 1.0, 3.0);
+    Eigen::VectorXd ddqTest = sns_ik::rng_util::getRngArrBndXd(0, ddqLow, ddqUpp).matrix();
+    Eigen::VectorXd dJdq = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
 
     // create a task that is feasible with scaling
-    Eigen::VectorXd dxFeas = J*dqTest; // this task velocity is feasible by definition
+    Eigen::VectorXd ddxFeas = J*ddqTest + dJdq; // this task acceleration is feasible by definition
     double taskScaleMin = sns_ik::rng_util::getRngDouble(0, 0.2, 1.2);
     taskScaleMin = std::min(1.0, taskScaleMin);  // clamp max value to 1.0
-    Eigen::VectorXd dx = dxFeas / taskScaleMin;
+    Eigen::VectorXd ddx = ddxFeas / taskScaleMin;
 
     // solve
-    Eigen::VectorXd dq;
+    Eigen::VectorXd ddq;
     double taskScale;
-    sns_ik::SnsVelIkBase::uPtr ikSolver = sns_ik::SnsVelIkBase::create(dqLow, dqUpp);
+    sns_ik::SnsAccIkBase::uPtr ikSolver = sns_ik::SnsAccIkBase::create(ddqLow, ddqUpp);
     ASSERT_TRUE(ikSolver.get() != nullptr);
     ros::Time startTime = ros::Time::now();
-    sns_ik::SnsVelIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
+    sns_ik::SnsAccIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, &ddq, &taskScale);
     double solveTime = (ros::Time::now() - startTime).toSec();
     meanSolveTime += solveTime;
 
-    if (exitCode == sns_ik::SnsVelIkBase::ExitCode::Success) {
+    if (exitCode == sns_ik::SnsAccIkBase::ExitCode::Success) {
       nPass++;
       // check requirements
       ASSERT_LE(taskScale, 1.0 + tol);
       if (taskScale < taskScaleMin - tol) nSubOpt++;
-      sns_ik::test_util::checkEqualVector(taskScale * dx, J * dq, tol);
-      sns_ik::test_util::checkVectorLimits(dqLow, dq, dqUpp, tol);
+      sns_ik::test_util::checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
+      sns_ik::test_util::checkVectorLimits(ddqLow, ddq, ddqUpp, tol);
     } else {
       nFail++;
       EXPECT_TRUE(false) << "Solver failed  --  infeasible task?";
