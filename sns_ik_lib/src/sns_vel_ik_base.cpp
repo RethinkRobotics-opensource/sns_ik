@@ -5,9 +5,6 @@
  * @author Matthew Kelly
  * @author Andy Park
  *
- * This file provides a set of functions that return simple kinematic chains that are used for the
- * unit tests. This allows unit tests to run quickly without depending on external URDF files.
- *
  *    Copyright 2018 Rethink Robotics
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
