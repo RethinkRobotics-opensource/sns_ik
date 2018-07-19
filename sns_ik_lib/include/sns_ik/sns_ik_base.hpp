@@ -54,7 +54,6 @@ public:
     InternalError  // there was an internal error in the solver (should never happen...)
   };
 
-
   // Make sure that class is cleaned-up correctly
   virtual ~SnsIkBase() {};
 
@@ -115,6 +114,9 @@ protected:
 
   // Tolerance for checks on the velocity/acceleration limits
   static const double BOUND_TOLERANCE;
+
+  // Nice formatting option from Eigen
+  static const Eigen::IOFormat EigArrFmt;
 
   /*
    * protected constructor: require factory method to create an object.

@@ -28,9 +28,6 @@
 
 namespace sns_ik {
 
-// Nice formatting for printing eigen arrays.
-static const Eigen::IOFormat EigArrFmt4(4, 0, ", ", "\n", "[", "]");
-
 const double SnsIkBase::LIN_SOLVE_RESIDUAL_TOL = 1e-8;
 const int SnsIkBase::MAXIMUM_SOLVER_ITERATION_FACTOR = 100;
 const double SnsIkBase::POS_INF = std::numeric_limits<double>::max();
@@ -38,6 +35,7 @@ const double SnsIkBase::NEG_INF = std::numeric_limits<double>::lowest();
 const double SnsIkBase::MINIMUM_FINITE_SCALE_FACTOR = 1e-10;
 const double SnsIkBase::MAXIMUM_FINITE_SCALE_FACTOR = 1e10;
 const double SnsIkBase::BOUND_TOLERANCE = 1e-8;
+const Eigen::IOFormat SnsIkBase::EigArrFmt(4, 0, ", ", "\n", "[", "]");
 
 /*************************************************************************************************
  *                                 Public Methods                                                *
