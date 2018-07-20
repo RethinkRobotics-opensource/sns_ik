@@ -55,7 +55,7 @@ SnsAccIkBase::uPtr SnsAccIkBase::create(const Eigen::ArrayXd& ddqLow, const Eige
   SnsAccIkBase::uPtr accIk(new SnsAccIkBase(nJnt));
 
   // Set the joint limits:
-  if (!accIk->setBnd(ddqLow, ddqUpp)) { ROS_ERROR("Bad Input!"); return nullptr; };
+  if (!accIk->setBounds(ddqLow, ddqUpp)) { ROS_ERROR("Bad Input!"); return nullptr; };
 
   return accIk;
 }
@@ -68,28 +68,28 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
   // Input validation
   if (!ddq) { ROS_ERROR("ddq is nullptr!"); return ExitCode::BadUserInput; }
   if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return ExitCode::BadUserInput; }
-  int nTask = ddx.size();
+  size_t nTask = ddx.size();
   if (nTask <= 0) {
     ROS_ERROR("Bad Input: ddx.size() > 0 is required!");
     return ExitCode::BadUserInput;
   }
-  if (int(J.rows()) != nTask) {
+  if (size_t(J.rows()) != nTask) {
     ROS_ERROR("Bad Input: J.rows() == ddx.size() is required!");
     return ExitCode::BadUserInput;
   }
-  if (int(J.cols()) != nJnt()) {
+  if (size_t(J.cols()) != getNrOfJoints()) {
     ROS_ERROR("Bad Input: J.cols() == nJnt is required!");
     return ExitCode::BadUserInput;
   }
-  int dJdqDim = dJdq.size();
+  size_t dJdqDim = dJdq.size();
   if (dJdqDim != nTask) {
     ROS_ERROR("Bad Input: dJdq.size() == nTask is required!");
     return ExitCode::BadUserInput;
   }
 
   // Local variable initialization:
-  Eigen::MatrixXd W = Eigen::MatrixXd::Identity(nJnt(), nJnt());  // null-space selection matrix
-  Eigen::VectorXd ddqNull = Eigen::VectorXd::Zero(nJnt());  // acceleration in the null-space
+  Eigen::MatrixXd W = Eigen::MatrixXd::Identity(getNrOfJoints(), getNrOfJoints());  // null-space selection matrix
+  Eigen::VectorXd ddqNull = Eigen::VectorXd::Zero(getNrOfJoints());  // acceleration in the null-space
   *taskScale = 1.0;  // task scale (assume feasible solution until proven otherwise)
 
   // Temp. variables to store the best solution
@@ -104,11 +104,11 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
   }
 
   // Keep track of which joints are saturated:
-  std::vector<bool> jointIsFree(nJnt(), true);
+  std::vector<bool> jointIsFree(getNrOfJoints(), true);
 
   // Main solver loop:
   double resErr;  // residual error in the linear solver
-  for (int iter = 0; iter < nJnt() * MAXIMUM_SOLVER_ITERATION_FACTOR; iter++) {
+  for (size_t iter = 0; iter < getNrOfJoints() * MAXIMUM_SOLVER_ITERATION_FACTOR; iter++) {
 
     // Compute the joint acceleration given current saturation set:
     if (solveProjectionEquation(J, dJdq, ddqNull, ddx, ddq, &resErr) != ExitCode::Success) {
@@ -121,7 +121,7 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     }
 
     // Check to see if the solution satisfies the joint limits
-    if (checkBnd(*ddq)) { // Done! solution is feasible and task scale is at maximum value
+    if (checkBounds(*ddq)) { // Done! solution is feasible and task scale is at maximum value
       return ExitCode::Success;
     }  //  else joint acceleration is infeasible: saturate joint and then try again
 
@@ -159,7 +159,7 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
       ROS_ERROR("Task is infeasible!  resErr: %e > tol: %e", resErr, LIN_SOLVE_RESIDUAL_TOL);
       return ExitCode::InfeasibleTask;
     }
-    if (tmpScale > bestTaskScale || !checkBnd(ddqTmp)) {
+    if (tmpScale > bestTaskScale || !checkBounds(ddqTmp)) {
       bestTaskScale = tmpScale;
       bestW = W;
       bestDdqNull = ddqNull;
@@ -168,10 +168,10 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     // Saturate the most critical joint
     W(jntIdx, jntIdx) = 0.0;
     jointIsFree[jntIdx] = false;
-    if ((*ddq)(jntIdx) > (getUpp())(jntIdx)) {
-      ddqNull(jntIdx) = (getUpp())(jntIdx);
-    } else if ((*ddq)(jntIdx) < (getLow())(jntIdx)) {
-      ddqNull(jntIdx) = (getLow())(jntIdx);
+    if ((*ddq)(jntIdx) > (getUpperBounds())(jntIdx)) {
+      ddqNull(jntIdx) = (getUpperBounds())(jntIdx);
+    } else if ((*ddq)(jntIdx) < (getLowerBounds())(jntIdx)) {
+      ddqNull(jntIdx) = (getLowerBounds())(jntIdx);
     } else {
       ROS_ERROR("Internal error in computing task scale!  ddq(%d) = %f", jntIdx, (*ddq)(jntIdx));
       return ExitCode::InternalError;

@@ -38,7 +38,7 @@ const Eigen::IOFormat SnsIkBase::EigArrFmt(4, 0, ", ", "\n", "[", "]");
  *                                 Public Methods                                                *
  *************************************************************************************************/
 
-bool SnsIkBase::setBnd(const Eigen::ArrayXd& qLow, const Eigen::ArrayXd& qUpp)
+bool SnsIkBase::setBounds(const Eigen::ArrayXd& qLow, const Eigen::ArrayXd& qUpp)
 {
   int nJnt = qLow.size();
   if (nJnt <= 0) {
@@ -60,7 +60,7 @@ bool SnsIkBase::setBnd(const Eigen::ArrayXd& qLow, const Eigen::ArrayXd& qUpp)
  *                               Protected Methods                                               *
  *************************************************************************************************/
 
-bool SnsIkBase::checkBnd(const Eigen::VectorXd& q)
+bool SnsIkBase::checkBounds(const Eigen::VectorXd& q)
 {
   if (q.size() != nJnt_) {
     ROS_ERROR("Bad Input:  q.size(%d) == nJnt(%d) is required!", int(q.size()), nJnt_);

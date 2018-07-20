@@ -64,22 +64,22 @@ public:
    * @param qUpp: upper bound on the velocity/acceleration of each joint
    * @return: true iff successful
    */
-  bool setBnd(const Eigen::ArrayXd& qLow, const Eigen::ArrayXd& qUpp);
+  bool setBounds(const Eigen::ArrayXd& qLow, const Eigen::ArrayXd& qUpp);
 
   /*
    * @return: reference to the lower bound in configuration space (pos / vel / acc)
    */
-  const Eigen::ArrayXd& getLow() const { return qLow_; };
+  const Eigen::ArrayXd& getLowerBounds() const { return qLow_; };
 
   /*
    * @return: reference to the lower bound in configuration space (pos / vel / acc)
    */
-  const Eigen::ArrayXd& getUpp() const { return qUpp_; };
+  const Eigen::ArrayXd& getUpperBounds() const { return qUpp_; };
 
   /*
    * @return: number of joints
    */
-  int nJnt() const { return nJnt_; }
+  size_t getNrOfJoints() const { return nJnt_; }
 
 protected:
 
@@ -126,7 +126,7 @@ protected:
    * @return: true iff qLow <= q <= qUpp
    *          if q.empty() return false
    */
-  bool checkBnd(const Eigen::VectorXd& q);
+  bool checkBounds(const Eigen::VectorXd& q);
 
   /*
    * This method sets and solves the decomposition of the matrix that is used by the linear solver.
@@ -149,7 +149,7 @@ protected:
   /*
    * @return: rank of the matrix that is currently set in the linear solver
    */
-  int getLinSolverRank() const { return linSolver_.rank(); }
+  size_t getLinSolverRank() const { return linSolver_.rank(); }
 
   /*
    * Solve the following equation for the variable qUpp:

@@ -55,7 +55,7 @@ SnsVelIkBase::uPtr SnsVelIkBase::create(const Eigen::ArrayXd& dqLow, const Eigen
   SnsVelIkBase::uPtr velIk(new SnsVelIkBase(nJnt));
 
   // Set the joint limits:
-  if (!velIk->setBnd(dqLow, dqUpp)) { ROS_ERROR("Bad Input!"); return nullptr; };
+  if (!velIk->setBounds(dqLow, dqUpp)) { ROS_ERROR("Bad Input!"); return nullptr; };
 
   return velIk;
 }
@@ -68,16 +68,16 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
   // Input validation
   if (!dq) { ROS_ERROR("dq is nullptr!"); return ExitCode::BadUserInput; }
   if (!taskScale) { ROS_ERROR("taskScale is nullptr!"); return ExitCode::BadUserInput; }
-  int nTask = dx.size();
+  size_t nTask = dx.size();
   if (nTask <= 0) {
     ROS_ERROR("Bad Input: dx.size() > 0 is required!");
     return ExitCode::BadUserInput;
   }
-  if (int(J.rows()) != nTask) {
+  if (size_t(J.rows()) != nTask) {
     ROS_ERROR("Bad Input: J.rows() == dx.size() is required!");
     return ExitCode::BadUserInput;
   }
-  if (int(J.cols()) != nJnt()) {
+  if (size_t(J.cols()) != getNrOfJoints()) {
     ROS_ERROR("Bad Input: J.cols() == nJnt is required!");
     return ExitCode::BadUserInput;
   }
@@ -87,8 +87,8 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
    * The entry of 1 indicates the corresponding joint is free for the task,
    * and 0 indicates the corresponding joint is saturated.
    */
-  Eigen::MatrixXd W = Eigen::MatrixXd::Identity(nJnt(), nJnt());  // null-space selection matrix
-  Eigen::VectorXd dqNull = Eigen::VectorXd::Zero(nJnt());  // velocity in the null-space
+  Eigen::MatrixXd W = Eigen::MatrixXd::Identity(getNrOfJoints(), getNrOfJoints());  // null-space selection matrix
+  Eigen::VectorXd dqNull = Eigen::VectorXd::Zero(getNrOfJoints());  // velocity in the null-space
   *taskScale = 1.0;  // task scale (assume feasible solution until proven otherwise)
 
   // Temp. variables to store the best solution
@@ -103,11 +103,11 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
   }
 
   // Keep track of which joints are saturated:
-  std::vector<bool> jointIsFree(nJnt(), true);
+  std::vector<bool> jointIsFree(getNrOfJoints(), true);
 
   // Main solver loop:
   double resErr;  // residual error in the linear solver
-  for (int iter = 0; iter < nJnt() * MAXIMUM_SOLVER_ITERATION_FACTOR; iter++) {
+  for (size_t iter = 0; iter < getNrOfJoints() * MAXIMUM_SOLVER_ITERATION_FACTOR; iter++) {
 
     // Compute the joint velocity given current saturation set:
     if (solveProjectionEquation(J, dqNull, dx, dq, &resErr) != ExitCode::Success) {
@@ -120,7 +120,7 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     }
 
     // Check to see if the solution satisfies the joint limits
-    if (checkBnd(*dq)) { // Done! solution is feasible and task scale is at maximum value
+    if (checkBounds(*dq)) { // Done! solution is feasible and task scale is at maximum value
       return ExitCode::Success;
     }  //  else joint velocity is infeasible: saturate joint and then try again
 
@@ -156,10 +156,10 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     // Saturate the most critical joint
     W(jntIdx, jntIdx) = 0.0;
     jointIsFree[jntIdx] = false;
-    if ((*dq)(jntIdx) > (getUpp())(jntIdx)) {
-      dqNull(jntIdx) = (getUpp())(jntIdx);
-    } else if ((*dq)(jntIdx) < (getLow())(jntIdx)) {
-      dqNull(jntIdx) = (getLow())(jntIdx);
+    if ((*dq)(jntIdx) > (getUpperBounds())(jntIdx)) {
+      dqNull(jntIdx) = (getUpperBounds())(jntIdx);
+    } else if ((*dq)(jntIdx) < (getLowerBounds())(jntIdx)) {
+      dqNull(jntIdx) = (getLowerBounds())(jntIdx);
     } else {
       ROS_ERROR("Internal error in computing task scale!  dq(%d) = %f", jntIdx, (*dq)(jntIdx));
       return ExitCode::InternalError;
