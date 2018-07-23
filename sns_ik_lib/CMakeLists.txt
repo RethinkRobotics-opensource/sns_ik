@@ -41,6 +41,7 @@ add_library(sns_ik
             src/osns_velocity_ik.cpp
             src/sns_acc_ik_base.cpp
             src/sns_ik.cpp
+            src/sns_ik_base.cpp
             src/sns_position_ik.cpp
             src/sns_vel_ik_base.cpp
             src/sns_velocity_ik.cpp

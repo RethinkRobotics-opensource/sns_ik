@@ -24,10 +24,13 @@
 #include <ros/console.h>
 
 #include <sns_ik/sns_vel_ik_base.hpp>
+#include <sns_ik/sns_ik_base.hpp>
 #include "rng_utilities.hpp"
 #include "test_utilities.hpp"
 
 /*************************************************************************************************/
+// Nice formatting for printing eigen arrays.
+static const Eigen::IOFormat EigArrFmt4(4, 0, ", ", "\n", "[", "]");
 
 /*
  * This test is for the SnsVelIkBase::solve() without any joint limits.
@@ -52,8 +55,8 @@ TEST(sns_vel_ik_base, basic_no_limits)
     // solve
     sns_ik::SnsVelIkBase::uPtr ikSolver = sns_ik::SnsVelIkBase::create(nJoint);
     ASSERT_TRUE(ikSolver.get() != nullptr);
-    sns_ik::SnsVelIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
-    ASSERT_TRUE(exitCode == sns_ik::SnsVelIkBase::ExitCode::Success);
+    sns_ik::SnsIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
+    ASSERT_TRUE(exitCode == sns_ik::SnsIkBase::ExitCode::Success);
 
     // check requirements
     ASSERT_LE(taskScale, 1.0 + tol);
@@ -102,11 +105,11 @@ TEST(sns_vel_ik_base, basic_with_limits)
     sns_ik::SnsVelIkBase::uPtr ikSolver = sns_ik::SnsVelIkBase::create(dqLow, dqUpp);
     ASSERT_TRUE(ikSolver.get() != nullptr);
     ros::Time startTime = ros::Time::now();
-    sns_ik::SnsVelIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
+    sns_ik::SnsIkBase::ExitCode exitCode = ikSolver->solve(J, dx, &dq, &taskScale);
     double solveTime = (ros::Time::now() - startTime).toSec();
     meanSolveTime += solveTime;
 
-    if (exitCode == sns_ik::SnsVelIkBase::ExitCode::Success) {
+    if (exitCode == sns_ik::SnsIkBase::ExitCode::Success) {
       nPass++;
       // check requirements
       ASSERT_LE(taskScale, 1.0 + tol);

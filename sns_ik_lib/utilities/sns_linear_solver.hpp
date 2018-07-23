@@ -95,7 +95,7 @@ public:
   /*
    * @return: the rank of the matrix A
    */
-  int rank() const { return rank_; };
+  unsigned int rank() const { return rank_; };
 
 private:
 

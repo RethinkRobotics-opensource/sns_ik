@@ -44,53 +44,10 @@ function [dq, s, sCS, exitCode] = snsIk_vel_rr_cs(dqLow, dqUpp, dxGoal, dqCS, J)
 % TODO: input validation
 
 %% compute the solution for the primary task
-[nTask, nJnt] = size(J);
-W = eye(nJnt);
-dqNull = zeros(nJnt, 1);
-s = 1.0;
-sStar = 0.0;
-exitCode = 1;
+nJnt = size(J,2);
 tol = 1e-6;
-limitExceeded = true;
-while limitExceeded == true
-    limitExceeded = false;
-    dq = dqNull + pinv(J*W) * (dxGoal - J*dqNull);
-    if any(dq < (dqLow - tol)) || any(dq > (dqUpp + tol))
-        limitExceeded = true;
-    end
-    a = pinv(J*W) * dxGoal;
-    b = dq - a;
 
-    marginL = dqLow - b;
-    marginU = dqUpp - b;
-    sMax = zeros(nJnt, 1);
-    for i=1:nJnt
-        if W(i,i) == 0
-            sMax(i) = inf;
-        else
-            sMax(i) = FindScaleFactor(marginL(i), marginU(i), a(i));
-        end
-    end
-
-    [~, jntIdx] = min(sMax);
-    taskScale = sMax(jntIdx);
-    if taskScale > sStar
-        sStar = taskScale;
-        Wstar = W;
-        dqNullStar = dqNull;
-    end
-
-    W(jntIdx, jntIdx) = 0;
-    dqNull(jntIdx) = min(max(dqLow(jntIdx), dq(jntIdx)), dqUpp(jntIdx));
-
-    if rank(J*W) < nTask
-        s = sStar;
-        W = Wstar;
-        dqNull = dqNullStar;
-        dq = dqNull + pinv(J*W)*(s * dxGoal - J * dqNull);
-        limitExceeded = false;
-    end
-end
+[dq, s, exitCode] = snsIk_vel_rr(dqLow, dqUpp, dxGoal, J);
 
 %% compute the solution for the secondary task
 %-- initialization
