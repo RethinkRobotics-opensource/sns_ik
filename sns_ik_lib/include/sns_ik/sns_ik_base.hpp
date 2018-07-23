@@ -149,7 +149,7 @@ protected:
   /*
    * @return: rank of the matrix that is currently set in the linear solver
    */
-  size_t getLinSolverRank() const { return linSolver_.rank(); }
+  uint getLinSolverRank() const { return linSolver_.rank(); }
 
   /*
    * Solve the following equation for the variable qUpp:
@@ -183,7 +183,7 @@ protected:
    *
    * PRECONDITION:
    * --> Assumes that linSolver_ has been initialized with J*W
-   *
+   * 
    * @param J: Jacobian matrix, mapping from joint to task space. Size = [nTask, nJoint]
    * @param dJdq: the product of Jacobian derivative and joint velocity. Length = nTask
    * @param ddqNull: null-space joint acceleration. Size = nJoint
