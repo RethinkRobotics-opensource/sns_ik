@@ -85,8 +85,8 @@ TEST(sns_acc_ik_base, basic_with_limits)
   double meanSolveTime = 0.0;
   for (int iTest = 0; iTest < nTest; iTest++) {
     // generate a test problem
-    int nJoint = sns_ik::rng_util::getRngInt(0, 1, 10);
-    int nTask = sns_ik::rng_util::getRngInt(0, 1, nJoint);
+    int nTask = sns_ik::rng_util::getRngInt(0, 1, 6);
+    int nJoint = sns_ik::rng_util::getRngInt(0, nTask, nTask + 4);
     Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -3.0, 3.0);
     Eigen::ArrayXd ddqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -3.0, -1.0);
     Eigen::ArrayXd ddqUpp = sns_ik::rng_util::getRngVectorXd(0, nJoint, 1.0, 3.0);
@@ -124,6 +124,74 @@ TEST(sns_acc_ik_base, basic_with_limits)
   meanSolveTime /= static_cast<double>(nPass + nFail);
   ROS_INFO("Pass: %d  --  Fail: %d  --  nSubOpt: %d  --  Mean solve time: %.4f ms",
            nPass, nFail, nSubOpt, meanSolveTime*1000.0);
+}
+
+/*************************************************************************************************/
+
+/*
+ * This test is for the SnsAccIkBase::solve() with a secondary goal (as well as joint limits).
+ * This checks if the solution obtained from SNS IK with limits is valid.
+ * Test data including task scale factor is randomly generated and they
+ * will be compared against the solution from the solver. A solution is
+ * considered valid if it is within the limits while meeting the goal
+ * task acceleration with the computed task scale factor.
+ */
+TEST(sns_acc_ik_base, basic_with_secondary_goal)
+{
+  sns_ik::rng_util::setRngSeed(65444, 48535);  // set the initial seed for the random number generators
+  int nTest = 10000;
+  double tol = 1e-10;
+  int nPass = 0;
+  int nFail = 0;
+  int nSubOpt = 0;
+  double meanSolveTime = 0.0;
+  double meanTaskScaleCS = 0.0;
+  for (int iTest = 0; iTest < nTest; iTest++) {
+    // generate a test problem
+    int nTask = sns_ik::rng_util::getRngInt(0, 1, 6);
+    int nJoint = sns_ik::rng_util::getRngInt(0, nTask, nTask + 4);
+    Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -3.0, 3.0);
+    Eigen::ArrayXd ddqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -3.0, -1.0);
+    Eigen::ArrayXd ddqUpp = sns_ik::rng_util::getRngVectorXd(0, nJoint, 1.0, 3.0);
+    Eigen::VectorXd ddqTest = sns_ik::rng_util::getRngArrBndXd(0, ddqLow, ddqUpp).matrix();
+    Eigen::VectorXd dJdq = sns_ik::rng_util::getRngVectorXd(0, nTask, -1.0, 1.0);
+
+    // create a task that is feasible with scaling
+    Eigen::VectorXd ddxFeas = J*ddqTest + dJdq; // this task acceleration is feasible by definition
+    double taskScaleMin = sns_ik::rng_util::getRngDouble(0, 0.2, 1.2);
+    taskScaleMin = std::min(1.0, taskScaleMin);  // clamp max value to 1.0
+    Eigen::VectorXd ddx = ddxFeas / taskScaleMin;
+
+    // generate a configuration space task as secondary goal
+    Eigen::VectorXd ddqCS = sns_ik::rng_util::getRngArrBndXd(0, ddqLow, ddqUpp).matrix();
+
+    // solve
+    Eigen::VectorXd ddq;
+    double taskScale, taskScaleCS;
+    sns_ik::SnsAccIkBase::uPtr ikSolver = sns_ik::SnsAccIkBase::create(ddqLow, ddqUpp);
+    ASSERT_TRUE(ikSolver.get() != nullptr);
+    ros::Time startTime = ros::Time::now();
+    sns_ik::SnsIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, ddqCS, &ddq, &taskScale, &taskScaleCS);
+    double solveTime = (ros::Time::now() - startTime).toSec();
+    meanSolveTime += solveTime;
+    meanTaskScaleCS += taskScaleCS;
+
+    if (exitCode == sns_ik::SnsIkBase::ExitCode::Success) {
+      nPass++;
+      // check requirements
+      ASSERT_LE(taskScale, 1.0 + tol);
+      if (taskScale < taskScaleMin - tol) nSubOpt++;
+      sns_ik::test_util::checkEqualVector(taskScale * ddx, J * ddq + dJdq, tol);
+      sns_ik::test_util::checkVectorLimits(ddqLow, ddq, ddqUpp, tol);
+    } else {
+      nFail++;
+      EXPECT_TRUE(false) << "Solver failed  --  infeasible task?";
+    }
+  }
+  meanSolveTime /= static_cast<double>(nPass + nFail);
+  meanTaskScaleCS /= static_cast<double>(nPass);
+  ROS_INFO("Pass: %d  --  Fail: %d  --  nSubOpt: %d  --  Mean solve time: %.4f ms -- Mean secondary goal scale : %.4f",
+           nPass, nFail, nSubOpt, meanSolveTime*1000.0, meanTaskScaleCS);
 }
 
 /*************************************************************************************************/

@@ -26,6 +26,7 @@
 #include <memory>
 
 #include "sns_linear_solver.hpp"
+#include "sns_ik_math_utils.hpp"
 
 namespace sns_ik {
 
