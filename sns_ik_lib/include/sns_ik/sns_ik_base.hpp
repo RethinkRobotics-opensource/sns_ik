@@ -183,7 +183,7 @@ protected:
    *
    * PRECONDITION:
    * --> Assumes that linSolver_ has been initialized with J*W
-   * 
+   *
    * @param J: Jacobian matrix, mapping from joint to task space. Size = [nTask, nJoint]
    * @param dJdq: the product of Jacobian derivative and joint velocity. Length = nTask
    * @param ddqNull: null-space joint acceleration. Size = nJoint
