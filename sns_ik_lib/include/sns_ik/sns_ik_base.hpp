@@ -149,7 +149,7 @@ protected:
   /*
    * @return: rank of the matrix that is currently set in the linear solver
    */
-  uint getLinSolverRank() const { return linSolver_.rank(); }
+  unsigned int getLinSolverRank() const { return linSolver_.rank(); }
 
   /*
    * Solve the following equation for the variable qUpp:
