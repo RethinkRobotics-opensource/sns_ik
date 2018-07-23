@@ -24,6 +24,7 @@
 #include <ros/console.h>
 
 #include <sns_ik/sns_acc_ik_base.hpp>
+#include <sns_ik/sns_ik_base.hpp>
 #include "rng_utilities.hpp"
 #include "test_utilities.hpp"
 
@@ -53,8 +54,8 @@ TEST(sns_acc_ik_base, basic_no_limits)
     // solve
     sns_ik::SnsAccIkBase::uPtr ikSolver = sns_ik::SnsAccIkBase::create(nJoint);
     ASSERT_TRUE(ikSolver.get() != nullptr);
-    sns_ik::SnsAccIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, &ddq, &taskScale);
-    ASSERT_TRUE(exitCode == sns_ik::SnsAccIkBase::ExitCode::Success);
+    sns_ik::SnsIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, &ddq, &taskScale);
+    ASSERT_TRUE(exitCode == sns_ik::SnsIkBase::ExitCode::Success);
 
     // check requirements
     ASSERT_LE(taskScale, 1.0 + tol);
@@ -84,7 +85,7 @@ TEST(sns_acc_ik_base, basic_with_limits)
   double meanSolveTime = 0.0;
   for (int iTest = 0; iTest < nTest; iTest++) {
     // generate a test problem
-    int nJoint = sns_ik::rng_util::getRngInt(0, 1, 8);
+    int nJoint = sns_ik::rng_util::getRngInt(0, 1, 10);
     int nTask = sns_ik::rng_util::getRngInt(0, 1, nJoint);
     Eigen::MatrixXd J = sns_ik::rng_util::getRngMatrixXd(0, nTask, nJoint, -3.0, 3.0);
     Eigen::ArrayXd ddqLow = sns_ik::rng_util::getRngVectorXd(0, nJoint, -3.0, -1.0);
@@ -104,11 +105,11 @@ TEST(sns_acc_ik_base, basic_with_limits)
     sns_ik::SnsAccIkBase::uPtr ikSolver = sns_ik::SnsAccIkBase::create(ddqLow, ddqUpp);
     ASSERT_TRUE(ikSolver.get() != nullptr);
     ros::Time startTime = ros::Time::now();
-    sns_ik::SnsAccIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, &ddq, &taskScale);
+    sns_ik::SnsIkBase::ExitCode exitCode = ikSolver->solve(J, dJdq, ddx, &ddq, &taskScale);
     double solveTime = (ros::Time::now() - startTime).toSec();
     meanSolveTime += solveTime;
 
-    if (exitCode == sns_ik::SnsAccIkBase::ExitCode::Success) {
+    if (exitCode == sns_ik::SnsIkBase::ExitCode::Success) {
       nPass++;
       // check requirements
       ASSERT_LE(taskScale, 1.0 + tol);
