@@ -309,7 +309,7 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     ROS_WARN("Secondary goal is infeasible! scaling --> zero");
   }
 
-  // compute the additional joint velocity due to the secondary goal
+  // compute the additional joint acceleration due to the secondary goal
   Eigen::VectorXd ddqDelta = ((Pcs*ddqCS).array() * (*taskScaleCS)).matrix();
 
   // compute the final solution
