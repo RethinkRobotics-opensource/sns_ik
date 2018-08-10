@@ -71,12 +71,12 @@ public:
    *  subject to:
    *    s * ddx = J * ddq + dJ*dq
    *    0 < s <= 1
-   *    ddqLow <= ddqUpp <= ddqUpp      ( bounds set in constructor or setVelBnd() )
+   *    ddqLow <= ddqUpp <= ddqUpp      ( bounds set in constructor or setBounds() )
    *
    * @param J: Jacobian matrix, mapping from joint to task space. Size = [nTask, nJoint]
    * @param dJdq: the product of Jacobian derivative and joint velocity. Length = nTask
-   * @param dx: task acceleration vector. Length = nTask
-   * @param[out] ddqUpp: joint acceleration solution. Length = nJoint
+   * @param ddx: task acceleration vector. Length = nTask
+   * @param[out] ddq: joint acceleration solution. Length = nJoint
    * @param[out] taskScale: task scale.  fwdKin(q, dq, ddq) = taskScale*ddx
    *                            taskScale == 1.0  --> task was feasible
    *                            taskScale < 1.0  --> task was infeasible and had to be scaled
@@ -86,6 +86,37 @@ public:
   ExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dJdq, const Eigen::VectorXd& dx,
                       Eigen::VectorXd* ddqUpp, double* taskScale);
 
+  /**
+   * Solve a acceleration IK problem with null-space bias task as the secondary goal.
+   *
+   *  This method implements a simplified version of "Algorithm 4: SNS algorithm for multiple tasks"
+   *  where the total number of tasks is two and the secondary goal is a configuration-space velocity
+   *  task.
+   *
+   * Solve for joint acceleration ddqUpp and task scales (s and sCS):
+   *
+   *  maximize: s
+   *  subject to:
+   *    s * ddx = J * ddq + dJ*dq
+   *    sCS * ddqCS = (I - pinv(J)*J) * ddq;
+   *    0 < s <= 1
+   *    0 < sCS <= 1
+   *    ddqLow <= ddq <= ddqUpp      ( bounds set in constructor or setBounds() )
+   *
+   * @param J: Jacobian matrix, mapping from joint to task space. Size = [nTask, nJoint]
+   * @param dJdq: the product of Jacobian derivative and joint velocity. Length = nTask
+   * @param ddx: task acceleration vector. Length = nTask
+   * @param ddqCS: configuration space acceleration (secondary goal). Length = nJnt
+   * @param[out] ddq: joint acceleration solution. Length = nJoint
+   * @param[out] taskScale: task scale.  fwdKin(q, dq, ddq) = taskScale*ddx
+   *                            taskScale == 1.0  --> task was feasible
+   *                            taskScale < 1.0  --> task was infeasible and had to be scaled
+   * @param[out] taskScaleCS: task scale for secondary goal.
+   * @return: Success: the algorithm worked correctly and satisfied the problem statement
+   *          otherwise: something went wrong
+   */
+  ExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dJdq, const Eigen::VectorXd& ddx,
+                 const Eigen::VectorXd& ddqCS, Eigen::VectorXd* ddq, double* taskScale, double* taskScaleCS);
 
 protected:
 

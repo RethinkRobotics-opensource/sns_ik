@@ -71,7 +71,7 @@ public:
    *  subject to:
    *    s * dx = J * dq
    *    0 < s <= 1
-   *    dqLow <= dq <= dqUpp      ( bounds set in constructor or setVelBnd() )
+   *    dqLow <= dq <= dqUpp      ( bounds set in constructor or setBounds() )
    *
    * @param J: Jacobian matrix, mapping from joint to task space. Size = [nTask, nJoint]
    * @param dx: task velocity vector. Length = nTask
@@ -85,6 +85,37 @@ public:
   ExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx,
                       Eigen::VectorXd* dq, double* taskScale);
 
+
+  /**
+   * Solve a velocity IK problem with null-space bias task as the secondary goal.
+   *
+   *  This method implements a simplified version of "Algorithm 4: SNS algorithm for multiple tasks"
+   *  where the total number of tasks is two and the secondary goal is a configuration-space velocity
+   *  task.
+   *
+   * Solve for joint velocity dq and task scales (s and sCS):
+   *
+   *  maximize: s
+   *  subject to:
+   *    s * dx = J * dq
+   *    sCS * dqCS = (I - pinv(J)*J) * dq;
+   *    0 < s <= 1
+   *    0 < sCS <= 1
+   *    dqLow <= dq <= dqUpp      ( bounds set in constructor or setBounds() )
+   *
+   * @param J: Jacobian matrix, mapping from joint to task space. Size = [nTask, nJoint]
+   * @param dx: task space velocity vector (primary goal). Length = nTask
+   * @param dqCS: configuration space velocity (secondary goal). Length = nJnt
+   * @param[out] dq: joint velocity solution. Length = nJoint
+   * @param[out] taskScale: task scale for primary goal.  fwdKin(dq) = taskScale*dx
+   *                            taskScale == 1.0  --> task was feasible
+   *                            taskScale < 1.0  --> task was infeasible and had to be scaled
+   * @param[out] taskScaleCS: task scale for secondary goal.
+   * @return: ExitCode::Success: the algorithm worked correctly and satisfied the problem statement
+   *          otherwise: something went wrong, exit code specifics the type of problem
+   */
+  ExitCode solve(const Eigen::MatrixXd& J, const Eigen::VectorXd& dx, const Eigen::VectorXd& dqCS,
+                      Eigen::VectorXd* dq, double* taskScale, double* taskScaleCS);
 
 protected:
 
