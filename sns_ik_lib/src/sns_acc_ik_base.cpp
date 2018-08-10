@@ -278,6 +278,9 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
 
   // Compute the task scale associated with each joint
   Eigen::ArrayXd jntScaleFactorArr(getNrOfJoints());
+  // here lower and upper margins are defined as the budget for the desired task (xdd) only
+  // qdd needs to accomplish both task-independent term (b) as well as desired task (xdd)
+  // within the upper and lower bounds.
   Eigen::ArrayXd lowMargin = (getLowerBounds() - b);
   Eigen::ArrayXd uppMargin = (getUpperBounds() - b);
   for (size_t i = 0; i < getNrOfJoints(); i++) {
