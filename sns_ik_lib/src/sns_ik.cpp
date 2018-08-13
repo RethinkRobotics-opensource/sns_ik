@@ -19,6 +19,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <urdf/model.h>
 #include <sns_ik/sns_velocity_ik.hpp>
+#include <sns_ik/sns_vel_ik_base_interface.hpp>
 #include <sns_ik/osns_velocity_ik.hpp>
 #include <sns_ik/osns_sm_velocity_ik.hpp>
 #include <sns_ik/fsns_velocity_ik.hpp>
@@ -38,6 +39,8 @@ namespace sns_ik {
        return "SNS_Fast";
      case sns_ik::VelocitySolveType::SNS_FastOptimal:
        return "SNS_FastOptimal";
+     case sns_ik::VelocitySolveType::SNS_Base:
+       return "SNS_Base";
      default:
        return "SNS_Unknown";
    }
@@ -223,6 +226,10 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
       case sns_ik::SNS:
         m_ik_vel_solver = std::shared_ptr<SNSVelocityIK>(new SNSVelocityIK(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to Standard SNS solver.");
+        break;
+      case sns_ik::SNS_Base:
+        m_ik_vel_solver = std::shared_ptr<SNSVelocityBaseIK>(new SNSVelocityBaseIK(m_chain.getNrOfJoints(), m_loopPeriod));
+        ROS_INFO("SNS_IK: Set Velocity solver to Base SNS solver.");
         break;
       default:
         ROS_ERROR("SNS_IK: Unknown Velocity solver type requested.");

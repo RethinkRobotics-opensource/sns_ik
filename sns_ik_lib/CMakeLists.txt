@@ -24,13 +24,13 @@ find_package(catkin REQUIRED
 )
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include utilities
   DEPENDS Eigen3 orocos_kdl
   CATKIN_DEPENDS roscpp std_msgs
   LIBRARIES sns_ik
 )
 
-include_directories(include utilities ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
+include_directories(utilities include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS})
 
 # library for public API
@@ -44,6 +44,7 @@ add_library(sns_ik
             src/sns_ik_base.cpp
             src/sns_position_ik.cpp
             src/sns_vel_ik_base.cpp
+            src/sns_vel_ik_base_interface.cpp
             src/sns_velocity_ik.cpp
             utilities/sns_ik_math_utils.cpp
             utilities/sns_linear_solver.cpp)
@@ -52,6 +53,7 @@ target_link_libraries(sns_ik ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 # install the public API
 install(TARGETS sns_ik LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 install(DIRECTORY include/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+install(DIRECTORY utilities/ DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 # Unit tests (google framework)
 if (CATKIN_ENABLE_TESTING)

@@ -94,6 +94,9 @@ protected:
    */
   static const double LIN_SOLVE_RESIDUAL_TOL;
 
+  // A tolerance used for SVD-based pseudo-inverse operation
+  static const double PINV_TOL;
+
   /*
    * If all goes well, then the solver should always terminate the main loop. If something crazy
    * happens, then we want to prevent an infinite loop. The maximum iteration count is given by

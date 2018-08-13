@@ -31,7 +31,8 @@ namespace sns_ik {
                            SNS_Optimal,
                            SNS_OptimalScaleMargin,
                            SNS_Fast,
-                           SNS_FastOptimal
+                           SNS_FastOptimal,
+                           SNS_Base
                          };
 
 

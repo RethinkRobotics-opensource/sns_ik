@@ -264,6 +264,8 @@ TEST(sns_ik_pos, KDL_test_1) {
  */
 TEST(sns_ik, pos_ik_SNS_test) {
     runSnsPosIkTest(82025, sns_ik::VelocitySolveType::SNS); }
+TEST(sns_ik, pos_ik_SNS_Base_test) {
+    runSnsPosIkTest(82025, sns_ik::VelocitySolveType::SNS_Base); }
 TEST(sns_ik, pos_ik_SNS_Optimal_test) {
     runSnsPosIkTest(82025, sns_ik::VelocitySolveType::SNS_Optimal); }
 TEST(sns_ik, pos_ik_SNS_OptimalScaleMargin_test) {
