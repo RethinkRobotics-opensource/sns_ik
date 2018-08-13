@@ -245,13 +245,13 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
 
   // Compute nullspace projection matrix
   Eigen::MatrixXd Jinv, Pinv;
-  if(!pinv(J, &Jinv, SnsIkBase::PINV_TOL)) {
+  if(!pinv(J, &Jinv, PINV_TOL)) {
     ROS_ERROR("Pseudo-inverse of J cannot be computed!");
     return ExitCode::InternalError;
   }
 
   Eigen::MatrixXd P1 = I - Jinv*J; // for primary task
-  if(!pinv((I - W)*P1, &Pinv, SnsIkBase::PINV_TOL)){
+  if(!pinv((I - W)*P1, &Pinv, PINV_TOL)){
     // if (I-W) is a zero matrix, inverse is the same
     Pinv = (I - W)*P1;
   }

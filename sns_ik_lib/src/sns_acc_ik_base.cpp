@@ -260,13 +260,13 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
 
   // Compute nullspace projection matrix
   Eigen::MatrixXd Jinv, Pinv;
-  if(!pinv(J, &Jinv, LIN_SOLVE_RESIDUAL_TOL)) {
+  if(!pinv(J, &Jinv, PINV_TOL)) {
     ROS_ERROR("Pseudo-inverse of J cannot be computed!");
     return ExitCode::InternalError;
   }
 
   Eigen::MatrixXd P1 = I - Jinv*J; // for primary task
-  if(!pinv((I - W)*P1, &Pinv, LIN_SOLVE_RESIDUAL_TOL)){
+  if(!pinv((I - W)*P1, &Pinv, PINV_TOL)){
     // if (I-W) is a zero matrix, inverse is the same
     Pinv = (I - W)*P1;
   }
@@ -309,7 +309,7 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     return ExitCode::InternalError;
   }
   else if (*taskScaleCS < MINIMUM_FINITE_SCALE_FACTOR) {
-    ROS_WARN("Secondary goal is infeasible! scaling --> zero");
+    ROS_DEBUG_THROTTLE(0.5, "Secondary goal is infeasible! scaling --> zero");
   }
 
   // compute the additional joint acceleration due to the secondary goal
