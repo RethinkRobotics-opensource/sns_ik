@@ -294,7 +294,7 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
     return ExitCode::InternalError;
   }
   else if (*taskScaleCS < MINIMUM_FINITE_SCALE_FACTOR) {
-    ROS_DEBUG_THROTTLE(0.5, "Secondary goal is infeasible! scaling --> zero");
+    ROS_DEBUG("Secondary goal is infeasible! scaling --> zero");
   }
 
   // compute the additional joint velocity due to the secondary goal

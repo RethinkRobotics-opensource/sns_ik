@@ -30,10 +30,10 @@
 
 namespace sns_ik {
 
-class SNSVelocityBaseIK : public SNSVelocityIK {
+class SNSVelIKBaseInterface : public SNSVelocityIK {
   public:
-    SNSVelocityBaseIK(int dof, double loop_period);
-    virtual ~SNSVelocityBaseIK() {};
+    SNSVelIKBaseInterface(int dof, double loop_period);
+    virtual ~SNSVelIKBaseInterface() {};
 
     // Optimal SNS Velocity IK
     virtual double getJointVelocity(Eigen::VectorXd *jointVelocity, const std::vector<Task> &sot,

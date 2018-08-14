@@ -27,13 +27,13 @@
 
 namespace sns_ik {
 
-SNSVelocityBaseIK::SNSVelocityBaseIK(int dof, double loop_period) :
+SNSVelIKBaseInterface::SNSVelIKBaseInterface(int dof, double loop_period) :
   SNSVelocityIK(dof, loop_period)
 {
   baseIkSolver = SnsVelIkBase::create(n_dof);
 }
 
-double SNSVelocityBaseIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
+double SNSVelIKBaseInterface::getJointVelocity(Eigen::VectorXd *jointVelocity,
     const std::vector<Task> &sot,
     const Eigen::VectorXd &jointConfiguration)
 {
@@ -60,12 +60,6 @@ double SNSVelocityBaseIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
   // set box constraints
   baseIkSolver->setBounds(dqLow, dqUpp);
 
-  // initialize the base IK solver
-  // ROS_INFO_STREAM("dqLow: " << dqLow.transpose().format(EigArrFmt));
-  // ROS_INFO_STREAM("dqUpp: " << dqUpp.transpose().format(EigArrFmt));
-  // ROS_INFO_STREAM("J: " << J.format(EigArrFmt));
-  // ROS_INFO_STREAM("dx: " << dx.transpose().format(EigArrFmt));
-
   if (n_tasks == 1) {
     exitCode = baseIkSolver->solve(J, dx, &dqSol, &taskScale);
     scaleFactors[0] = taskScale;
@@ -75,17 +69,6 @@ double SNSVelocityBaseIK::getJointVelocity(Eigen::VectorXd *jointVelocity,
     scaleFactors[0] = taskScale;
     scaleFactors[1] = taskScaleCS;
   }
-
-
-  // ROS_INFO_STREAM("taskScale: " << taskScale);
-  // ROS_INFO_STREAM("solution from base solver: " <<
-  // dqBase.transpose().format(EigArrFmt)); ROS_INFO_STREAM("solution from
-  // non-base solver: " << qDot.transpose().format(EigArrFmt));
-  // SnsIkBase::ExitCode exitCode = baseIkSolver->solve(J, dx, dqCS, &qDot,
-  // &taskScale, &taskScaleCS);
-  // if (exitCode != SnsIkBase::ExitCode::Success) {
-  //   ROS_WARN("Base IK Solver failed");
-  // }
 
   // store solution and scale factor
   *jointVelocity = dqSol;

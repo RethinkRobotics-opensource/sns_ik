@@ -228,7 +228,7 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
         ROS_INFO("SNS_IK: Set Velocity solver to Standard SNS solver.");
         break;
       case sns_ik::SNS_Base:
-        m_ik_vel_solver = std::shared_ptr<SNSVelocityBaseIK>(new SNSVelocityBaseIK(m_chain.getNrOfJoints(), m_loopPeriod));
+        m_ik_vel_solver = std::shared_ptr<SNSVelIKBaseInterface>(new SNSVelIKBaseInterface(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to Base SNS solver.");
         break;
       default:
