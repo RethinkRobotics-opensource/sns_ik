@@ -26,12 +26,12 @@
 #include <memory>
 #include <vector>
 
-#include "sns_linear_solver.hpp"
 #include "sns_ik_base.hpp"
+// #include "sns_linear_solver.hpp"
 
 namespace sns_ik {
 
-class SnsVelIkBase : SnsIkBase{
+class SnsVelIkBase : public SnsIkBase{
 
 public:
 

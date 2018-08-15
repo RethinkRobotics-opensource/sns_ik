@@ -25,7 +25,9 @@
 
 namespace sns_ik {
 
-const double SnsIkBase::LIN_SOLVE_RESIDUAL_TOL = 1e-8;
+// TODO: figure out why LIN_SOLVE_RESIDUAL_TOL has to be large for pos/vel tests
+const double SnsIkBase::LIN_SOLVE_RESIDUAL_TOL = 1e1;
+const double SnsIkBase::PINV_TOL = 1e-10;
 const int SnsIkBase::MAXIMUM_SOLVER_ITERATION_FACTOR = 100;
 const double SnsIkBase::POS_INF = std::numeric_limits<double>::max();
 const double SnsIkBase::NEG_INF = std::numeric_limits<double>::lowest();

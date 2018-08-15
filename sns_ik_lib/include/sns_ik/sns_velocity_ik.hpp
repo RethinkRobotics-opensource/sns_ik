@@ -25,6 +25,7 @@
 
 #include <Eigen/Dense>
 #include <vector>
+#include <sns_ik/sns_vel_ik_base.hpp>
 
 namespace sns_ik {
 

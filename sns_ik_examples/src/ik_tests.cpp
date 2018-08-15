@@ -31,6 +31,7 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/date_time.hpp>
 #include <sns_ik/sns_ik.hpp>
+#include <sns_ik/sns_vel_ik_base.hpp>
 #include <ros/ros.h>
 #include <kdl/chainiksolverpos_nr_jl.hpp>
 #include <kdl/chainfksolvervel_recursive.hpp>
@@ -396,6 +397,8 @@ void test(ros::NodeHandle& nh, double num_samples_pos, double num_samples_vel,
   vel_solver_data.push_back(sns_fast);
   velocitySolverData sns_fastoptimal = {sns_ik::SNS_FastOptimal,"SNS Fast Optimal",0.0,0.0,0.0,0.0,0.0,0.0};
   vel_solver_data.push_back(sns_fastoptimal);
+  velocitySolverData sns_base = {sns_ik::SNS_Base,"SNS Base",0.0,0.0,0.0,0.0,0.0,0.0};
+  vel_solver_data.push_back(sns_base);
 
   for(auto& vst: vel_solver_data){
     snsik_solver.setVelocitySolveType(vst.type);

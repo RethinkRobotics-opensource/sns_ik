@@ -25,6 +25,7 @@
 #include <kdl/chain.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
+#include <sns_ik/sns_vel_ik_base.hpp>
 
 namespace sns_ik {
 
