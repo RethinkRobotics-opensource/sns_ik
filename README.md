@@ -37,6 +37,9 @@ required for the SNS Velocity IK solver.
 
 **Fast Optimal SNS:** Similar to the Optimal SNS, but with several numerical improvements.
 
+**SNS Base Velocity/Acceleration IK w/ and w/o Configuration Task as Secondary Goal:** This uses SNS IK algorithms rewritten by Andy Park. 
+These algorithms passed rigorous unit tests and they much more robust than the original algorithms developed by Fabrizio in edge cases. And by providing an acceleration-level IK, they result in inherently continuous velocity outputs. 
+
 ## References:
 
 The algorithms in this library are drawn from three papers,
