@@ -70,7 +70,7 @@ Rome, Italy
 ```
 **Maintainence and Updates:**
 ````
-Forrest Rogers-Marcovitz, Ian McMahon, and Matthew Kelly
+Forrest Rogers-Marcovitz, Ian McMahon, Matthew Kelly, and Andy Park
 Rethink Robotics
 Boston, MA, USA
 ````
