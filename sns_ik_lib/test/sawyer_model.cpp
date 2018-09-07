@@ -37,50 +37,17 @@ KDL::Chain getSawyerKdlChain(std::vector<std::string>* jointNames)
   }
 
   using namespace KDL;
-  Vector axis, origin;
-  Joint jnt;
   Chain chain;
 
-  jnt = Joint("right_arm_mount", Joint::None);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, 0.0, 1.0);
-  origin = Vector(0.0, 0.0, 0.08);
-  jnt = Joint("right_j0", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, 1.0, 0.0);
-  origin = Vector(0.081, 0.05, 0.237);
-  jnt = Joint("right_j1", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, -1.0, 0.0);
-  origin = Vector(0.0, -0.14, 0.1425);
-  jnt = Joint("right_j2", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, 1.0, 0.0);
-  origin = Vector(0.0, -0.042, 0.26);
-  jnt = Joint("right_j3", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, -1.0, 0.0);
-  origin = Vector(0.0, -0.125, -0.1265);
-  jnt = Joint("right_j4", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, 1.0, 0.0);
-  origin = Vector(0.0, 0.031, 0.275);
-  jnt = Joint("right_j5", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  axis = Vector(0.0, -1.0, 0.0);
-  origin = Vector(0.0, -0.11, 0.1053);
-  jnt = Joint("right_j6", origin, axis, Joint::RotAxis);
-  chain.addSegment(Segment(jnt));
-
-  jnt = Joint("right_hand", Joint::None);
-  chain.addSegment(Segment(jnt));
+  chain.addSegment(Segment("right_arm_mount", Joint(Joint::None), KDL::Frame(Rotation::RPY(0.0,0.0,0.0), Vector(0.0, 0.0, 0.08))));
+  chain.addSegment(Segment("right_l0", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(-1.57079632679, 1.57079632679, 0), Vector(0.081, 0.05, 0.237))));
+  chain.addSegment(Segment("right_l1", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(1.57079632679, 0, 0), Vector(0.0, -0.14, 0.1425))));
+  chain.addSegment(Segment("right_l2", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(-1.57079632679, 0, 0), Vector(0.0, -0.042, 0.26))));
+  chain.addSegment(Segment("right_l3", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(1.57079632679, 0, 0), Vector(0.0, -0.125, -0.1265))));
+  chain.addSegment(Segment("right_l4", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(-1.57079632679, 0, 0), Vector(0.0, 0.031, 0.275))));
+  chain.addSegment(Segment("right_l5", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(-1.57079632679, -0.17453, 3.1416), Vector(0.0, -0.11, 0.1053))));
+  chain.addSegment(Segment("right_l6", Joint(Joint::RotZ), KDL::Frame(Rotation::RPY(0, 0, 1.570796), Vector(0, 0, 0.0245))));
+  chain.addSegment(Segment("right_hand", Joint(Joint::None), KDL::Frame(Rotation::RPY(0.0,0.0,0.0), Vector(0.0, 0.0, 0.0))));
 
   return chain;
 }
