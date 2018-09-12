@@ -73,6 +73,10 @@ double SNSVelIKBaseInterface::getJointVelocity(Eigen::VectorXd *jointVelocity,
   // store solution and scale factor
   *jointVelocity = dqSol;
 
+  // return -1.0 when IK was not successful
+  if (exitCode != SnsIkBase::ExitCode::Success)
+    return -1.0;
+
   return 1.0;
 }
 
