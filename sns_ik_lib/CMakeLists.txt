@@ -46,6 +46,7 @@ add_library(sns_ik
             src/sns_vel_ik_base.cpp
             src/sns_vel_ik_base_interface.cpp
             src/sns_velocity_ik.cpp
+            src/sns_acceleration_ik.cpp
             utilities/sns_ik_math_utils.cpp
             utilities/sns_linear_solver.cpp)
 target_link_libraries(sns_ik ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
@@ -74,6 +75,8 @@ if (CATKIN_ENABLE_TESTING)
   target_link_libraries(sns_ik_pos_test sns_ik sns_ik_test ${catkin_LIBRARIES})
   catkin_add_gtest(sns_ik_vel_test test/sns_ik_vel_test.cpp)
   target_link_libraries(sns_ik_vel_test sns_ik sns_ik_test ${catkin_LIBRARIES})
+  catkin_add_gtest(sns_ik_acc_test test/sns_ik_acc_test.cpp)
+  target_link_libraries(sns_ik_acc_test sns_ik sns_ik_test ${catkin_LIBRARIES})
   catkin_add_gtest(sns_vel_ik_base_test test/sns_vel_ik_base_test.cpp)
   target_link_libraries(sns_vel_ik_base_test sns_ik sns_ik_test ${catkin_LIBRARIES})
   catkin_add_gtest(sns_acc_ik_base_test test/sns_acc_ik_base_test.cpp)

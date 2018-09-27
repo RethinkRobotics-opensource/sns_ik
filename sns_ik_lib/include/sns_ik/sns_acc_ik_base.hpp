@@ -31,7 +31,7 @@
 namespace sns_ik {
 
 
-class SnsAccIkBase : SnsIkBase{
+class SnsAccIkBase : public SnsIkBase{
 
 public:
 

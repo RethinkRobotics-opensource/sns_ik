@@ -12,7 +12,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-// Author: Ian McMahon
+// Author: Ian McMahon, Andy Park
 
 #ifndef SNS_IK_HPP
 #define SNS_IK_HPP
@@ -24,6 +24,7 @@
 #include <kdl/jntarray.hpp>
 #include <kdl/chainfksolverpos_recursive.hpp>
 #include <sns_ik/sns_position_ik.hpp>
+#include <sns_ik/sns_acceleration_ik.hpp>
 
 namespace sns_ik {
 
@@ -32,7 +33,8 @@ namespace sns_ik {
                            SNS_OptimalScaleMargin,
                            SNS_Fast,
                            SNS_FastOptimal,
-                           SNS_Base
+                           SNS_Base,
+                           SNS_Base_Acc
                          };
 
 
@@ -45,6 +47,8 @@ namespace sns_ik {
 
   // Forward declare SNS Velocity Base Class
   class SNSVelocityIK;
+  // Forward declare SNS Acceleration Base Class
+  class SNSAccelerationIK;
   class SNS_IK
   {
   public:
@@ -146,6 +150,46 @@ namespace sns_ik {
                      const KDL::JntArray& q_vel_bias,
                      KDL::JntArray& qdot_out);
 
+    bool getJacobian(const KDL::JntArray& jnt_pos_in, Eigen::MatrixXd *jacobianOut);
+
+    bool getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray& jnt_vel_in,
+                        Eigen::MatrixXd *jacobianDotOut, const std::string & tipName);
+
+    bool getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray& jnt_vel_in,
+                        Eigen::MatrixXd *jacobianDotOut)
+    { return getJacobianDot(jnt_pos_in, jnt_vel_in, jacobianDotOut, "right_hand"); }
+
+    int CartToJntAcc(const KDL::JntArray& q_in,
+                     const KDL::JntArray& qdot_in,
+                     const KDL::Twist& a_in,
+                     KDL::JntArray& qddot_out)
+    { return CartToJntAcc(q_in, qdot_in, a_in, KDL::JntArray(0), std::vector<std::string>(),
+                          KDL::JntArray(0), qddot_out); }
+
+    // Assumes the NS bias is for all the joints in the correct order
+    int CartToJntAcc(const KDL::JntArray& q_in,
+                     const KDL::JntArray& qdot_in,
+                     const KDL::Twist& a_in,
+                     const KDL::JntArray& q_bias,
+                     KDL::JntArray& qddot_out)
+    { return CartToJntAcc(q_in, qdot_in, a_in, q_bias, m_jointNames, KDL::JntArray(0), qddot_out); }
+
+    int CartToJntAcc(const KDL::JntArray& q_in,
+                     const KDL::JntArray& qdot_in,
+                     const KDL::Twist& a_in,
+                     const KDL::JntArray& q_bias,
+                     const KDL::JntArray& q_acc_bias,
+                     KDL::JntArray& qddot_out)
+    { return CartToJntAcc(q_in, qdot_in, a_in, q_bias, m_jointNames, q_acc_bias, qddot_out); }
+
+    int CartToJntAcc(const KDL::JntArray& q_in,
+                     const KDL::JntArray& qdot_in,
+                     const KDL::Twist& a_in,
+                     const KDL::JntArray& q_bias,
+                     const std::vector<std::string>& biasNames,
+                     const KDL::JntArray& q_acc_bias,
+                     KDL::JntArray& qddot_out);
+
     // Nullspace gain should be specified between 0 and 1.0
     double getNullspaceGain() { return m_nullspaceGain; }
     void setNullspaceGain(double gain)
@@ -171,6 +215,7 @@ namespace sns_ik {
 
     std::vector<KDL::JntArray> m_solutions;
     std::shared_ptr<SNSVelocityIK> m_ik_vel_solver;
+    std::shared_ptr<SNSAccelerationIK> m_ik_acc_solver;
     std::shared_ptr<SNSPositionIK> m_ik_pos_solver;
     std::shared_ptr<KDL::ChainJntToJacSolver> m_jacobianSolver;
 

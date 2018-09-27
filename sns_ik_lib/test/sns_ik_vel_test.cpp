@@ -1,6 +1,6 @@
 /*! \file sns_ik_vel_test.cpp
  * \brief Unit Test: sns_ik velocity solver
- * \author Matthew Kelly
+ * \author Matthew Kelly, Andy Park
  */
 /*
  *    Copyright 2018 Rethink Robotics
