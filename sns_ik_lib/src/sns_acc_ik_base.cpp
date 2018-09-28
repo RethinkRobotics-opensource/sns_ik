@@ -183,7 +183,7 @@ SnsIkBase::ExitCode SnsAccIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
       ddqNull = bestDdqNull;
 
       if (bestTaskScale < MINIMUM_FINITE_SCALE_FACTOR) {  // check that the solver found a feasible solution
-        ROS_WARN("Task is infeasible! scaling --> zero");
+        ROS_ERROR("Task is infeasible! scaling --> zero");
         return ExitCode::InfeasibleTask;
       }
 
