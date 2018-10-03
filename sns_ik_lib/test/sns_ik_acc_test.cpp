@@ -78,10 +78,10 @@ struct AccTestResult {
 
 /*************************************************************************************************/
 
-void forwardKinematicsAcceleration(const KDL::JntArray& q, const KDL::JntArray& dq, 
+void forwardKinematicsAcceleration(const KDL::JntArray& q, const KDL::JntArray& dq,
                                    const KDL::JntArray& ddq, sns_ik::SNS_IK pSolver, KDL::Twist *accFK)
 {
-  // compute Jacobian 
+  // compute Jacobian
   Eigen::MatrixXd jacobian;
 
   if (!pSolver.getJacobian(q, &jacobian))
@@ -98,7 +98,7 @@ void forwardKinematicsAcceleration(const KDL::JntArray& q, const KDL::JntArray& 
 
   // compute the goal endpoint acc
   Eigen::VectorXd accFKtmp = jacobian*ddq.data + jacobianDot*dq.data;
-  
+
   accFK->vel(0) = accFKtmp(0);
   accFK->vel(1) = accFKtmp(1);
   accFK->vel(2) = accFKtmp(2);
@@ -197,7 +197,7 @@ AccTestResult runAccIkSingleTest(int seed, const KDL::JntArray& qLow, const KDL:
   // run benchmarking:
   ros::Time startTime = ros::Time::now();
   result.exitCode = ikSolver(qTest, dqTest, accFkTmp, ddqSolve, taskScale);
-  
+
   result.solveTime += ros::Time::now() - startTime;
   result.taskScale = taskScale;  // primary task scale
   KDL::Twist scaledAcc = accFkTmp * result.taskScale;
@@ -226,9 +226,9 @@ AccTestResult runAccIkSingleTest(int seed, const KDL::JntArray& qLow, const KDL:
  * @param solverName: solver name, used for logging only
  * @param nTest: number of tests to run
  */
-void runGeneralAccIkTest(int seed, sns_ik::SNS_IK pSolver, IkSolver& ikSolver, 
+void runGeneralAccIkTest(int seed, sns_ik::SNS_IK pSolver, IkSolver& ikSolver,
                   const KDL::JntArray& qLow, const KDL::JntArray& qUpp,
-                  const KDL::JntArray& vMax, const KDL::JntArray& aMax, 
+                  const KDL::JntArray& vMax, const KDL::JntArray& aMax,
                   std::string solverName, int nTest = ACC_IK_TEST_COUNT)
 {
   // Set up the data structure for the results:
@@ -284,7 +284,7 @@ void runSnsAccIkTest(int seed, sns_ik::VelocitySolveType solverType) {
   ikSolver.setVelocitySolveType(solverType);
 
   // Function template for acceleration IK solver
-  IkSolver invKin = [&ikSolver](const KDL::JntArray& qInit, const KDL::JntArray& dqInit, 
+  IkSolver invKin = [&ikSolver](const KDL::JntArray& qInit, const KDL::JntArray& dqInit,
                                 const KDL::Twist& ddpGoal, KDL::JntArray& ddqSoln, double& taskScale) {
     int exitCode = ikSolver.CartToJntAcc(qInit, dqInit, ddpGoal, ddqSoln);
     std::vector<double> taskScaleAcc;
@@ -311,11 +311,11 @@ void runSnsAccIkTest(int seed, sns_ik::VelocitySolveType solverType) {
  *************************************************************************************************/
 
 /*
- * Run the benchmark test on all five versions of the acceleration solver.
+ * Run the benchmark test on the acceleration solvers.
  * Note: each test uses the same seed so that the test problems are identical for each solver.
  */
 TEST(sns_ik, acc_ik_SNS_test) {
-    runSnsAccIkTest(23539, sns_ik::VelocitySolveType::SNS_Base_Acc); }
+    runSnsAccIkTest(23539, sns_ik::VelocitySolveType::SNS_Base); }
 
 /*************************************************************************************************/
 

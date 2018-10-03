@@ -52,10 +52,9 @@ class SNSAccelerationIK {
 
     // SNS Acceleration IK
     int getJointAcceleration(Eigen::VectorXd *jointAcceleration, const std::vector<TaskAcc> &sot,
-                                    const Eigen::VectorXd &jointConfiguration, const Eigen::VectorXd &jointVelocities);
+                             const Eigen::VectorXd &jointConfiguration, const Eigen::VectorXd &jointVelocities);
 
-    std::vector<double> getTasksScaleFactor()
-        { return scaleFactors; }
+    std::vector<double> getTasksScaleFactor() const { return scaleFactors; }
 
     Eigen::VectorXd getJointLimitLow() { return jointLimit_low; }
     Eigen::VectorXd getJointLimitHigh() { return jointLimit_high; }
@@ -67,7 +66,7 @@ class SNSAccelerationIK {
 
     // Shape the joint acceleration bound ddotQmin and ddotQmax
     void shapeJointAccelerationBound(const Eigen::VectorXd &actualJointConfiguration,
-                        const Eigen::VectorXd &actualJointVelocities, double margin = 0.98);
+                                     const Eigen::VectorXd &actualJointVelocities, double margin = 0.98);
 
     int n_dof;  //manipulator degree of freedom
     int n_tasks;  //number of tasks
@@ -84,19 +83,7 @@ class SNSAccelerationIK {
     std::vector<double> scaleFactors;
 
     // variables for base acc ik solver
-    Eigen::ArrayXd ddqLow;
-    Eigen::ArrayXd ddqUpp;
-    Eigen::MatrixXd J;
-    Eigen::VectorXd dJdq;
-    Eigen::VectorXd ddx;
-    Eigen::VectorXd ddqCS;
-    Eigen::VectorXd ddqSol;
-
-    double taskScale, taskScaleCS;
-
     SnsAccIkBase::uPtr baseIkSolver;
-
-    SnsIkBase::ExitCode exitCode;
 };
 
 }  // namespace sns_ik

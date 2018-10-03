@@ -33,8 +33,7 @@ namespace sns_ik {
                            SNS_OptimalScaleMargin,
                            SNS_Fast,
                            SNS_FastOptimal,
-                           SNS_Base,
-                           SNS_Base_Acc
+                           SNS_Base
                          };
 
 
@@ -153,11 +152,7 @@ namespace sns_ik {
     bool getJacobian(const KDL::JntArray& jnt_pos_in, Eigen::MatrixXd *jacobianOut);
 
     bool getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray& jnt_vel_in,
-                        Eigen::MatrixXd *jacobianDotOut, const std::string & tipName);
-
-    bool getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray& jnt_vel_in,
-                        Eigen::MatrixXd *jacobianDotOut)
-    { return getJacobianDot(jnt_pos_in, jnt_vel_in, jacobianDotOut, "right_hand"); }
+                        Eigen::MatrixXd *jacobianDotOut, const std::string& tipName = "right_hand");
 
     int CartToJntAcc(const KDL::JntArray& q_in,
                      const KDL::JntArray& qdot_in,

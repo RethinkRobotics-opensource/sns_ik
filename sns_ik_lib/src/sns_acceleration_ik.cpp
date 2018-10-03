@@ -35,6 +35,7 @@ SNSAccelerationIK::SNSAccelerationIK(int dof, double loop_period) :
   setNumberOfDOF(dof);
   setLoopPeriod(loop_period);
 
+  // initialize the sns acc ik solver
   baseIkSolver = SnsAccIkBase::create(n_dof);
 }
 
@@ -91,10 +92,17 @@ bool SNSAccelerationIK::setMaxJointAcceleration(const Eigen::VectorXd maxAcceler
   return true;
 }
 
+// The box constraints (ddotQmin and ddotQmax) in acceleration level are calculated 
+// from joint position, velocity and acceleration limits based on the equations 
+// in the following paper: 
+// Flacco, Fabrizio, Alessandro De Luca, and Oussama Khatib. 
+// "Motion control of redundant robots under joint constraints: 
+// Saturation in the null space." In IEEE International Conference on Robotics 
+// and Automation (ICRA), pp. 285-292, 2012.
 void SNSAccelerationIK::shapeJointAccelerationBound(const Eigen::VectorXd &actualJointConfiguration,
                                         const Eigen::VectorXd &actualJointVelocities, double margin) {
 
-  // it could be written using the Eigen::Array potentiality
+  // TODO: rewrite this using the Eigen::Array
   double step, max, stop;
 
   for (int i = 0; i < n_dof; i++) {
@@ -109,12 +117,6 @@ void SNSAccelerationIK::shapeJointAccelerationBound(const Eigen::VectorXd &actua
       ddotQmin(i) = max;
     }
 
-    if (ddotQmin(i) > 0) {
-      ROS_ERROR_STREAM("Limit has been reversed for "<< i <<"th joint!\n"<< "jointLimit_Low: " << jointLimit_low(i)<<
-      ",  actualJointConfiguration: " << actualJointConfiguration(i));
-      ROS_ERROR_STREAM("minJointVelocity: " << -maxJointVelocity(i)<< ",  actualJointVelocities: " << actualJointVelocities(i));
-    }
-
     // for the maximum bound
     max = maxJointAcceleration(i);
     if (m_usePositionLimits) {
@@ -126,10 +128,18 @@ void SNSAccelerationIK::shapeJointAccelerationBound(const Eigen::VectorXd &actua
       ddotQmax(i) = max;
     }
 
-    if (ddotQmax(i) < 0) {
-      ROS_ERROR_STREAM("Limit has been reversed for "<< i <<"th joint!\n"<< "jointLimit_high: " << jointLimit_high(i)<<
-      ",  actualJointConfiguration: " << actualJointConfiguration(i));
-      ROS_ERROR_STREAM("maxJointVelocity: " << maxJointVelocity(i)<< ",  actualJointVelocities: " << actualJointVelocities(i));
+    // check whether the acceleration limits are correctly shaped
+    if (ddotQmin(i) > ddotQmax(i)) {
+      if (ddotQmin(i) > 0) {
+      ROS_ERROR_STREAM("Lower limit has been reversed for J"<< i <<"!\n"<< "jointLimit_Low: " << jointLimit_low(i) 
+      << ",  actualJointConfiguration: " << actualJointConfiguration(i) <<"\nminJointVelocity: " << -maxJointVelocity(i)
+      << ",  actualJointVelocities: " << actualJointVelocities(i));
+      }
+      if (ddotQmax(i) < 0) {
+        ROS_ERROR_STREAM("Upper limit has been reversed for J"<< i <<"!\n"<< "jointLimit_high: " << jointLimit_high(i)
+        << ",  actualJointConfiguration: " << actualJointConfiguration(i) << "\nmaxJointVelocity: " << maxJointVelocity(i)
+        << ",  actualJointVelocities: " << actualJointVelocities(i));
+      }
     }
   }
 
@@ -140,24 +150,36 @@ void SNSAccelerationIK::shapeJointAccelerationBound(const Eigen::VectorXd &actua
 int SNSAccelerationIK::getJointAcceleration(Eigen::VectorXd *jointAcceleration,
     const std::vector<TaskAcc> &sot, const Eigen::VectorXd &jointConfiguration, const Eigen::VectorXd &jointVelocities)
 {
+  // check whether tasks are defined or not
+  if (sot.size()==0) {
+    ROS_ERROR("Tasks have not been correctly set!");
+    return -1;
+  } 
+
   // This will only reset member variables if different from previous values
   setNumberOfTasks(sot.size(), sot[0].jacobian.cols());
 
   // calculate box constraints
   shapeJointAccelerationBound(jointConfiguration, jointVelocities);
 
-  // solve using SNS base IK solver (andy)
-  ddqLow = ddotQmin;
-  ddqUpp = ddotQmax;
-  J = sot[0].jacobian;
-  dJdq = sot[0].dJdq;
-  ddx = sot[0].desired;
+  // define variables
+  Eigen::ArrayXd ddqLow = ddotQmin;
+  Eigen::ArrayXd ddqUpp = ddotQmax;
+  Eigen::MatrixXd J = sot[0].jacobian;
+  Eigen::VectorXd dJdq = sot[0].dJdq;
+  Eigen::VectorXd ddx = sot[0].desired;
+  Eigen::VectorXd ddqSol;
+  Eigen::VectorXd ddqCS;
+  double taskScale, taskScaleCS;
+  SnsIkBase::ExitCode exitCode;
+
+  // set default values 
   ddqSol.resize(n_dof);
   taskScale = 1.0;
+  taskScaleCS = 1.0;
 
   if (n_tasks > 1) {
     // if the tasks include a nullspace bias task
-    taskScaleCS = 1.0;
     ddqCS = sot[1].desired;
   }
 
@@ -178,13 +200,9 @@ int SNSAccelerationIK::getJointAcceleration(Eigen::VectorXd *jointAcceleration,
   *jointAcceleration = ddqSol;
 
   if (exitCode != SnsIkBase::ExitCode::Success)
-  {
     return -1;
-  }
 
   return 1;
 }
-
-
 
 }  // namespace sns_ik

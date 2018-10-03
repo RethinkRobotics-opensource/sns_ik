@@ -28,6 +28,10 @@
 
 namespace sns_ik {
 
+  // define some constants
+  static const size_t CARTESIAN_DOF = 6;
+  static const size_t NUM_LINKS = 9; // the number of links in robot kinematic chain
+
   std::string toStr(const sns_ik::VelocitySolveType& type) {
    switch (type) {
      case sns_ik::VelocitySolveType::SNS:
@@ -42,8 +46,6 @@ namespace sns_ik {
        return "SNS_FastOptimal";
      case sns_ik::VelocitySolveType::SNS_Base:
        return "SNS_Base";
-     case sns_ik::VelocitySolveType::SNS_Base_Acc:
-       return "SNS_Base_Acc";
      default:
        return "SNS_Unknown";
    }
@@ -234,13 +236,6 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
         m_ik_vel_solver = std::shared_ptr<SNSVelIKBaseInterface>(new SNSVelIKBaseInterface(m_chain.getNrOfJoints(), m_loopPeriod));
         ROS_INFO("SNS_IK: Set Velocity solver to Base SNS solver.");
         break;
-      case sns_ik::SNS_Base_Acc:
-        m_ik_vel_solver = std::shared_ptr<SNSVelIKBaseInterface>(new SNSVelIKBaseInterface(m_chain.getNrOfJoints(), m_loopPeriod));
-        m_ik_acc_solver = std::shared_ptr<SNSAccelerationIK>(new SNSAccelerationIK(m_chain.getNrOfJoints(), m_loopPeriod));
-        m_ik_acc_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
-                                           m_velocity.data, m_acceleration.data);
-        ROS_INFO("SNS_IK: Set Acceleration solver to Base SNS solver.");
-        break;
       default:
         ROS_ERROR("SNS_IK: Unknown Velocity solver type requested.");
         return false;
@@ -248,6 +243,10 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver, m_eps));
+
+    // set default acceleration IK solver
+    m_ik_acc_solver = std::shared_ptr<SNSAccelerationIK>(new SNSAccelerationIK(m_chain.getNrOfJoints(), m_loopPeriod));
+    m_ik_acc_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data, m_velocity.data, m_acceleration.data);
 
     m_solvetype = type;
     m_initialized = true;
@@ -308,9 +307,9 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
   std::vector<Task> sot;
   Task task;
   task.jacobian = jacobian.data;
-  task.desired = Eigen::VectorXd::Zero(6);
+  task.desired = Eigen::VectorXd::Zero(CARTESIAN_DOF);
   // twistEigenToKDL
-  for(size_t i = 0; i < 6; i++)
+  for(size_t i = 0; i < CARTESIAN_DOF; i++)
       task.desired(i) = v_in[i];
   sot.push_back(task);
 
@@ -426,7 +425,7 @@ bool SNS_IK::getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray
   }
 
   // Get Linear/Angular Jacobians
-  Eigen::MatrixXd Jv, Jw;
+  Eigen::Matrix3Xd Jv, Jw;
   Jv = jacobian.data.block(0,0,3,numJnt);
   Jw = jacobian.data.block(3,0,3,numJnt);
 
@@ -435,49 +434,43 @@ bool SNS_IK::getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray
   jacobianDot.resize(numJnt);
 
   // initialization
-  Eigen::MatrixXd p_0_i_1_i = Eigen::MatrixXd::Zero(3, numJnt);
-  Eigen::MatrixXd pdot_0_i_1_i = Eigen::MatrixXd::Zero(3, numJnt);
-  Eigen::MatrixXd p_0_i_1 = Eigen::MatrixXd::Zero(3, numJnt);
-  Eigen::MatrixXd p_0_i_1_k = Eigen::MatrixXd::Zero(3, numJnt);
-  Eigen::MatrixXd pdot_0_i_1_k = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd p_0_i_1_i = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd pdot_0_i_1_i = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd p_0_i_1 = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd p_0_i_1_k = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd pdot_0_i_1_k = Eigen::MatrixXd::Zero(3, numJnt);
 
-  Eigen::MatrixXd w = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd w = Eigen::MatrixXd::Zero(3, numJnt);
 
-  Eigen::MatrixXd Jdw = Eigen::MatrixXd::Zero(3, numJnt);
-  Eigen::MatrixXd Jdv = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd Jdw = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd Jdv = Eigen::MatrixXd::Zero(3, numJnt);
 
   // get FK of the intermediate links
   std::vector<KDL::Frame> transforms;
   KDL::ChainFkSolverPos_recursive fwdKin(m_chain);
-  KDL::JntArray q(jnt_pos_in.rows());
-  q.data << 1,1,1,1,1,1,1;
 
-  for (size_t i = 0; i < 9; i++) {
+  for (size_t i = 0; i < NUM_LINKS; i++) {
     KDL::Frame transformTemp;
-    fwdKin.JntToCart(q, transformTemp, i+1);
+    fwdKin.JntToCart(jnt_pos_in, transformTemp, i+1);
     if (i < numJnt)
       p_0_i_1.col(i) << transformTemp.p(0),transformTemp.p(1),transformTemp.p(2);
     transforms.push_back(transformTemp);
   }
 
-  // get the tip position vector
-  Eigen::Vector3d p_0_k(transforms[8].p(0),transforms[8].p(1),transforms[8].p(2));
+  // get the tip position vector (the last link frame index is NUM_LINKS-1)
+  Eigen::Vector3d p_0_k(transforms[NUM_LINKS-1].p(0),transforms[NUM_LINKS-1].p(1),transforms[NUM_LINKS-1].p(2));
 
   // first pass -- compute Jdw and quantities needed for Jdv
-  Eigen::Vector3d w_i(0,0,0);
   Eigen::Vector3d w_i_1(0,0,0);
-  for (size_t i = 0; i < numJnt; i++) {
+  for (size_t i = 1; i < numJnt; i++) {
     if (i > 0) {
       w_i_1 = w.col(i-1);
     }
 
     // compute w_i and w_i_1
-    w_i = jnt_vel_in(i)*Jw.col(i) + w_i_1;
-    w.col(i) = w_i;
-
+    w.col(i) = jnt_vel_in(i)*Jw.col(i) + w_i_1;
     // compute Jdw
-    Eigen::Vector3d Jw_i = Jw.col(i);
-    Jdw.col(i) = w_i_1.cross(Jw_i);
+    Jdw.col(i) = w_i_1.cross(Jw.col(i));
 
     /// compute quantities for Jdv
 
@@ -490,9 +483,7 @@ bool SNS_IK::getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray
     }
 
     // compute its derivative
-    Eigen::Vector3d p_0_i_1_i_ = p_0_i_1_i.col(i);
-    pdot_0_i_1_i.col(i) = w_i.cross(p_0_i_1_i_);
-
+    pdot_0_i_1_i.col(i) = w.col(i).cross(p_0_i_1_i.col(i));
     // compute the position vector between joint coordinate frame and tip
     p_0_i_1_k.col(i) = p_0_k - p_0_i_1.col(i);
   }
@@ -504,11 +495,7 @@ bool SNS_IK::getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray
       pdot_0_i_1_k.col(i) = pdot_0_i_1_k.col(i) + pdot_0_i_1_i.col(j);
     }
     // compute Jdv
-    Eigen::Vector3d Jw_i = Jw.col(i);
-    Eigen::Vector3d Jdw_i = Jdw.col(i);
-    Eigen::Vector3d p_0_i_1_k_ = p_0_i_1_k.col(i);
-    Eigen::Vector3d pdot_0_i_1_k_ = pdot_0_i_1_k.col(i);
-    Jdv.col(i) = Jdw_i.cross(p_0_i_1_k_) + Jw_i.cross(pdot_0_i_1_k_);
+    Jdv.col(i) = Jdw.col(i).cross(p_0_i_1_k.col(i)) + Jw.col(i).cross(pdot_0_i_1_k.col(i));
   }
 
   // assign Jdv and Jdw into Jacobian dot
@@ -555,10 +542,10 @@ int SNS_IK::CartToJntAcc(const KDL::JntArray& q_in, const KDL::JntArray& qdot_in
   task.jacobian = jacobian.data;
   Eigen::VectorXd dJdq = jacobianDot*qdot_in.data;
   task.dJdq = dJdq;
-  task.desired = Eigen::VectorXd::Zero(6);
+  task.desired = Eigen::VectorXd::Zero(CARTESIAN_DOF);
 
   // twistEigenToKDL
-  for(size_t i = 0; i < 6; i++)
+  for(size_t i = 0; i < CARTESIAN_DOF; i++)
       task.desired(i) = a_in[i];
   sot.push_back(task);
 
@@ -617,6 +604,7 @@ bool SNS_IK::setMaxJointAcceleration(const KDL::JntArray& accel) {
 bool SNS_IK::getTaskScaleFactors(std::vector<double>& scaleFactors) {
   scaleFactors = m_ik_vel_solver->getTasksScaleFactor();
 
+  // if scaleFactors from velocity IK solver are empty, get them from acc IK solver
   if (scaleFactors.empty())
     scaleFactors = m_ik_acc_solver->getTasksScaleFactor();
   return m_initialized && !scaleFactors.empty();
