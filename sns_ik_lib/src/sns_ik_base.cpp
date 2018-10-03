@@ -33,6 +33,7 @@ const double SnsIkBase::NEG_INF = std::numeric_limits<double>::lowest();
 const double SnsIkBase::MINIMUM_FINITE_SCALE_FACTOR = 1e-10;
 const double SnsIkBase::MAXIMUM_FINITE_SCALE_FACTOR = 1e10;
 const double SnsIkBase::BOUND_TOLERANCE = 1e-8;
+const double SnsIkBase::SMALL_SCALE_FACTOR = 1e-3;
 const Eigen::IOFormat SnsIkBase::EigArrFmt(4, 0, ", ", "\n", "[", "]");
 
 /*************************************************************************************************
@@ -189,9 +190,13 @@ SnsIkBase::ExitCode SnsIkBase::computeTaskScalingFactor(const Eigen::MatrixXd& J
   Eigen::ArrayXd jntScaleFactorArr(nJnt_);
   Eigen::ArrayXd lowMargin = (qLow_ - b);
   Eigen::ArrayXd uppMargin = (qUpp_ - b);
+
   for (int i = 0; i < nJnt_; i++) {
     if (jntIsFree[i]) {
       jntScaleFactorArr(i) = SnsIkBase::findScaleFactor(lowMargin(i), uppMargin(i), a(i));
+      if (jntScaleFactorArr(i) == 1 && (jointOut(i) < (qLow_(i) - SnsIkBase::BOUND_TOLERANCE) 
+          || jointOut(i) > (qUpp_(i) + SnsIkBase::BOUND_TOLERANCE)))
+        jntScaleFactorArr(i) = SMALL_SCALE_FACTOR;
     } else {  // joint is constrained
       jntScaleFactorArr(i) = POS_INF;
     }

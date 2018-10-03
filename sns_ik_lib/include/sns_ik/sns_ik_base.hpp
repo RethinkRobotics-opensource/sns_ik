@@ -117,6 +117,9 @@ protected:
   // Tolerance for checks on the velocity/acceleration limits
   static const double BOUND_TOLERANCE;
 
+  // A small scale factor used during sns ik algorithm
+  static const double SMALL_SCALE_FACTOR;
+
   // Nice formatting option from Eigen
   static const Eigen::IOFormat EigArrFmt;
 

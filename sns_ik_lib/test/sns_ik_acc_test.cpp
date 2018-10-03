@@ -1,6 +1,6 @@
-/*! \file sns_ik_vel_test.cpp
- * \brief Unit Test: sns_ik velocity solver
- * \author Matthew Kelly, Andy Park
+/*! \file sns_ik_acc_test.cpp
+ * \brief Unit Test: sns_ik acceleration solver
+ * \author Andy Park
  */
 /*
  *    Copyright 2018 Rethink Robotics
@@ -33,9 +33,9 @@
 #include <sns_ik/sns_ik.hpp>
 
 /*
- * Define a common interface to call both SNS and KDL solvers for velocity IK
+ * Define a common interface to call both SNS and KDL solvers for acceleration IK
  */
-typedef std::function<int(const KDL::JntArray&, const KDL::Twist&,
+typedef std::function<int(const KDL::JntArray&, const KDL::JntArray&, const KDL::Twist&,
                           KDL::JntArray&, double& taskScale)> IkSolver;
 
 /*
@@ -44,24 +44,28 @@ typedef std::function<int(const KDL::JntArray&, const KDL::Twist&,
  */
 
 /*************************************************************************************************
- *                               Velocity IK Test Params                                         *
+ *                               Acceleration IK Test Params                                         *
  *************************************************************************************************/
 
-// How many velocity IK tests should be run?
-static const int VEL_IK_TEST_COUNT = 250;
+// How many acceleration IK tests should be run?
+static const int ACC_IK_TEST_COUNT = 250;
 
-// Should the velocity IK tests print the results (beyond pass/fail) to terminal?
-static const bool VEL_IK_TEST_VERBOSE = true;
+// Should the acceleration IK tests print the results (beyond pass/fail) to terminal?
+static const bool ACC_IK_TEST_VERBOSE = true;
 
 // Tolerance for checks on forward kinematics
-static const double VEL_IK_TEST_FK_LIN_TOL = 1e-8;  // meters per second
-static const double VEL_IK_TEST_FK_ANG_TOL = 1e-8;  // radians per second
+static const double ACC_IK_TEST_FK_LIN_TOL = 1e-8;  // meters per second^2
+static const double ACC_IK_TEST_FK_ANG_TOL = 1e-8;  // radians per second^2
+
+// Margins for joint angles and rates with respect to their limits
+static const double TEST_ANGLE_MARGIN = 1e-1;
+static const double TEST_RATE_MARGIN = 1e-1;
 
 /*************************************************************************************************
  *                               Utilities Functions                                             *
  *************************************************************************************************/
 
-struct VelTestResult {
+struct AccTestResult {
   ros::Duration solveTime;  // duration spent in the solver across all calls
   int exitCode;  // exit code returned by the solver
   double fkLinErr;  // error in the linear speed
@@ -74,30 +78,57 @@ struct VelTestResult {
 
 /*************************************************************************************************/
 
+void forwardKinematicsAcceleration(const KDL::JntArray& q, const KDL::JntArray& dq,
+                                   const KDL::JntArray& ddq, sns_ik::SNS_IK pSolver, KDL::Twist *accFK)
+{
+  // compute Jacobian
+  Eigen::MatrixXd jacobian;
+
+  if (!pSolver.getJacobian(q, &jacobian))
+  {
+    ROS_ERROR("Jacobian computation failed!");
+  }
+
+  // compute Jacobian dot
+  Eigen::MatrixXd jacobianDot;
+  if (!pSolver.getJacobianDot(q, dq, &jacobianDot))
+  {
+    ROS_ERROR("Jacobian dot computation failed!");
+  }
+
+  // compute the goal endpoint acc
+  Eigen::VectorXd accFKtmp = jacobian*ddq.data + jacobianDot*dq.data;
+
+  accFK->vel(0) = accFKtmp(0);
+  accFK->vel(1) = accFKtmp(1);
+  accFK->vel(2) = accFKtmp(2);
+  accFK->rot(0) = accFKtmp(3);
+  accFK->rot(1) = accFKtmp(4);
+  accFK->rot(2) = accFKtmp(5);
+}
+
+
 /*
- * Computes the maximum absolute error in the forward kinematics at the velocity level.
+ * Computes the maximum absolute error in the forward kinematics at the acceleration level.
  * @param q: joint angles
  * @param dq: joint rates
- * @param fwdKin: solver to use for the forward-kinematics
- * @param twist: expected twist at the end-effector
- * @param[out] linErr: linear speed error
- * @param[out] angErr: angular speed error
+ * @param ddq: joint accelerations
+ * @param accSns: expected acc at the end-effector
+ * @param[out] linErr: linear acc error
+ * @param[out] angErr: angular acc error
  */
-void checkForwardKinematicVelocity( const KDL::JntArray& q, const KDL::JntArray& dq,
-                                    KDL::ChainFkSolverVel_recursive& fwdKin, const KDL::Twist& twistSns,
-                                    double* linErr, double* angErr)
+void checkForwardKinematicAcceleration( const KDL::JntArray& q, const KDL::JntArray& dq, const KDL::JntArray& ddq,
+                                    const KDL::Twist& accSns, sns_ik::SNS_IK pSolver, double* linErr, double* angErr)
 {
   if (!linErr) { ROS_ERROR("linErr is nullptr!"); return; }
   if (!angErr) { ROS_ERROR("angErr is nullptr!"); return; }
 
-  // compute the goal endpoint twist
-  KDL::JntArrayVel jointData(q, dq);
-  KDL::FrameVel frameVel;
-  fwdKin.JntToCart(jointData, frameVel);
-  KDL::Twist twistFk = frameVel.GetTwist();
+  // get forward kinematics in acc
+  KDL::Twist accFk;
+  forwardKinematicsAcceleration(q, dq, ddq, pSolver, &accFk);
 
   // compute the difference
-  KDL::Twist twistErr = twistFk - twistSns;
+  KDL::Twist twistErr = accSns - accFk;
 
   // compute the error in each component:
   KDL::Vector rot = twistErr.rot;
@@ -109,11 +140,11 @@ void checkForwardKinematicVelocity( const KDL::JntArray& q, const KDL::JntArray&
 /*************************************************************************************************/
 
 /*
- * A function to run a benchmarking test on the velocity IK solvers.
+ * A function to run a benchmarking test on the acceleration IK solvers.
  *
  * Structure:
  * - generate N test poses in joint space
- * - use forward kinematics to compute end-effector twist
+ * - use forward kinematics to compute end-effector acc
  * - solve the IK problem using ikSolver
  * - measure and report solve time and success rate
  *
@@ -123,41 +154,55 @@ void checkForwardKinematicVelocity( const KDL::JntArray& q, const KDL::JntArray&
  * @param qLow:  lower joint limits
  * @param qUpp:  upper joint limits
  * @param vMax:  maximum joint speed
+ * @param aMax:  maximum joint acc
  * @param fwdKin:  forward kinematics solver
  * @param ikSolver:  inverse kinematics solver
- * @return: velocity solver test result
+ * @return: acceleration solver test result
  */
-VelTestResult runVelIkSingleTest(int seed, const KDL::JntArray& qLow, const KDL::JntArray& qUpp,
-  const KDL::JntArray& vMax, KDL::ChainFkSolverVel_recursive& fwdKin,  IkSolver& ikSolver)
+AccTestResult runAccIkSingleTest(int seed, const KDL::JntArray& qLow, const KDL::JntArray& qUpp,
+  const KDL::JntArray& vMax, const KDL::JntArray& aMax, IkSolver& ikSolver, sns_ik::SNS_IK pSolver)
 {
-  // compute a random joint velocity and velocity for the solution and the corresponding test pose
-  KDL::JntArray qTest = sns_ik::rng_util::getRngBoundedJoints(seed, qLow, qUpp);
+  // compute a random joint acceleration and acceleration for the solution and the corresponding test pose
+  KDL::JntArray qLowTmp = qLow;
+  KDL::JntArray qUppTmp = qUpp;
+  for (int i = 0; i < int(qLow.rows()); i++) { qLowTmp(i) = qLowTmp(i) + TEST_ANGLE_MARGIN; }
+  for (int i = 0; i < int(qUpp.rows()); i++) { qUppTmp(i) = qUppTmp(i) - TEST_ANGLE_MARGIN; }
+  KDL::JntArray qTest = sns_ik::rng_util::getRngBoundedJoints(seed, qLowTmp, qUppTmp);
   seed = 0;  // let the RNG update the sequence automatically after the first call
+
   KDL::JntArray vMin = vMax;
   for (int i = 0; i < int(vMin.rows()); i++) { vMin(i) = -vMin(i); }
-  KDL::JntArray wTest = sns_ik::rng_util::getRngBoundedJoints(seed, vMin, vMax);
-  KDL::JntArrayVel qwTest(qTest, wTest);
 
-  // compute the goal endpoint twist
-  KDL::FrameVel zTest;
-  fwdKin.JntToCart(qwTest, zTest);
-  KDL::Twist twist = zTest.GetTwist();
+  KDL::JntArray qdLowTmp = vMin;
+  KDL::JntArray qdUppTmp = vMax;
+  for (int i = 0; i < int(qdLowTmp.rows()); i++) { qdLowTmp(i) = qdLowTmp(i) + TEST_RATE_MARGIN; }
+  for (int i = 0; i < int(qdUppTmp.rows()); i++) { qdUppTmp(i) = qdUppTmp(i) - TEST_RATE_MARGIN; }
+  KDL::JntArray dqTest = sns_ik::rng_util::getRngBoundedJoints(seed, qdLowTmp, qdUppTmp);
+
+  KDL::JntArray aMin = aMax;
+  for (int i = 0; i < int(aMin.rows()); i++) { aMin(i) = -aMin(i); }
+  KDL::JntArray ddqTest = sns_ik::rng_util::getRngBoundedJoints(seed, aMin, aMax);
+
+  // get forward kinematics in acc
+  KDL::Twist accFkTmp;
+  forwardKinematicsAcceleration(qTest, dqTest, ddqTest, pSolver, &accFkTmp);
 
   // initialize the output for the IK solver
-  KDL::JntArray dqSolve;
+  KDL::JntArray ddqSolve(qTest.rows());
   double taskScale;
 
   // initialize the test result:
-  VelTestResult result;
+  AccTestResult result;
 
   // run benchmarking:
   ros::Time startTime = ros::Time::now();
-  result.exitCode = ikSolver(qTest, twist, dqSolve, taskScale);
+  result.exitCode = ikSolver(qTest, dqTest, accFkTmp, ddqSolve, taskScale);
+
   result.solveTime += ros::Time::now() - startTime;
   result.taskScale = taskScale;  // primary task scale
-  KDL::Twist scaledTwist = twist * result.taskScale;
-  checkForwardKinematicVelocity(qTest, dqSolve, fwdKin, scaledTwist, &(result.fkLinErr), &(result.fkAngErr));
-  result.fkValid = result.fkLinErr <= VEL_IK_TEST_FK_LIN_TOL && result.fkAngErr <= VEL_IK_TEST_FK_ANG_TOL;
+  KDL::Twist scaledAcc = accFkTmp * result.taskScale;
+  checkForwardKinematicAcceleration(qTest, dqTest, ddqSolve, scaledAcc, pSolver, &(result.fkLinErr), &(result.fkAngErr));
+  result.fkValid = result.fkLinErr <= ACC_IK_TEST_FK_LIN_TOL && result.fkAngErr <= ACC_IK_TEST_FK_ANG_TOL;
   if (result.fkValid && result.exitCode >= 0) {
     result.nPass = 1; result.nFail = 0;
   } else {
@@ -172,27 +217,29 @@ VelTestResult runVelIkSingleTest(int seed, const KDL::JntArray& qLow, const KDL:
 /*
  * @param seed: seed to pass to the RNG on each call
  *              if seed == 0, then seed is ignored
- * @param fwdKin: forward kinematics solver for velocity
- * @param ikSolver: inverse kinematics solver for velocity (to be tested)
+ * @param fwdKin: forward kinematics solver for acceleration
+ * @param ikSolver: inverse kinematics solver for acceleration (to be tested)
  * @param qLow: lower bounds on joints (for generating the test problem)
  * @param qLow: upper bounds on joints (for generating the test problem)
  * @param vMax: maximum joint speed (for generating the test problem)
+ * @param aMax: maximum joint acc (for generating the test problem)
  * @param solverName: solver name, used for logging only
  * @param nTest: number of tests to run
  */
-void runGeneralVelIkTest(int seed, KDL::ChainFkSolverVel_recursive& fwdKin, IkSolver& ikSolver,
+void runGeneralAccIkTest(int seed, sns_ik::SNS_IK pSolver, IkSolver& ikSolver,
                   const KDL::JntArray& qLow, const KDL::JntArray& qUpp,
-                  const KDL::JntArray& vMax, std::string solverName, int nTest = VEL_IK_TEST_COUNT)
+                  const KDL::JntArray& vMax, const KDL::JntArray& aMax,
+                  std::string solverName, int nTest = ACC_IK_TEST_COUNT)
 {
   // Set up the data structure for the results:
-  VelTestResult results;  // accumulate results here
-  VelTestResult tmp; // individual test output here
+  AccTestResult results;  // accumulate results here
+  AccTestResult tmp; // individual test output here
 
   // run the test many times and accumulate the results
   bool success = true;
   for (int iTest = 0; iTest < nTest; iTest++) {
     seed++;
-    tmp = runVelIkSingleTest(seed, qLow, qUpp, vMax, fwdKin, ikSolver);
+    tmp = runAccIkSingleTest(seed, qLow, qUpp, vMax, aMax, ikSolver, pSolver);
     if (iTest == 0) {
       results = tmp;
     } else {
@@ -201,18 +248,18 @@ void runGeneralVelIkTest(int seed, KDL::ChainFkSolverVel_recursive& fwdKin, IkSo
       results.solveTime += tmp.solveTime;
       results.fkLinErr += tmp.fkLinErr;
       results.fkAngErr += tmp.fkAngErr;
-      ASSERT_LE(tmp.fkLinErr, VEL_IK_TEST_FK_LIN_TOL);
-      ASSERT_LE(tmp.fkAngErr, VEL_IK_TEST_FK_ANG_TOL);
+      ASSERT_LE(tmp.fkLinErr, ACC_IK_TEST_FK_LIN_TOL);
+      ASSERT_LE(tmp.fkAngErr, ACC_IK_TEST_FK_ANG_TOL);
     }
   }
 
   // Print out the results:
-  if (VEL_IK_TEST_VERBOSE) {
+  if (ACC_IK_TEST_VERBOSE) {
     int nPass = results.nPass;
     int nFail = results.nFail;
     int nTotal = nPass + nFail;
     double total = static_cast<double>(nTotal);
-    ROS_INFO("Velocity IK Test  -->  pass: %d, fail: %d  --  %f ms  --  linErr: %e, angErr: %e  --  %s",
+    ROS_INFO("Acceleration IK Test  -->  pass: %d, fail: %d  --  %f ms  --  linErr: %e, angErr: %e  --  %s",
               nPass, nFail, 1000.0 * results.solveTime.toSec() / total,
               results.fkLinErr / total, results.fkAngErr / total,
               solverName.c_str());
@@ -224,7 +271,7 @@ void runGeneralVelIkTest(int seed, KDL::ChainFkSolverVel_recursive& fwdKin, IkSo
 
 /*************************************************************************************************/
 
-void runSnsVelkTest(int seed, sns_ik::VelocitySolveType solverType) {
+void runSnsAccIkTest(int seed, sns_ik::VelocitySolveType solverType) {
 
   // Create a sawyer model:
   std::vector<std::string> jointNames;
@@ -232,24 +279,21 @@ void runSnsVelkTest(int seed, sns_ik::VelocitySolveType solverType) {
   KDL::JntArray qLow, qUpp, vMax, aMax;
   sns_ik::sawyer_model::getSawyerJointLimits(&qLow, &qUpp, &vMax, &aMax);
 
-  // Create a forward-kinematics solver:
-  KDL::ChainFkSolverVel_recursive fwdKin(sawyerChain);
-
   // Create a SNS-IK solver:
   sns_ik::SNS_IK ikSolver(sawyerChain, qLow, qUpp, vMax, aMax, jointNames);
   ikSolver.setVelocitySolveType(solverType);
 
-  // Function template for velocity IK solver
-  IkSolver invKin = [&ikSolver](const KDL::JntArray& qInit, const KDL::Twist& dpGoal,
-                                KDL::JntArray& dqSoln, double& taskScale) {
-    int exitCode = ikSolver.CartToJntVel(qInit, dpGoal, dqSoln);
-    std::vector<double> taskScaleVec;
-    ikSolver.getTaskScaleFactors(taskScaleVec);
-    if (taskScaleVec.empty()) {
+  // Function template for acceleration IK solver
+  IkSolver invKin = [&ikSolver](const KDL::JntArray& qInit, const KDL::JntArray& dqInit,
+                                const KDL::Twist& ddpGoal, KDL::JntArray& ddqSoln, double& taskScale) {
+    int exitCode = ikSolver.CartToJntAcc(qInit, dqInit, ddpGoal, ddqSoln);
+    std::vector<double> taskScaleAcc;
+    ikSolver.getTaskScaleFactors(taskScaleAcc);
+    if (taskScaleAcc.empty()) {
       ROS_ERROR("No task scale!");
       taskScale = -1.0;  // This is what SNS-IK uses as an error flag...
     } else {
-      taskScale = taskScaleVec.front();
+      taskScale = taskScaleAcc.front();
     }
     return exitCode;
   };
@@ -259,7 +303,7 @@ void runSnsVelkTest(int seed, sns_ik::VelocitySolveType solverType) {
    * Note: This seems to cause a segfault in ubuntu 16.04 with Eigen 3.3.4, but it
    * works fine in Ubuntu 14.04 with Eigen 3.2.0. FIXME
    */
-  runGeneralVelIkTest(seed, fwdKin, invKin, qLow, qUpp, vMax, sns_ik::toStr(solverType));
+  runGeneralAccIkTest(seed, ikSolver, invKin, qLow, qUpp, vMax, aMax, sns_ik::toStr(solverType));
 }
 
 /*************************************************************************************************
@@ -267,23 +311,11 @@ void runSnsVelkTest(int seed, sns_ik::VelocitySolveType solverType) {
  *************************************************************************************************/
 
 /*
- * Run the benchmark test on all five versions of the velocity solver.
+ * Run the benchmark test on the acceleration solvers.
  * Note: each test uses the same seed so that the test problems are identical for each solver.
  */
-TEST(sns_ik, vel_ik_SNS_test) {
-    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS); }
-TEST(sns_ik, vel_ik_SNS_Base_test) {
-    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_Base); }
-// FIXME - uncomment to run test. For details, see
-// https://github.com/RethinkRobotics-opensource/sns_ik/issues/87
-// TEST(sns_ik, vel_ik_SNS_Optimal_test) {
-//    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_Optimal); }
-TEST(sns_ik, vel_ik_SNS_OptimalScaleMargin_test) {
-    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_OptimalScaleMargin); }
-TEST(sns_ik, vel_ik_SNS_Fast_test) {
-    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_Fast); }
-TEST(sns_ik, vel_ik_SNS_FastOptimal_test) {
-    runSnsVelkTest(23539, sns_ik::VelocitySolveType::SNS_FastOptimal); }
+TEST(sns_ik, acc_ik_SNS_test) {
+    runSnsAccIkTest(23539, sns_ik::VelocitySolveType::SNS_Base); }
 
 /*************************************************************************************************/
 

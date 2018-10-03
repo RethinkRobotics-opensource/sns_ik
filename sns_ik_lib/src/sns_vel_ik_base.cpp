@@ -136,10 +136,6 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
       ROS_ERROR("Failed to compute task scale!");
       return taskScaleExit;
     }
-    if (tmpScale < MINIMUM_FINITE_SCALE_FACTOR) { // check that the solver found a feasible solution
-      ROS_ERROR("Task is infeasible! scaling --> zero");
-      return ExitCode::InfeasibleTask;
-    }
 
     if (tmpScale > 1.0) {
       ROS_ERROR("Task scale is %f, which is more than 1.0", tmpScale);
@@ -176,6 +172,11 @@ SnsIkBase::ExitCode SnsVelIkBase::solve(const Eigen::MatrixXd& J, const Eigen::V
       (*taskScale) = bestTaskScale;
       W = bestW;
       dqNull = bestDqNull;
+
+      if (bestTaskScale < MINIMUM_FINITE_SCALE_FACTOR) { // check that the solver found a feasible solution
+        ROS_ERROR("Task is infeasible! scaling --> zero");
+        return ExitCode::InfeasibleTask;
+      }
 
       // Update the linear solver
       if (setLinearSolver(J * W) != ExitCode::Success) {

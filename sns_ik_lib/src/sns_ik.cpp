@@ -24,8 +24,13 @@
 #include <sns_ik/osns_sm_velocity_ik.hpp>
 #include <sns_ik/fsns_velocity_ik.hpp>
 #include <sns_ik/fosns_velocity_ik.hpp>
+#include <sns_ik/sns_acceleration_ik.hpp>
 
 namespace sns_ik {
+
+  // define some constants
+  static const size_t CARTESIAN_DOF = 6;
+  static const size_t NUM_LINKS = 9; // the number of links in robot kinematic chain
 
   std::string toStr(const sns_ik::VelocitySolveType& type) {
    switch (type) {
@@ -238,6 +243,11 @@ bool SNS_IK::setVelocitySolveType(VelocitySolveType type) {
     m_ik_vel_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data,
                                            m_velocity.data, m_acceleration.data);
     m_ik_pos_solver = std::shared_ptr<SNSPositionIK>(new SNSPositionIK(m_chain, m_ik_vel_solver, m_eps));
+
+    // set default acceleration IK solver
+    m_ik_acc_solver = std::shared_ptr<SNSAccelerationIK>(new SNSAccelerationIK(m_chain.getNrOfJoints(), m_loopPeriod));
+    m_ik_acc_solver->setJointsCapabilities(m_lower_bounds.data, m_upper_bounds.data, m_velocity.data, m_acceleration.data);
+
     m_solvetype = type;
     m_initialized = true;
     return true;
@@ -290,16 +300,16 @@ int SNS_IK::CartToJntVel(const KDL::JntArray& q_in, const KDL::Twist& v_in,
   jacobian.resize(q_in.rows());
   if (m_jacobianSolver->JntToJac(q_in, jacobian) < 0)
   {
-    std::cout << "JntToJac failed" << std::endl;
+    ROS_ERROR("JntToJac failed!");
     return -1;
   }
 
   std::vector<Task> sot;
   Task task;
   task.jacobian = jacobian.data;
-  task.desired = Eigen::VectorXd::Zero(6);
+  task.desired = Eigen::VectorXd::Zero(CARTESIAN_DOF);
   // twistEigenToKDL
-  for(size_t i = 0; i < 6; i++)
+  for(size_t i = 0; i < CARTESIAN_DOF; i++)
       task.desired(i) = v_in[i];
   sot.push_back(task);
 
@@ -362,6 +372,218 @@ bool SNS_IK::nullspaceBiasTask(const KDL::JntArray& q_bias,
   return true;
 }
 
+/**
+ * Method to return the jacobian matrix.
+ *
+ * @param jnt_pos_in: vector of joint positions
+ * @param jacobianOut: the jacobian dot matrix for the given joint angles and velocities
+ * @param tipName: std string holding the tip name.
+ *
+ * @return true: if jacobianOut is successfully loaded with the desired matrix.
+ *
+ */
+bool SNS_IK::getJacobian(const KDL::JntArray& jnt_pos_in, Eigen::MatrixXd *jacobianOut)
+{
+  // Get the Jacobian corresponding to current joint position
+  KDL::Jacobian jacobian;
+  jacobian.resize(jnt_pos_in.rows());
+  if (m_jacobianSolver->JntToJac(jnt_pos_in, jacobian) < 0)
+  {
+    ROS_ERROR("JntToJac failed!");
+    return false;
+  }
+
+  *jacobianOut = jacobian.data;
+
+  return true;
+}
+
+/**
+ * Method to return the jacobian dot matrix.
+ *
+ * @param jnt_pos_in: vector of joint positions
+ * @param jnt_vel_in: vector of joint velocities
+ * @param jacobianDotOut: the jacobian dot matrix for the given joint angles and velocities
+ * @param tipName: std string holding the tip name.
+ *
+ * @return true: if jacobianDotOut is successfully loaded with the desired matrix.
+ *
+ */
+bool SNS_IK::getJacobianDot(const KDL::JntArray& jnt_pos_in, const KDL::JntArray& jnt_vel_in,
+                                  Eigen::MatrixXd *jacobianDotOut, const std::string & tipName)
+{
+  // copy joint positions and velocities into kdl JntArray
+  size_t numJnt = jnt_pos_in.rows();
+
+  // Get the Jacobian corresponding to current joint position
+  KDL::Jacobian jacobian;
+  jacobian.resize(jnt_pos_in.rows());
+  if (m_jacobianSolver->JntToJac(jnt_pos_in, jacobian) < 0)
+  {
+    ROS_ERROR("JntToJac failed!");
+    return false;
+  }
+
+  // Get Linear/Angular Jacobians
+  Eigen::Matrix3Xd Jv, Jw;
+  Jv = jacobian.data.block(0,0,3,numJnt);
+  Jw = jacobian.data.block(3,0,3,numJnt);
+
+  /// Compute Jacobian Dot
+  KDL::Jacobian jacobianDot;
+  jacobianDot.resize(numJnt);
+
+  // initialization
+  Eigen::Matrix3Xd p_0_i_1_i = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd pdot_0_i_1_i = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd p_0_i_1 = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd p_0_i_1_k = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd pdot_0_i_1_k = Eigen::MatrixXd::Zero(3, numJnt);
+
+  Eigen::Matrix3Xd w = Eigen::MatrixXd::Zero(3, numJnt);
+
+  Eigen::Matrix3Xd Jdw = Eigen::MatrixXd::Zero(3, numJnt);
+  Eigen::Matrix3Xd Jdv = Eigen::MatrixXd::Zero(3, numJnt);
+
+  // get FK of the intermediate links
+  std::vector<KDL::Frame> transforms;
+  KDL::ChainFkSolverPos_recursive fwdKin(m_chain);
+
+  for (size_t i = 0; i < NUM_LINKS; i++) {
+    KDL::Frame transformTemp;
+    fwdKin.JntToCart(jnt_pos_in, transformTemp, i+1);
+    if (i < numJnt)
+      p_0_i_1.col(i) << transformTemp.p(0),transformTemp.p(1),transformTemp.p(2);
+    transforms.push_back(transformTemp);
+  }
+
+  // get the tip position vector (the last link frame index is NUM_LINKS-1)
+  Eigen::Vector3d p_0_k(transforms[NUM_LINKS-1].p(0),transforms[NUM_LINKS-1].p(1),transforms[NUM_LINKS-1].p(2));
+
+  // first pass -- compute Jdw and quantities needed for Jdv
+  Eigen::Vector3d w_i_1(0,0,0);
+  for (size_t i = 1; i < numJnt; i++) {
+    if (i > 0) {
+      w_i_1 = w.col(i-1);
+    }
+
+    // compute w_i and w_i_1
+    w.col(i) = jnt_vel_in(i)*Jw.col(i) + w_i_1;
+    // compute Jdw
+    Jdw.col(i) = w_i_1.cross(Jw.col(i));
+
+    /// compute quantities for Jdv
+
+    // compute the position vector between consecutive links w.r.t base
+    if (i < numJnt - 1) {
+      p_0_i_1_i.col(i) = p_0_i_1.col(i+1) - p_0_i_1.col(i);
+    }
+    else {
+      p_0_i_1_i.col(i) = p_0_k - p_0_i_1.col(i);
+    }
+
+    // compute its derivative
+    pdot_0_i_1_i.col(i) = w.col(i).cross(p_0_i_1_i.col(i));
+    // compute the position vector between joint coordinate frame and tip
+    p_0_i_1_k.col(i) = p_0_k - p_0_i_1.col(i);
+  }
+
+  // second pass -- compute Jdv
+  for (size_t i = 0; i < numJnt; i++) {
+    // sum of derivative
+    for (size_t j = i; j < numJnt; j++) {
+      pdot_0_i_1_k.col(i) = pdot_0_i_1_k.col(i) + pdot_0_i_1_i.col(j);
+    }
+    // compute Jdv
+    Jdv.col(i) = Jdw.col(i).cross(p_0_i_1_k.col(i)) + Jw.col(i).cross(pdot_0_i_1_k.col(i));
+  }
+
+  // assign Jdv and Jdw into Jacobian dot
+  jacobianDot.data.block(0, 0, 3, numJnt) = Jdv;
+  jacobianDot.data.block(3, 0, 3, numJnt) = Jdw;
+
+  // Get the jacobian
+  *jacobianDotOut = jacobianDot.data;
+
+  return true;
+}
+
+int SNS_IK::CartToJntAcc(const KDL::JntArray& q_in, const KDL::JntArray& qdot_in,
+                         const KDL::Twist& a_in,
+                         const KDL::JntArray& q_bias,
+                         const std::vector<std::string>& biasNames,
+                         const KDL::JntArray& q_acc_bias,
+                         KDL::JntArray& qddot_out)
+{
+  if (!m_initialized) {
+    ROS_ERROR("SNS_IK was not properly initialized with a valid chain or limits.");
+    return -1;
+  }
+
+  // compute Jacobian
+  KDL::Jacobian jacobian;
+  jacobian.resize(q_in.rows());
+  if (m_jacobianSolver->JntToJac(q_in, jacobian) < 0)
+  {
+    ROS_ERROR("JntToJac failed!");
+    return -1;
+  }
+
+  // compute Jacobian dot
+  Eigen::MatrixXd jacobianDot;
+  if (!getJacobianDot(q_in, qdot_in, &jacobianDot))
+  {
+    ROS_ERROR("Jacobian dot computation failed!");
+    return -1;
+  }
+
+  std::vector<TaskAcc> sot;
+  TaskAcc task;
+  task.jacobian = jacobian.data;
+  Eigen::VectorXd dJdq = jacobianDot*qdot_in.data;
+  task.dJdq = dJdq;
+  task.desired = Eigen::VectorXd::Zero(CARTESIAN_DOF);
+
+  // twistEigenToKDL
+  for(size_t i = 0; i < CARTESIAN_DOF; i++)
+      task.desired(i) = a_in[i];
+  sot.push_back(task);
+
+  // Calculate the nullspace goal as a configuration-space task.
+  // Creates a task Jacobian which maps the provided nullspace joints to
+  // the full joint state.
+  if (q_bias.rows()) {
+    TaskAcc task2;
+    std::vector<int> indicies;
+    if (!nullspaceBiasTask(q_bias, biasNames, &(task2.jacobian), &indicies)) {
+      ROS_ERROR("Could not create nullspace bias task");
+      return -1;
+    }
+    task2.desired = Eigen::VectorXd::Zero(q_bias.rows());
+    for (size_t ii = 0; ii < q_bias.rows(); ++ii) {
+      // This calculates a "nullspace velocity".
+      // There is an arbitrary scale factor which will be set by the max scale factor.
+      task2.desired(ii) = m_nullspaceGain * (q_bias(ii) - q_in(indicies[ii])) / m_loopPeriod;
+      // TODO: may want to limit the NS velocity to 70-90% of max joint velocity
+    }
+    sot.push_back(task2);
+  }
+
+  // Bias the joint velocities
+  // If the bias is the previous joint velocities, this is velocity damping
+  if(q_acc_bias.rows() == q_in.rows()) {
+    TaskAcc task2;
+    task2.jacobian = Eigen::MatrixXd::Identity(q_acc_bias.rows(), q_acc_bias.rows());
+    task2.desired = Eigen::VectorXd::Zero(q_acc_bias.rows());
+    for (size_t ii = 0; ii < q_acc_bias.rows(); ++ii) {
+      task2.desired(ii) = q_acc_bias(ii);
+    }
+    sot.push_back(task2);
+  }
+
+  return m_ik_acc_solver->getJointAcceleration(&qddot_out.data, sot, q_in.data, qdot_in.data);
+}
+
 SNS_IK::~SNS_IK(){}
 
 bool SNS_IK::setMaxJointVelocity(const KDL::JntArray& vel) {
@@ -381,6 +603,10 @@ bool SNS_IK::setMaxJointAcceleration(const KDL::JntArray& accel) {
 
 bool SNS_IK::getTaskScaleFactors(std::vector<double>& scaleFactors) {
   scaleFactors = m_ik_vel_solver->getTasksScaleFactor();
+
+  // if scaleFactors from velocity IK solver are empty, get them from acc IK solver
+  if (scaleFactors.empty())
+    scaleFactors = m_ik_acc_solver->getTasksScaleFactor();
   return m_initialized && !scaleFactors.empty();
 }
 
