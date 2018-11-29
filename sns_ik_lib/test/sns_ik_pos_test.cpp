@@ -117,7 +117,7 @@ PosTestResult runPosIkSingleTest(int seed, const KDL::JntArray& qLow, const KDL:
   }
 
   // loop over each solver type
-  KDL::JntArray qSoln;
+  KDL::JntArray qSoln(qTest.rows()); // solution must be the correct size for solve call
   PosTestResult result;
   result.solveTime = ros::Duration(0);
   result.nPass = 0;
