@@ -32,7 +32,7 @@ namespace sns_ik {
 class SNSVelocityIK;
 class SNSPositionIK {
   public:
-    SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps=1e-5);
+    SNSPositionIK(const KDL::Chain& chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps=1e-5);
     ~SNSPositionIK();
 
     int CartToJnt(const KDL::JntArray& joint_seed,
