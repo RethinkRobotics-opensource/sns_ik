@@ -74,21 +74,20 @@ for iTask = 1:nTask
     siStar = 0.0;
 
     limitExceeded = true;
-    drop_correction_term = false;
     cntLoop = 1;
+
+    Wistar = Wi;
+    dqNulliStar = dqNulli;
+    PiBarStar = zeros(size(PiBar));
+    PiHatStar = (I - pinv(Ji*PiBar, tol)*Ji)*pinv((I - Wi)*PiPrev, tol);
     while limitExceeded == true
         limitExceeded = false;
 
         % compute a solution without task scale factor
         PiHat = (I - pinv(Ji*PiBar, tol)*Ji)*pinv((I - Wi)*PiPrev, tol);
 
-        if (drop_correction_term)
-            dqi = dqiPrev + pinv(Ji*PiBar, tol) * dxGoali + ...
-                PiHat*(dqNulli - dqiPrev);
-        else
-            dqi = dqiPrev + pinv(Ji*PiBar, tol) * (dxGoali - Ji*dqiPrev) + ...
-                PiHat*(dqNulli - dqiPrev);
-        end
+        dqi = dqiPrev + pinv(Ji*PiBar, tol) * (dxGoali - Ji*dqiPrev) + ...
+            PiHat*(dqNulli - dqiPrev);
 
         % check whether the solution violates the limits
         if any(dqi < (dqLow - tol)) || any(dqi > (dqUpp + tol))
@@ -124,7 +123,13 @@ for iTask = 1:nTask
         if (iTask == 1 || taskScale > 0)
 
             % try to store maximum scale factor with associated variables
-            if taskScale > siStar
+            % check whether the solution violates the limits
+            scaledDqi = dqiPrev + pinv(Ji*PiBar, tol) * ...
+                (taskScale*dxGoali - Ji*dqiPrev) + ...
+                PiHat*(dqNulli - dqiPrev);
+
+            if (taskScale > siStar) && ...
+                    ~(any(scaledDqi < (dqLow - tol)) || any(scaledDqi > (dqUpp + tol)))
                 siStar = taskScale;
                 Wistar = Wi;
                 dqNulliStar = dqNulli;
@@ -142,41 +147,22 @@ for iTask = 1:nTask
 
             % if rank is below task dimension, terminate the loop and output
             % the current best solution
-            if (rank(Ji*PiBar) < ndxGoal)
-                si = siStar;
+            if (rank(Ji*PiBar, tol) < ndxGoal)
+                taskScale = siStar;
                 Wi = Wistar;
                 dqNulli = dqNulliStar;
                 PiBar = PiBarStar;
                 PiHat = PiHatStar;
 
-                if (drop_correction_term)
-                    dqi = dqiPrev + pinv(Ji*PiBar, tol) * si*dxGoali + ...
-                        PiHat*(dqNulli - dqiPrev);
+                dqi = dqiPrev + pinv(Ji*PiBar, tol) * ...
+                    (taskScale*dxGoali - Ji*dqiPrev) + ...
+                    PiHat*(dqNulli - dqiPrev);
 
-                    limitExceeded = false;
-                else
-                    dqi = dqiPrev + pinv(Ji*PiBar, tol) * (si*dxGoali - Ji*dqiPrev) + ...
-                        PiHat*(dqNulli - dqiPrev);
-
-                    % if the solution violates the limits, drop the
-                    % correction term and run it again
-                    if (any(dqi > dqUpp + tol) || any(dqi < dqLow - tol))
-                        drop_correction_term = true;
-                        cntLoop = 0;
-                        Wi = eye(nJnt);
-                        dqNulli = zeros(nJnt, 1);
-                        PiBar = PiPrev;
-                        si = 1.0;
-                        siStar = 0.0;
-                    else
-                        limitExceeded = false;
-                    end
-                end
-
+                limitExceeded = false;
             end
 
         else % if the current task is infeasible
-            si = 0;
+            taskScale = 0;
             Wi = zeros(nJnt, nJnt);
             dqi = dqiPrev;
             limitExceeded = false;
@@ -185,14 +171,14 @@ for iTask = 1:nTask
         cntLoop = cntLoop + 1;
     end
 
-    if (si > 0)
+    if (taskScale > 0)
         % update nullspace projection
         Pi = PiPrev - pinv(Ji*PiPrev, tol)*(Ji*PiPrev);
     end
 
     % store data
     WData{iTask} = Wi;
-    sData(iTask) = si;
+    sData(iTask) = taskScale;
     dqData{iTask} = dqi;
     dqNullData{iTask} = dqNulli;
 end
