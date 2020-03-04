@@ -28,8 +28,8 @@ namespace sns_ik {
 SNSPositionIK::SNSPositionIK(KDL::Chain chain, std::shared_ptr<SNSVelocityIK> velocity_ik, double eps) :
     m_chain(chain),
     m_ikVelSolver(velocity_ik),
-    m_positionFK(chain),
-    m_jacobianSolver(chain),
+    m_positionFK(m_chain),
+    m_jacobianSolver(m_chain),
     m_linearMaxStepSize(0.2),
     m_angularMaxStepSize(0.2),
     m_maxIterations(150),
